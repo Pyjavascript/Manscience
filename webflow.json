@@ -1,0 +1,18 @@
+{
+  "library": {
+    "name": "Manascience Library",
+    "components": [
+      "./src/**/*.webflow.@(js|jsx|mjs|ts|tsx)"
+    ],
+    "globals": "C:/Users/91788/Desktop/manascience_lib/src/globals.webflow.js",
+    "description": "manascience",
+    "id": "manascience-library"
+  },
+  "telemetry": {
+    "global": {
+      "allowTelemetry": true,
+      "lastPrompted": 1780935043175,
+      "version": "2.0.0"
+    }
+  }
+}
