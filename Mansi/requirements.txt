@@ -1,0 +1,9 @@
+# --- LLM Provider SDKs ---
+openai==1.54.4
+
+# httpx>=0.28 removed the `proxies` kwarg that openai==1.54.4 still passes
+# internally; pin to the last compatible 0.27.x release.
+httpx==0.27.2
+
+# --- Configuration ---
+python-dotenv==1.0.1
