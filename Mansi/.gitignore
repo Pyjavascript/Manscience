@@ -1,0 +1,47 @@
+# --- Environment variables / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+
+# --- Test / lint caches ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Coverage ---
+.coverage
+htmlcov/
+
+# --- Node ---
+node_modules/
+
+# --- Editors / IDE ---
+.idea/
+.vscode/
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Build artifacts ---
+dist/
+build/
+
+# --- Databases ---
+*.sqlite3
+*.db
+
+# --- Logs / temp ---
+logs/
+tmp/
+temp/

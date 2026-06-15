@@ -8,10 +8,13 @@ See `claude/spec/mansi-ai-spec-steps-3-8.md` for the full design spec.
 
 ## Setup
 
-1. Activate the virtual environment:
+1. Create and activate a virtual environment:
 
    ```bash
+   python3 -m venv venv
+
    source venv/bin/activate
+   # Windows: venv\Scripts\activate
    ```
 
 2. Install dependencies:
@@ -53,3 +56,8 @@ pytest -q
 
 All tests run offline — the OpenAI SDK is mocked, so no API key or network
 access is required.
+
+## More
+
+See [`docs/SETUP.md`](docs/SETUP.md) for a detailed setup guide,
+troubleshooting tips, and common Git/GitHub issues.
