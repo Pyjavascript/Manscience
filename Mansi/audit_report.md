@@ -62,18 +62,3 @@ needed to start Phase 1 — they're scaffolding for later phases per the spec:
 
 No dependency installation or code changes are required — everything else is
 already in place and verified by the passing test suite.
-
-## 6. Tech Stack
-
-- **Frontend:** React + Tailwind (exported as a React Webflow library)
-- **Backend:** Supabase
-- **Database:** Supabase (PostgreSQL)
-
-### Mansi (this repo) — currently used
-
-- **Language:** Python 3.12
-- **LLM Provider SDK:** `openai==1.54.4`
-- **HTTP client:** `httpx==0.27.2` (pinned for compatibility with `openai==1.54.4`)
-- **Config:** `python-dotenv==1.0.1`
-- **Testing:** `pytest==8.3.2`, `pytest-mock==3.14.0`
-- **Entry point:** `main.py` (terminal REPL)
