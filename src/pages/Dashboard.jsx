@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   FaKey,
   FaUserMd,
@@ -9,7 +9,24 @@ import {
   FaUsers,
   FaEye,
   FaSync,
+  FaBrain,
+  FaBookMedical,
+  FaHandHoldingMedical,
+  FaBookOpen,
+  FaRegNewspaper,
+  FaCrown,
+  FaUserMinus,
 } from "react-icons/fa";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import { supabase } from "../supabase";
 
 const Dashboard = () => {
@@ -20,8 +37,14 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Subscriptions Table States
+  // Subscriptions Table States (Overview Tab)
   const [subscriptions, setSubscriptions] = useState([]);
+
+  // User Management Main States
+  const [allUsersList, setAllUsersList] = useState([]);
+  const [userManagementLoading, setUserManagementLoading] = useState(false);
+  const [userFilter, setUserFilter] = useState("all"); // "all" | "subscribed" | "unsubscribed"
+  const [selectedUser, setSelectedUser] = useState(null);
 
   // Practitioners Sub-tab States
   const [practitioners, setPractitioners] = useState([]);
@@ -37,8 +60,104 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [practitionerSubTab, setPractitionerSubTab] = useState("pending");
 
+  const fetchUserManagementData = async () => {
+    try {
+      setUserManagementLoading(true);
 
-const fetchPractitioners = async (type) => {
+      // 1. Fetch all system users from your admin-users edge function
+      const usersResponse = await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/admin-users",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "users" }),
+        },
+      );
+      const usersData = await usersResponse.json();
+      const profiles = usersData.users || [];
+
+      // 2. Fetch all subscription bundles from your subscriptions edge function
+      const subsResponse = await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/subscriptions",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "users" }),
+        },
+      );
+      const subsData = await subsResponse.json();
+      const activeSubs = subsData.users || [];
+
+      const subMap = new Map(activeSubs.map((s) => [s.userid, s]));
+
+      // 3. Blend them together client-side for your metrics calculations
+      const blendedUsers = profiles.map((user) => {
+        const userSub = subMap.get(user.id);
+        const isSubscribed =
+          userSub &&
+          (userSub.status === "active" || userSub.status === "trialing");
+
+        return {
+          ...user,
+          subscription: userSub
+            ? {
+                plan: userSub.plan,
+                status: userSub.status,
+                current_period_end: userSub.current_period_end || null,
+              }
+            : null,
+          isSubscribed: !!isSubscribed,
+        };
+      });
+
+      setAllUsersList(blendedUsers);
+    } catch (err) {
+      console.error("Error aggregating User Management directories:", err);
+    } finally {
+      setUserManagementLoading(false);
+    }
+  };
+
+  // Math Metrics Computations
+  const computedTotalUsersCount = allUsersList.length;
+  const computedSubscribedCount = allUsersList.filter(
+    (u) => u.isSubscribed,
+  ).length;
+  const computedUnsubscribedCount =
+    computedTotalUsersCount - computedSubscribedCount;
+
+  // COMPUTE MONTHLY GROWTH DATA FOR CHART GRAPH
+  const monthlyGrowthData = useMemo(() => {
+    const monthlyMap = {};
+
+    allUsersList.forEach((user) => {
+      if (!user.created_at) return;
+      const date = new Date(user.created_at);
+      // Grouping by "MMM YY" (e.g., "Jan 26")
+      const monthLabel = date.toLocaleString("en-US", {
+        month: "short",
+        year: "2-digit",
+      });
+      const sortKey = date.getFullYear() * 100 + date.getMonth();
+
+      if (!monthlyMap[monthLabel]) {
+        monthlyMap[monthLabel] = { name: monthLabel, Users: 0, sortKey };
+      }
+      monthlyMap[monthLabel].Users += 1;
+    });
+
+    // Return chronological order dataset
+    return Object.values(monthlyMap).sort((a, b) => a.sortKey - b.sortKey);
+  }, [allUsersList]);
+
+  // Filter list display data
+  const filteredUsersDisplayList = allUsersList.filter((u) => {
+    if (userFilter === "subscribed") return u.isSubscribed;
+    if (userFilter === "unsubscribed") return !u.isSubscribed;
+    return true; // "all"
+  });
+
+  const fetchPractitioners = async (type) => {
     try {
       setPractitionersLoading(true);
       const { data, error } = await supabase.functions.invoke(
@@ -50,51 +169,58 @@ const fetchPractitioners = async (type) => {
       if (error) throw error;
       if (data) {
         const mappedData = (data.practitioners || []).map((p) => {
-
           const fields = p.rawFieldData || p.fieldData || p;
-
           const education = p.education || fields.education || "N/A";
           const experience = p.experience || fields.experience || "N/A";
-          const specialization = p.specialization || fields.specialization || "General Practitioner";
-          const therapies = p.therapiesOffered || fields["therapies-offered"] || fields.therapies || "N/A";
-          const approach = p.approachToCare || fields["approach-to-care"] || fields.approach_to_care || "N/A";
-          const research = p["research-papers"] || fields["research-papers"] || "N/A";
+          const specialization =
+            p.specialization || fields.specialization || "General Practitioner";
+          const therapies =
+            p.therapiesOffered ||
+            fields["therapies-offered"] ||
+            fields.therapies ||
+            "N/A";
+          const approach =
+            p.approachToCare ||
+            fields["approach-to-care"] ||
+            fields.approach_to_care ||
+            "N/A";
+          const research =
+            p["research-papers"] || fields["research-papers"] || "N/A";
 
           const imageObj = p.image || fields.image || fields["image-2"] || null;
 
-        
           let certsArray = [];
           if (Array.isArray(fields["certificate-images"])) {
             certsArray = fields["certificate-images"];
           } else if (Array.isArray(fields["certificate-image"])) {
             certsArray = fields["certificate-image"];
           } else if (Array.isArray(p.certificateImages)) {
-            // Re-wrap if the edge function sent raw string arrays back
-            certsArray = p.certificateImages.map(url => typeof url === 'string' ? { url } : url);
+            certsArray = p.certificateImages.map((url) =>
+              typeof url === "string" ? { url } : url,
+            );
           }
 
-          // Return a fully unified object mapping containing both dash and camelCase aliases
           return {
             ...p,
             id: p.id,
             name: p.name || fields.name || "Unknown",
-            email: p.email || fields.email || p.rawFieldData?.email || `${p.slug || "practitioner"}@domain.com`,
+            email:
+              p.email ||
+              fields.email ||
+              p.rawFieldData?.email ||
+              `${p.slug || "practitioner"}@domain.com`,
             specialization: specialization,
             education: education,
             experience: experience,
             image: imageObj,
-            
-            // Re-mapping keys with exact dashboard layout string targets
             "therapies-offered": therapies,
             "approach-to-care": approach,
             "research-papers": research,
             "certificate-images": certsArray,
-
-            // Retaining native clean copies for complete variable safety
             therapiesOffered: therapies,
             approachToCare: approach,
             certificateImages: certsArray,
-            rawFieldData: fields
+            rawFieldData: fields,
           };
         });
 
@@ -112,7 +238,6 @@ const fetchPractitioners = async (type) => {
   const handleReviewAction = async (itemId, action) => {
     try {
       setActionProcessingId(itemId);
-
       const { data, error } = await supabase.functions.invoke(
         "review-practitioner",
         {
@@ -132,7 +257,7 @@ const fetchPractitioners = async (type) => {
         } else {
           setPendingCount((prev) => Math.max(0, prev - 1));
         }
-        setSelectedPractitioner(null); // Close modal on success
+        setSelectedPractitioner(null);
       }
     } catch (err) {
       alert(`Action execution failed: ${err.message}`);
@@ -140,7 +265,6 @@ const fetchPractitioners = async (type) => {
       setActionProcessingId(null);
     }
   };
-
 
   const fetchTherapyCount = async () => {
     try {
@@ -209,25 +333,33 @@ const fetchPractitioners = async (type) => {
     }
   };
 
-  // Reusable pipeline to refresh all overview and configuration dependencies
   const refreshOverviewData = async () => {
     setLoading(true);
     setError(null);
-    await Promise.all([
-      fetchTherapyCount(),
-      fetchBlogLength(),
-      loadDashboard(),
-      fetchSubscriptions(),
-      fetchPractitioners("pending"),
-      fetchPractitioners("live"),
-    ]);
-    setLoading(false);
+    try {
+      await Promise.all([
+        fetchTherapyCount(),
+        fetchBlogLength(),
+        loadDashboard(),
+        fetchSubscriptions(),
+        fetchPractitioners("pending"),
+        fetchPractitioners("live"),
+        fetchUserManagementData(),
+      ]);
+    } catch (err) {
+      console.error("Error running dashboard lifecycle:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
-
 
   useEffect(() => {
     if (activeTab === "practitioners") {
       fetchPractitioners(practitionerSubTab);
+    }
+    if (activeTab === "Usermanagement") {
+      fetchUserManagementData();
     }
   }, [practitionerSubTab, activeTab]);
 
@@ -237,6 +369,7 @@ const fetchPractitioners = async (type) => {
 
   return (
     <main className="min-h-screen bg-gray-100 flex font-sans text-gray-800">
+      {/* SIDEBAR NAVIGATION */}
       <aside className="w-72 bg-white border-r border-gray-200 flex flex-col p-2">
         <div className="p-6 text-2xl font-semibold text-black tracking-tight">
           Dashboard
@@ -244,63 +377,103 @@ const fetchPractitioners = async (type) => {
         <nav className="flex-1 flex flex-col gap-2 mt-4">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-lg flex items-center gap-3 ${activeTab === "overview" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "overview" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
           >
             <FaKey /> Overview
           </button>
           <button
+            onClick={() => setActiveTab("Usermanagement")}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "Usermanagement" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+          >
+            <FaUsers /> User Management
+          </button>
+          <button
             onClick={() => setActiveTab("practitioners")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-lg flex items-center gap-3 ${activeTab === "practitioners" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "practitioners" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
           >
             <FaUserMd /> Practitioners ({pendingCount})
+          </button>
+          <button
+            onClick={() => setActiveTab("AiRoadmap")}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "AiRoadmap" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+          >
+            <FaBrain /> Ai Roadmap
+          </button>
+          <button
+            onClick={() => setActiveTab("TherapiesManagement")}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "TherapiesManagement" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+          >
+            <FaBookMedical /> Therapies Management
+          </button>
+          <button
+            onClick={() => setActiveTab("ConditionManagement")}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "ConditionManagement" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+          >
+            <FaHandHoldingMedical /> Condition Management
+          </button>
+          <button
+            onClick={() => setActiveTab("LearningHub")}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "LearningHub" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+          >
+            <FaBookOpen /> Learning Hub
+          </button>
+          <button
+            onClick={() => setActiveTab("ResearchDigest")}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "ResearchDigest" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+          >
+            <FaRegNewspaper /> Research Digest
           </button>
         </nav>
       </aside>
 
+      {/* VIEWPORT LAYOUT WRAPPER */}
       <section className="flex-1 p-8 overflow-y-auto relative">
         <header className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-medium text-gray-800 capitalize">
               {activeTab === "practitioners"
                 ? `Practitioners Management`
-                : activeTab}
+                : activeTab === "Usermanagement"
+                  ? "User Directory Management"
+                  : activeTab}
             </h1>
-            
-            {/* Dynamic Content Refresh Controls */}
+
             {activeTab === "overview" && (
               <button
                 onClick={refreshOverviewData}
                 disabled={loading}
-                title="Refresh Overview Data"
-                className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all disabled:opacity-40"
+                className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
               >
                 <FaSync className={loading ? "animate-spin" : ""} size={16} />
               </button>
             )}
 
-            {activeTab === "practitioners" && (
+            {activeTab === "Usermanagement" && (
               <button
-                onClick={() => fetchPractitioners(practitionerSubTab)}
-                disabled={practitionersLoading}
-                title="Refresh Profile Entries"
-                className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all disabled:opacity-40"
+                onClick={fetchUserManagementData}
+                disabled={userManagementLoading}
+                className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
               >
-                <FaSync className={practitionersLoading ? "animate-spin" : ""} size={16} />
+                <FaSync
+                  className={userManagementLoading ? "animate-spin" : ""}
+                  size={16}
+                />
               </button>
             )}
           </div>
-          
+
           <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium">
-            June 10, 2026
+            June 15, 2026
           </div>
         </header>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6">
-            Error loading operational metrics: {error}
+            Error parsing application state: {error}
           </div>
         )}
 
+        {/* OVERVIEW TAB RENDER */}
         {activeTab === "overview" && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -361,7 +534,7 @@ const fetchPractitioners = async (type) => {
               </div>
             </div>
 
-            {/* SUBSCRIBERS TABLE COMPONENT */}
+            {/* OVERVIEW SUBSCRIBERS TABLE */}
             <div className="w-full bg-white border border-gray-200 rounded-3xl mt-4">
               <div className="p-6 border-b border-gray-100">
                 <h2 className="text-xl font-medium text-gray-800">
@@ -426,6 +599,295 @@ const fetchPractitioners = async (type) => {
           </>
         )}
 
+        {/* USER MANAGEMENT TAB RENDER (UPDATED WITH GRAPH LAYOUT) */}
+        {activeTab === "Usermanagement" && (
+          <div className="space-y-6">
+            {/* NEW GRAPH AND METRIC GRID WRAPPER LAYOUT */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* GRAPH SECTION (Updated to Match the Reference Bar Style) */}
+              <div className="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-xl font-medium text-gray-900 tracking-tight">
+                        User Registration Growth
+                      </h2>
+                    </div>
+                    {/* Optional Legend Badge */}
+                    <span className="text-xs font-semibold bg-indigo-50 text-[#5932EA] px-3 py-1 rounded-full border border-indigo-100">
+                      Monthly Total
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live Recharts Bar Canvas */}
+                <div className="w-full h-64 mt-2">
+                  {userManagementLoading ? (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 italic text-sm">
+                      Generating metrics chart metrics...
+                    </div>
+                  ) : monthlyGrowthData.length === 0 ? (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 italic text-sm">
+                      No user timeline data found.
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={monthlyGrowthData}
+                        margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+                        barSize={40} // Adjusts bar thickness to look clean like your reference img
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#F1F5F9"
+                        />
+                        <XAxis
+                          dataKey="name"
+                          stroke="#9197B3"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          stroke="#9197B3"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          cursor={{ fill: "#F8FAFC", opacity: 0.4 }}
+                          contentStyle={{
+                            background: "#fff",
+                            borderRadius: "12px",
+                            border: "1px solid #E2E8F0",
+                          }}
+                        />
+                        <Bar
+                          dataKey="Users"
+                          radius={[8, 8, 0, 0]} // Gives sleek rounded tops to the bars
+                        >
+                          {/* dynamically fills the bars with your dashboard brand color */}
+                          {monthlyGrowthData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill="#5932EA" />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+
+                {/* FOOTER ROW: Dynamic Percentage Changes (Matches your image layout) */}
+                {!userManagementLoading && monthlyGrowthData.length > 0 && (
+                  <div className="border-t border-gray-100 mt-4 pt-4">
+                    <div className="grid grid-flow-col auto-cols-fr gap-2 text-center text-xs">
+                      <div className="text-gray-400 font-medium text-left">
+                        Month of Month Change:
+                      </div>
+                      {monthlyGrowthData.map((data, idx) => {
+                        if (idx === 0)
+                          return (
+                            <div
+                              key={idx}
+                              className="text-gray-400 font-medium"
+                            >
+                              -
+                            </div>
+                          );
+
+                        const prevUsers = monthlyGrowthData[idx - 1].Users;
+                        const currentUsers = data.Users;
+
+                        // Calculate % change velocity
+                        let percentChange = 0;
+                        if (prevUsers > 0) {
+                          percentChange =
+                            ((currentUsers - prevUsers) / prevUsers) * 100;
+                        } else if (currentUsers > 0) {
+                          percentChange = 100;
+                        }
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`font-semibold ${percentChange >= 0 ? "text-green-600" : "text-red-500"}`}
+                          >
+                            {percentChange >= 0
+                              ? `+${percentChange.toFixed(1)}%`
+                              : `${percentChange.toFixed(1)}%`}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* VERTICAL SCORECARDS (Takes 1 Column) */}
+              <div className="flex flex-col gap-4 justify-between">
+                <div
+                  onClick={() => setUserFilter("all")}
+                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "all" ? "bg-[#5932EA] text-white border-transparent" : "bg-white border-gray-200 hover:border-indigo-300 text-gray-900"}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <h3
+                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "all" ? "text-indigo-100" : "text-gray-400"}`}
+                    >
+                      Total Registrations
+                    </h3>
+                    <FaUsers
+                      size={20}
+                      className={
+                        userFilter === "all" ? "text-white" : "text-indigo-500"
+                      }
+                    />
+                  </div>
+                  <p className="text-2xl font-bold mt-1">
+                    {userManagementLoading ? "..." : computedTotalUsersCount}
+                  </p>
+                </div>
+
+                <div
+                  onClick={() => setUserFilter("subscribed")}
+                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "subscribed" ? "bg-[#5932EA] text-white border-transparent" : "bg-white border-gray-200 hover:border-indigo-300 text-gray-900"}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <h3
+                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "subscribed" ? "text-indigo-100" : "text-gray-400"}`}
+                    >
+                      Subscribed Users
+                    </h3>
+                    <FaCrown
+                      size={18}
+                      className={
+                        userFilter === "subscribed"
+                          ? "text-white"
+                          : "text-amber-500"
+                      }
+                    />
+                  </div>
+                  <p className="text-2xl font-bold mt-1">
+                    {userManagementLoading ? "..." : computedSubscribedCount}
+                  </p>
+                </div>
+
+                <div
+                  onClick={() => setUserFilter("unsubscribed")}
+                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "unsubscribed" ? "bg-[#5932EA] text-white border-transparent" : "bg-white border-gray-200 hover:border-indigo-300 text-gray-900"}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <h3
+                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "unsubscribed" ? "text-indigo-100" : "text-gray-400"}`}
+                    >
+                      Unsubscribed Users
+                    </h3>
+                    <FaUserMinus
+                      size={18}
+                      className={
+                        userFilter === "unsubscribed"
+                          ? "text-white"
+                          : "text-red-400"
+                      }
+                    />
+                  </div>
+                  <p className="text-2xl font-bold mt-1">
+                    {userManagementLoading ? "..." : computedUnsubscribedCount}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Tab Listing Filter Controls */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-6">
+              <div className="flex border-b border-gray-200 mb-6 gap-6">
+                <button
+                  onClick={() => setUserFilter("all")}
+                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "all" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                >
+                  All Users ({computedTotalUsersCount})
+                </button>
+                <button
+                  onClick={() => setUserFilter("subscribed")}
+                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "subscribed" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                >
+                  Subscribed Accounts ({computedSubscribedCount})
+                </button>
+                <button
+                  onClick={() => setUserFilter("unsubscribed")}
+                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "unsubscribed" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                >
+                  Unsubscribed Accounts ({computedUnsubscribedCount})
+                </button>
+              </div>
+
+              {userManagementLoading ? (
+                <p className="text-gray-500 italic py-6 text-sm">
+                  Querying database rows records...
+                </p>
+              ) : filteredUsersDisplayList.length === 0 ? (
+                <p className="text-gray-500 italic py-6 text-sm">
+                  No profiles found for this selection query view.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                        <th className="py-4 px-6">User ID</th>
+                        <th className="py-4 px-6">Name</th>
+                        <th className="py-4 px-6">Email Address</th>
+                        <th className="py-4 px-6 text-center">
+                          Premium Access
+                        </th>
+                        <th className="py-4 px-6 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                      {filteredUsersDisplayList.map((user) => (
+                        <tr
+                          key={user.id}
+                          className="hover:bg-slate-50 transition"
+                        >
+                          <td className="py-4 px-6 font-mono text-xs text-gray-400 max-w-32 truncate select-all">
+                            {user.id}
+                          </td>
+                          <td className="py-4 px-6 font-semibold text-gray-900">
+                            {user.name}
+                          </td>
+                          <td className="py-4 px-6 text-gray-600">
+                            {user.email}
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            {user.isSubscribed ? (
+                              <span className="inline-block text-green-700 bg-green-50 px-3 py-1 border border-green-200 font-semibold rounded-full text-xs uppercase">
+                                Active ({user.subscription?.plan || "Premium"})
+                              </span>
+                            ) : (
+                              <span className="inline-block text-gray-500 bg-gray-100 px-3 py-1 border border-gray-200 font-medium rounded-full text-xs uppercase">
+                                Inactive / Free
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            <button
+                              onClick={() => setSelectedUser(user)}
+                              className="bg-blue-100 text-blue-600 py-1.5 px-3 rounded-xl font-medium text-sm inline-flex items-center gap-1 hover:bg-blue-200 transition mx-auto"
+                            >
+                              <FaEye size={14} /> View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* PRACTITIONERS MANAGEMENT TAB RENDER */}
         {activeTab === "practitioners" && (
           <div className="bg-white border border-gray-200 rounded-3xl p-6">
             <div className="flex border-b border-gray-200 mb-6 gap-6">
@@ -481,15 +943,12 @@ const fetchPractitioners = async (type) => {
                         {practitionerSubTab === "pending" && (
                           <td className="py-4 px-6 text-center">
                             <div className="flex justify-center items-center gap-3">
-                              {/* View Details Eye Icon Button */}
                               <button
                                 onClick={() => setSelectedPractitioner(p)}
                                 className="bg-blue-100 text-blue-600 py-1.5 px-3 rounded-xl font-medium text-sm flex items-center gap-1 hover:bg-blue-200 transition"
-                                title="View Application Details"
                               >
                                 <FaEye size={14} /> View
                               </button>
-
                               <button
                                 disabled={actionProcessingId !== null}
                                 onClick={() =>
@@ -521,11 +980,122 @@ const fetchPractitioners = async (type) => {
         )}
       </section>
 
-      {/* MODAL OVERLAY - Rendered conditionally when a practitioner is selected */}
+      {/* MODAL WINDOW: USER FILE SPECIFIC SUMMARY INFO */}
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+          <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="text-xl font-medium text-gray-800">
+                User Profile Card Summary
+              </h2>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-gray-400 hover:text-gray-600 p-2"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5 text-sm">
+              <div className="flex items-center gap-4 border-b pb-4 border-gray-100">
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${selectedUser.isSubscribed ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                >
+                  {selectedUser.name
+                    ? selectedUser.name.charAt(0).toUpperCase()
+                    : "?"}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {selectedUser.name}
+                  </h3>
+                  <p className="text-gray-500">{selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+                    Database Reference Account Key
+                  </h4>
+                  <p className="font-mono text-xs bg-gray-50 border p-2 rounded-md select-all truncate">
+                    {selectedUser.id}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+                    Platform Registration Date
+                  </h4>
+                  <p className="text-gray-800 p-2 bg-gray-50 rounded-md border">
+                    {selectedUser.created_at
+                      ? new Date(selectedUser.created_at).toLocaleDateString(
+                          "en-US",
+                          { year: "numeric", month: "long", day: "numeric" },
+                        )
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  Subscription Status Overview Details
+                </h3>
+
+                {selectedUser.subscription ? (
+                  <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-2.5">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">
+                        Plan Name Tier:
+                      </span>
+                      <span className="font-bold text-indigo-600 capitalize text-xs">
+                        {selectedUser.subscription.plan}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">
+                        Stripe Status Field:
+                      </span>
+                      <span
+                        className={`font-semibold text-xs px-2 py-0.5 rounded-full ${selectedUser.isSubscribed ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}
+                      >
+                        {selectedUser.subscription.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">
+                        Access Period Expiration End Date:
+                      </span>
+                      <span className="font-medium text-gray-900 text-xs">
+                        {selectedUser.subscription.current_period_end
+                          ? new Date(
+                              selectedUser.subscription.current_period_end,
+                            ).toLocaleString("en-US", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })
+                          : "Continuous Access / Lifelong Tier"}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-red-50/50 rounded-xl border border-red-100 text-center">
+                    <p className="text-sm text-gray-500 font-medium italic">
+                      This user has not initiated premium checkouts or active
+                      subscriptions on this platform profile record.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PRACTITIONER APPLICATION REVIEW MODAL */}
       {selectedPractitioner && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h2 className="text-xl font-bold text-gray-800">
                 Practitioner Review
@@ -538,9 +1108,7 @@ const fetchPractitioners = async (type) => {
               </button>
             </div>
 
-            {/* Modal Body (Scrollable) */}
             <div className="p-6 overflow-y-auto space-y-6 flex-1 text-sm">
-              {/* Profile Image & Name Section */}
               <div className="flex gap-6 items-center border-b pb-6 border-gray-100">
                 {selectedPractitioner.image?.url ? (
                   <img
@@ -566,7 +1134,6 @@ const fetchPractitioners = async (type) => {
                 </div>
               </div>
 
-              {/* Data Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
@@ -610,7 +1177,6 @@ const fetchPractitioners = async (type) => {
                 </div>
               </div>
 
-              {/* Certificates Rendering */}
               <div>
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                   Certificates
@@ -632,7 +1198,6 @@ const fetchPractitioners = async (type) => {
                             alt={`Certificate ${index + 1}`}
                             className="h-full object-contain transition duration-300 group-hover:scale-105"
                           />
-                          {/* Modern Hover Overlay */}
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 backdrop-blur-[1px]">
                             <span className="text-white text-xs font-medium bg-black/60 px-2.5 py-1.5 rounded-lg border border-white/20 tracking-wide shadow-sm">
                               Open Certificate
@@ -650,7 +1215,6 @@ const fetchPractitioners = async (type) => {
               </div>
             </div>
 
-            {/* Modal Footer Actions */}
             {practitionerSubTab === "pending" && (
               <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                 <button
