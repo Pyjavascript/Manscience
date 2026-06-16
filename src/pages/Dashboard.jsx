@@ -16,6 +16,7 @@ import {
   FaRegNewspaper,
   FaCrown,
   FaUserMinus,
+  FaTrash,
 } from "react-icons/fa";
 import {
   BarChart,
@@ -59,6 +60,259 @@ const Dashboard = () => {
   // Navigation Tabs States
   const [activeTab, setActiveTab] = useState("overview");
   const [practitionerSubTab, setPractitionerSubTab] = useState("pending");
+
+  // --- THERAPIES MANAGEMENT EXTRA HOOKS ---
+  const [therapiesList, setTherapiesList] = useState([]);
+  const [therapiesLoading, setTherapiesLoading] = useState(false);
+  const [selectedTherapyDetail, setSelectedTherapyDetail] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Reference Collection Dropdown States
+  const [conditionsOptions, setConditionsOptions] = useState([]);
+  const [deliveriesOptions, setDeliveriesOptions] = useState([]);
+  const [formatsOptions, setFormatsOptions] = useState([]);
+  const [mainFiltersOptions, setMainFiltersOptions] = useState([]);
+
+  const [newTherapyForm, setNewTherapyForm] = useState({
+    name: "",
+    targetArea: "",
+    postSummary: "",
+    postBody: "",
+    imageUrl: "",
+    thumbnailUrl: "",
+    conditionId: "",
+    deliveryId: "",
+    formatId: "",
+    mainCategoryId: "",
+  });
+
+  // Flat Key Map Tracker Dictionary helper
+  const lookupTable = useMemo(() => {
+    const map = new Map();
+    const arrays = [
+      conditionsOptions,
+      deliveriesOptions,
+      formatsOptions,
+      mainFiltersOptions,
+    ];
+    arrays.forEach((arr) => {
+      if (Array.isArray(arr)) {
+        arr.forEach((item) => {
+          if (item?.id && item?.fieldData?.name) {
+            map.set(item.id, item.fieldData.name);
+          }
+        });
+      }
+    });
+    return map;
+  }, [
+    conditionsOptions,
+    deliveriesOptions,
+    formatsOptions,
+    mainFiltersOptions,
+  ]);
+  const uploadImageToSupabase = async (file) => {
+    if (!file) return null;
+
+    try {
+      // Generate a unique file name to avoid overwrite conflicts
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `therapies/${fileName}`;
+
+      // Upload file directly to your Supabase bucket
+      const { data, error } = await supabase.storage
+        .from("therapy-images")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      // Retrieve the public URL string
+      const { data: publicUrlData } = supabase.storage
+        .from("therapy-images")
+        .getPublicUrl(filePath);
+
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error("Storage uploading caught error:", error.message);
+      alert(`File upload failed: ${error.message}`);
+      return null;
+    }
+  };
+
+  // Sync Form Dropdown lists from dynamic route query parameters
+  const fetchFormDropdownOptions = async () => {
+    try {
+      const fetchItems = async (collectionId) => {
+        const res = await fetch(
+          `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${collectionId}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data?.items || [];
+      };
+
+      const [cond, deliv, form, mainF] = await Promise.all([
+        fetchItems("6a2153b39dd6cbc89e2cd831"), // Conditions
+        fetchItems("6a21538114f11fc132b07488"), // Deliveries
+        fetchItems("6a21534a0abca22da70d9c92"), // Formats
+        fetchItems("6a1c7c260e4017306f072008"), // Main Filters
+      ]);
+
+      setConditionsOptions(cond);
+      setDeliveriesOptions(deliv);
+      setFormatsOptions(form);
+      setMainFiltersOptions(mainF);
+    } catch (err) {
+      console.error("Error gathering relational option parameters:", err);
+    }
+  };
+
+  const fetchTherapiesFromCms = async () => {
+    try {
+      setTherapiesLoading(true);
+      const response = await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      const data = await response.json();
+
+      if (data?.items) {
+        setTherapiesList(data.items);
+      }
+      if (data?.pagination?.total !== undefined) {
+        setTherapyCount(data.pagination.total);
+      }
+    } catch (err) {
+      console.error("Critical error reading therapies data:", err);
+    } finally {
+      setTherapiesLoading(false);
+    }
+  };
+
+  const handleOpenCreateModal = async () => {
+    setIsCreateModalOpen(true);
+    await fetchFormDropdownOptions();
+  };
+
+  const handleCreateTherapy = async (e) => {
+    e.preventDefault();
+
+    const inferredSlug = newTherapyForm.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-");
+
+    if (
+      newTherapyForm.imageUrl === "Uploading..." ||
+      newTherapyForm.thumbnailUrl === "Uploading..."
+    ) {
+      alert(
+        "Please wait for your images to finish uploading to Supabase before committing.",
+      );
+      return;
+    }
+    const payload = {
+      isArchived: false,
+      isDraft: false,
+      fieldData: {
+        name: newTherapyForm.name,
+        slug: inferredSlug,
+        "target-area": newTherapyForm.targetArea,
+        "title-name": newTherapyForm.titleName,
+        "post-summary": newTherapyForm.postSummary || null,
+        "post-body": newTherapyForm.postBody || null,
+        "main-image": newTherapyForm.imageUrl
+          ? { url: newTherapyForm.imageUrl, alt: newTherapyForm.name }
+          : null,
+        "thumbnail-image": newTherapyForm.thumbnailUrl
+          ? { url: newTherapyForm.thumbnailUrl, alt: newTherapyForm.name }
+          : null,
+        "main-categories": newTherapyForm.mainCategoryId || null,
+        conditions: newTherapyForm.conditionId || null,
+        deliveries: newTherapyForm.deliveryId || null,
+        formats: newTherapyForm.formatId || null,
+        featured: false,
+      },
+    };
+
+    try {
+      const response = await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData?.error || "Schema block save validation rejected.",
+        );
+      }
+
+      alert("Therapy record synced successfully to Webflow CMS!");
+      setIsCreateModalOpen(false);
+      setNewTherapyForm({
+        name: "",
+        targetArea: "",
+        titleName: "",
+        postSummary: "",
+        postBody: "",
+        imageUrl: "",
+        thumbnailUrl: "",
+        conditionId: "",
+        deliveryId: "",
+        formatId: "",
+        mainCategoryId: "",
+      });
+      fetchTherapiesFromCms();
+    } catch (err) {
+      alert(`Failed writing entry row: ${err.message}`);
+    }
+  };
+
+  const handleDeleteTherapy = async (id) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this therapy? This operation is permanent.",
+      )
+    )
+      return;
+
+    try {
+      setTherapiesList((prev) => prev.filter((item) => item.id !== id));
+      setTherapyCount((prev) => Math.max(0, prev - 1));
+
+      const response = await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "delete", itemId: id }),
+        },
+      );
+
+      if (!response.ok)
+        throw new Error("Server rejected deletion routing handler request.");
+    } catch (err) {
+      console.error("Delete handler error details:", err);
+      fetchTherapiesFromCms();
+    }
+  };
 
   const fetchUserManagementData = async () => {
     try {
@@ -173,7 +427,10 @@ const Dashboard = () => {
           const education = p.education || fields.education || "N/A";
           const experience = p.experience || fields.experience || "N/A";
           const specialization =
-            p.specialization || fields.specialization || "General Practitioner";
+            p.specialization ||
+            fields.specialization ||
+            fields["specialization"] ||
+            "General Practitioner";
           const therapies =
             p.therapiesOffered ||
             fields["therapies-offered"] ||
@@ -266,19 +523,6 @@ const Dashboard = () => {
     }
   };
 
-  const fetchTherapyCount = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("get-blogs", {
-        method: "GET",
-      });
-      if (error) throw error;
-      if (data?.pagination?.total !== undefined)
-        setTherapyCount(data.pagination.total);
-    } catch (err) {
-      console.error("Error fetching therapy count data:", err);
-    }
-  };
-
   const fetchBlogLength = async () => {
     try {
       const { data, error } = await supabase.functions.invoke("blogs-count", {
@@ -338,7 +582,8 @@ const Dashboard = () => {
     setError(null);
     try {
       await Promise.all([
-        fetchTherapyCount(),
+        fetchTherapiesFromCms(),
+        fetchFormDropdownOptions(),
         fetchBlogLength(),
         loadDashboard(),
         fetchSubscriptions(),
@@ -354,12 +599,30 @@ const Dashboard = () => {
     }
   };
 
+  // CHECK ACTIVE FETCH LOADING STATUS FOR DYNAMIC ROTATION
+  const isCurrentlyRefreshing = useMemo(() => {
+    if (activeTab === "overview") return loading;
+    if (activeTab === "Usermanagement") return userManagementLoading;
+    if (activeTab === "practitioners") return practitionersLoading;
+    if (activeTab === "TherapiesManagement") return therapiesLoading;
+    return false;
+  }, [
+    activeTab,
+    loading,
+    userManagementLoading,
+    practitionersLoading,
+    therapiesLoading,
+  ]);
+
   useEffect(() => {
     if (activeTab === "practitioners") {
       fetchPractitioners(practitionerSubTab);
     }
     if (activeTab === "Usermanagement") {
       fetchUserManagementData();
+    }
+    if (activeTab === "TherapiesManagement") {
+      fetchTherapiesFromCms();
     }
   }, [practitionerSubTab, activeTab]);
 
@@ -370,7 +633,7 @@ const Dashboard = () => {
   return (
     <main className="min-h-screen bg-gray-100 flex font-sans text-gray-800">
       {/* SIDEBAR NAVIGATION */}
-      <aside className="w-72 bg-white border-r border-gray-200 flex flex-col p-2">
+      <aside className="w-72 bg-white border-r border-gray-200 flex flex-col p-2 shrink-0">
         <div className="p-6 text-2xl font-semibold text-black tracking-tight">
           Dashboard
         </div>
@@ -391,7 +654,10 @@ const Dashboard = () => {
             onClick={() => setActiveTab("practitioners")}
             className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "practitioners" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
           >
-            <FaUserMd /> Practitioners ({pendingCount})
+            <FaUserMd /> Practitioners{" "}
+            <span className="text-white bg-[#5932EA] p-2.5 py-1 rounded-full text-sm">
+              {pendingCount}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab("AiRoadmap")}
@@ -427,43 +693,45 @@ const Dashboard = () => {
       </aside>
 
       {/* VIEWPORT LAYOUT WRAPPER */}
-      <section className="flex-1 p-8 overflow-y-auto relative">
+      <section className="flex-1 p-8 overflow-y-auto min-w-0 relative">
         <header className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-medium text-gray-800 capitalize">
-              {activeTab === "practitioners"
-                ? `Practitioners Management`
-                : activeTab === "Usermanagement"
-                  ? "User Directory Management"
-                  : activeTab}
+              {activeTab === "overview" && "Overview Metrics Dashboard"}
+              {activeTab === "Usermanagement" && "User Directory Management"}
+              {activeTab === "practitioners" &&
+                "Practitioners Directory Management"}
+              {activeTab === "TherapiesManagement" &&
+                "Therapies CMS Repository"}
+              {activeTab === "AiRoadmap" && "AI Assistant Roadmap"}
+              {activeTab === "ConditionManagement" &&
+                "Clinical Condition Filters"}
+              {activeTab === "LearningHub" && "Learning Hub Articles"}
+              {activeTab === "ResearchDigest" && "Medical Research Digest"}
             </h1>
 
-            {activeTab === "overview" && (
-              <button
-                onClick={refreshOverviewData}
-                disabled={loading}
-                className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
-              >
-                <FaSync className={loading ? "animate-spin" : ""} size={16} />
-              </button>
-            )}
-
-            {activeTab === "Usermanagement" && (
-              <button
-                onClick={fetchUserManagementData}
-                disabled={userManagementLoading}
-                className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
-              >
-                <FaSync
-                  className={userManagementLoading ? "animate-spin" : ""}
-                  size={16}
-                />
-              </button>
-            )}
+            <button
+              onClick={() => {
+                if (activeTab === "overview") refreshOverviewData();
+                if (activeTab === "Usermanagement") fetchUserManagementData();
+                if (activeTab === "practitioners")
+                  fetchPractitioners(practitionerSubTab);
+                if (activeTab === "TherapiesManagement")
+                  fetchTherapiesFromCms();
+              }}
+              className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
+            >
+              <FaSync
+                className={
+                  isCurrentlyRefreshing ? "animate-spin text-[#5932EA]" : ""
+                }
+                size={16}
+              />
+            </button>
           </div>
 
           <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium">
-            June 15, 2026
+            June 16, 2026
           </div>
         </header>
 
@@ -491,30 +759,16 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white p-6 pr-1 rounded-3xl border border-gray-200 flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                  <FaUserMd size={28} />
+              <div className="bg-white p-6 rounded-3xl border border-gray-200 flex items-center gap-4">
+                <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                  <FaBookMedical size={24} />
                 </div>
                 <div>
                   <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider">
-                    Pending Approvals
+                    Total Therapies
                   </h3>
                   <p className="text-3xl font-bold mt-1 text-gray-900">
-                    {loading ? "..." : pendingCount}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-3xl border border-gray-200 flex items-center gap-4 ">
-                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                  <FaGlobe size={28} />
-                </div>
-                <div>
-                  <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider">
-                    Live Experts
-                  </h3>
-                  <p className="text-3xl font-bold mt-1 text-gray-900">
-                    {loading ? "..." : liveCount}
+                    {loading ? "..." : therapyCount}
                   </p>
                 </div>
               </div>
@@ -532,13 +786,27 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
+
+              <div className="bg-white p-6 rounded-3xl border border-gray-200 flex items-center gap-4 ">
+                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                  <FaGlobe size={28} />
+                </div>
+                <div>
+                  <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider">
+                    Live Experts
+                  </h3>
+                  <p className="text-3xl font-bold mt-1 text-gray-900">
+                    {loading ? "..." : liveCount}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* OVERVIEW SUBSCRIBERS TABLE */}
             <div className="w-full bg-white border border-gray-200 rounded-3xl mt-4">
               <div className="p-6 border-b border-gray-100">
                 <h2 className="text-xl font-medium text-gray-800">
-                  All Subscribers
+                  Active Subscriptions Base
                 </h2>
               </div>
               <div className="overflow-x-auto">
@@ -823,7 +1091,7 @@ const Dashboard = () => {
 
               {userManagementLoading ? (
                 <p className="text-gray-500 italic py-6 text-sm">
-                  Querying database rows records...
+                  Querying database records...
                 </p>
               ) : filteredUsersDisplayList.length === 0 ? (
                 <p className="text-gray-500 italic py-6 text-sm">
@@ -888,6 +1156,7 @@ const Dashboard = () => {
         )}
 
         {/* PRACTITIONERS MANAGEMENT TAB RENDER */}
+
         {activeTab === "practitioners" && (
           <div className="bg-white border border-gray-200 rounded-3xl p-6">
             <div className="flex border-b border-gray-200 mb-6 gap-6">
@@ -978,9 +1247,177 @@ const Dashboard = () => {
             )}
           </div>
         )}
+
+        {/* THERAPIES MANAGEMENT TAB CONTAINER VIEW */}
+        {activeTab === "TherapiesManagement" && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
+                  Therapies Collection
+                </h2>
+              </div>
+              <button
+                onClick={handleOpenCreateModal}
+                className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm self-stretch sm:self-auto justify-center"
+              >
+                Create New Therapy
+              </button>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                  Live Repository Indexes
+                </span>
+                <button
+                  onClick={fetchTherapiesFromCms}
+                  className="text-xs text-[#5932EA] font-semibold hover:underline flex items-center gap-1"
+                >
+                  <FaSync
+                    size={10}
+                    className={therapiesLoading ? "animate-spin" : ""}
+                  />{" "}
+                  Force Sync Cache
+                </button>
+              </div>
+
+              {therapiesLoading ? (
+                <div className="text-center py-16 text-gray-400 italic text-sm space-y-2">
+                  <div className="w-8 h-8 border-4 border-[#5932EA] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p>Syncing live Webflow Collection variables...</p>
+                </div>
+              ) : therapiesList.length === 0 ? (
+                <div className="text-center py-16 text-gray-400 italic text-sm">
+                  No clinical therapy models found matching your schema.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                        <th className="py-4 px-6">Therapy Model</th>
+                        <th className="py-4 px-6">Main Category</th>
+                        <th className="py-4 px-6">Condition</th>
+                        <th className="py-4 px-6 text-center">Status</th>
+                        <th className="py-4 px-6 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                      {therapiesList.map((item) => {
+                        const data = item.fieldData || {};
+                        return (
+                          <tr
+                            key={item.id}
+                            className="hover:bg-slate-50 transition"
+                          >
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3">
+                                {data["main-image"]?.url ? (
+                                  <img
+                                    src={data["main-image"].url}
+                                    alt=""
+                                    className="w-10 h-10 object-cover rounded-xl border border-gray-100 shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-100">
+                                    Tx
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-semibold text-gray-900 tracking-tight">
+                                    {data.name || "Untitled"}
+                                  </div>
+                                  <div className="text-xs text-gray-400 font-mono max-w-xs truncate select-all">
+                                    {item.id}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6 font-medium text-gray-600">
+                              {lookupTable.get(data["main-categories"]) || (
+                                <span className="text-gray-300 italic">
+                                  None
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className="px-2.5 py-1 text-xs font-semibold bg-indigo-50 border border-indigo-100 rounded-md text-[#5932EA]">
+                                {lookupTable.get(data["conditions"]) ||
+                                  "General"}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center whitespace-nowrap">
+                              <span
+                                className={`inline-block px-2.5 py-1 border font-semibold rounded-full text-xs uppercase ${item.isDraft ? "text-amber-700 bg-amber-50 border-amber-200" : "text-green-700 bg-green-50 border-green-200"}`}
+                              >
+                                {item.isDraft ? "Draft" : "Live"}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex justify-center items-center gap-2">
+                                <button
+                                  onClick={() => setSelectedTherapyDetail(item)}
+                                  className="p-2.5 text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition"
+                                >
+                                  <FaEye size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTherapy(item.id)}
+                                  className="p-2.5 text-red-500 hover:bg-red-50 border border-gray-200 rounded-xl transition"
+                                >
+                                  <FaTrash size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* MODAL WINDOW: USER FILE SPECIFIC SUMMARY INFO */}
+      {/* --- PORTAL / GLOBAL MODALS ATTACHMENTS (SHADOWLESS FLAT THEME) --- */}
+      {/* {selectedUser && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+          <div className="bg-white w-full max-w-xl rounded-2xl border border-gray-200 overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="text-xl font-medium text-gray-800 tracking-tight">
+                User Profile Summary
+              </h2>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-gray-400 hover:text-gray-600 p-2"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-5 text-sm">
+              <div className="flex items-center gap-4 border-b pb-4 border-gray-100">
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${selectedUser.isSubscribed ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                >
+                  {selectedUser.name
+                    ? selectedUser.name.charAt(0).toUpperCase()
+                    : "?"}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+                    {selectedUser.name}
+                  </h3>
+                  <p className="text-gray-500">{selectedUser.email}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )} */}
+
       {selectedUser && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
           <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden flex flex-col">
@@ -1092,7 +1529,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* PRACTITIONER APPLICATION REVIEW MODAL */}
       {selectedPractitioner && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -1239,6 +1675,435 @@ const Dashboard = () => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {selectedTherapyDetail && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+          <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[85vh] rounded-3xl">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
+                Therapy Sheet Inspector
+              </h3>
+              <button
+                onClick={() => setSelectedTherapyDetail(null)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <FaTimes size={18} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-6 text-sm text-[#222]">
+              <div className="flex gap-4 items-center pb-4">
+                <div className="p-3 bg-purple-50 text-[#5932EA] rounded-2xl">
+                  <FaBookMedical size={24} />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-gray-900 tracking-tight">
+                    {selectedTherapyDetail.fieldData?.name}
+                  </h4>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Slug Reference: {selectedTherapyDetail.fieldData?.slug}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 border border-gray-100 rounded-xl">
+                <div>
+                  <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
+                    Main Category
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {lookupTable.get(
+                      selectedTherapyDetail.fieldData?.["main-categories"],
+                    ) || "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
+                    Assigned Condition
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {lookupTable.get(
+                      selectedTherapyDetail.fieldData?.["conditions"],
+                    ) || "N/A"}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
+                    Delivery Channel
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {lookupTable.get(
+                      selectedTherapyDetail.fieldData?.["deliveries"],
+                    ) || "N/A"}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
+                    Structural Format
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {lookupTable.get(
+                      selectedTherapyDetail.fieldData?.["formats"],
+                    ) || "N/A"}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase block mb-1">
+                  Summary Abstract Description
+                </span>
+                <p className="p-3 bg-gray-50 border rounded-xl text-gray-600 italic leading-relaxed">
+                  {selectedTherapyDetail.fieldData?.["post-summary"] ||
+                    "No text abstract summary written."}
+                </p>
+              </div>
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase block mb-1">
+                  Structured Body (HTML Payload)
+                </span>
+                {selectedTherapyDetail.fieldData?.["post-body"] ? (
+                  <div
+                    className="p-4 bg-gray-50 border rounded-xl text-gray-700 prose prose-sm max-w-none overflow-y-auto max-h-48 border-dashed"
+                    dangerouslySetInnerHTML={{
+                      __html: selectedTherapyDetail.fieldData["post-body"],
+                    }}
+                  />
+                ) : (
+                  <p className="p-3 bg-gray-50 border border-dashed rounded-xl text-gray-400 italic">
+                    No HTML description payload provided.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px] ">
+          <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh] rounded-3xl">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
+                Publish New Therapy Model
+              </h3>
+              <button
+                onClick={() => setIsCreateModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <FaTimes size={18} />
+              </button>
+            </div>
+            <form
+              onSubmit={handleCreateTherapy}
+              className="p-6 overflow-y-auto space-y-5 text-sm flex-1 text-[#222]"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Therapy System Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTherapyForm.name}
+                    onChange={(e) =>
+                      setNewTherapyForm({
+                        ...newTherapyForm,
+                        name: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Tomatis Auditory Integration"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Target Focus Area *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTherapyForm.targetArea}
+                    onChange={(e) =>
+                      setNewTherapyForm({
+                        ...newTherapyForm,
+                        targetArea: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Auditory / Neuro Care"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTherapyForm.titleName}
+                    onChange={(e) =>
+                      setNewTherapyForm({
+                        ...newTherapyForm,
+                        titleName: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Auditory / Neuro Care"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 border border-gray-200 rounded-2xl">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Main Category Mapping *
+                  </label>
+                  <select
+                    required
+                    value={newTherapyForm.mainCategoryId}
+                    onChange={(e) =>
+                      setNewTherapyForm({
+                        ...newTherapyForm,
+                        mainCategoryId: e.target.value,
+                      })
+                    }
+                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
+                  >
+                    <option value="">-- Choose Category --</option>
+                    {mainFiltersOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.fieldData?.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Clinical Condition Link *
+                  </label>
+                  <select
+                    required
+                    value={newTherapyForm.conditionId}
+                    onChange={(e) =>
+                      setNewTherapyForm({
+                        ...newTherapyForm,
+                        conditionId: e.target.value,
+                      })
+                    }
+                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
+                  >
+                    <option value="">-- Choose Condition --</option>
+                    {conditionsOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.fieldData?.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mt-1">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Delivery Channel Link *
+                  </label>
+                  <select
+                    required
+                    value={newTherapyForm.deliveryId}
+                    onChange={(e) =>
+                      setNewTherapyForm({
+                        ...newTherapyForm,
+                        deliveryId: e.target.value,
+                      })
+                    }
+                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
+                  >
+                    <option value="">-- Choose Delivery --</option>
+                    {deliveriesOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.fieldData?.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mt-1">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Format Type Link *
+                  </label>
+                  <select
+                    required
+                    value={newTherapyForm.formatId}
+                    onChange={(e) =>
+                      setNewTherapyForm({
+                        ...newTherapyForm,
+                        formatId: e.target.value,
+                      })
+                    }
+                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
+                  >
+                    <option value="">-- Choose Format --</option>
+                    {formatsOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.fieldData?.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                  {/* HERO IMAGE FILE INPUT */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Main Hero Image Asset *
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setNewTherapyForm((prev) => ({
+                            ...prev,
+                            imageUrl: "Uploading...",
+                          }));
+                          const uploadedUrl = await uploadImageToSupabase(file);
+                          setNewTherapyForm((prev) => ({
+                            ...prev,
+                            imageUrl: uploadedUrl || "",
+                          }));
+                        }
+                      }}
+                      className="w-full bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA] hover:file:bg-indigo-100"
+                    />
+                    {newTherapyForm.imageUrl && (
+                      <p className="mt-1.5 text-xs text-gray-500 truncate max-w-xs">
+                        {newTherapyForm.imageUrl === "Uploading..." ? (
+                          <span className="text-amber-600 animate-pulse font-medium">
+                            Uploading file to Supabase...
+                          </span>
+                        ) : (
+                          <span className="text-green-600 font-medium">
+                            ✓ Uploaded: {newTherapyForm.imageUrl}
+                          </span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* THUMBNAIL IMAGE FILE INPUT */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Thumbnail Preview Image *
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setNewTherapyForm((prev) => ({
+                            ...prev,
+                            thumbnailUrl: "Uploading...",
+                          }));
+                          const uploadedUrl = await uploadImageToSupabase(file);
+                          setNewTherapyForm((prev) => ({
+                            ...prev,
+                            thumbnailUrl: uploadedUrl || "",
+                          }));
+                        }
+                      }}
+                      className="w-full bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA] hover:file:bg-indigo-100"
+                    />
+                    {newTherapyForm.thumbnailUrl && (
+                      <p className="mt-1.5 text-xs text-gray-500 truncate max-w-xs">
+                        {newTherapyForm.thumbnailUrl === "Uploading..." ? (
+                          <span className="text-amber-600 animate-pulse font-medium">
+                            Uploading file to Supabase...
+                          </span>
+                        ) : (
+                          <span className="text-green-600 font-medium">
+                            ✓ Uploaded: {newTherapyForm.thumbnailUrl}
+                          </span>
+                        )}
+                      </p>
+                    )}
+                </div>
+                {/* <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Thumbnail Preview Image Link
+                  </label>
+                  <input
+                    type="url"
+                    value={newTherapyForm.thumbnailUrl}
+                    onChange={(e) =>
+                      setNewTherapyForm({
+                        ...newTherapyForm,
+                        thumbnailUrl: e.target.value,
+                      })
+                    }
+                    placeholder="https://cdn.prod.com/thumbnail_asset.jpg"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                  />
+                </div> */}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Brief Abstract Summary Text
+                </label>
+                <textarea
+                  rows="2"
+                  value={newTherapyForm.postSummary}
+                  onChange={(e) =>
+                    setNewTherapyForm({
+                      ...newTherapyForm,
+                      postSummary: e.target.value,
+                    })
+                  }
+                  placeholder="Write summary description details..."
+                  className="w-full border border-gray-200 p-4 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Structured Body Guidelines (HTML supported)
+                </label>
+                <textarea
+                  rows="3"
+                  value={newTherapyForm.postBody}
+                  onChange={(e) =>
+                    setNewTherapyForm({
+                      ...newTherapyForm,
+                      postBody: e.target.value,
+                    })
+                  }
+                  placeholder="<p>Write standard paragraph content blocks here...</p>"
+                  className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-[#5932EA]"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex justify-end gap-3 bg-white sticky bottom-0">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-5 py-2.5 border rounded-xl font-semibold text-gray-500 hover:bg-gray-50"
+                >
+                  Dismiss
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#5932EA] text-white font-semibold rounded-xl transition"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
