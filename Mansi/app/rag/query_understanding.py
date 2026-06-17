@@ -7,6 +7,7 @@ No LLM calls. Never raises; returns UNKNOWN intent on any internal failure.
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 from app.rag.models import Intent, QueryContext, QuestionType
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).parent.parent.parent
 _NORMALIZED_DIR = _PROJECT_ROOT / "data" / "normalized"
+
+_WORD_RE = re.compile(r"[a-z']+")
 
 _DEFINITION_KEYWORDS = frozenset({
     "what is", "what are", "define", "explain", "tell me about", "describe", "about",
@@ -25,6 +28,8 @@ _TREATMENT_KEYWORDS = frozenset({
 })
 _COMPARISON_KEYWORDS = frozenset({
     "vs", "versus", "compare", "difference between", "better than", "differ", "vs.",
+    "which is better", "which one", "which is more", "more suitable",
+    "have in common", "in common",
 })
 _RELATIONSHIP_KEYWORDS = frozenset({
     "linked", "related", "connection", "associated with", "cause", "causes",
@@ -37,7 +42,13 @@ _FOLLOW_UP_WORD_SIGNALS = frozenset({
 })
 _FOLLOW_UP_PHRASE_SIGNALS = frozenset({
     "the condition", "the therapy", "tell me more", "other options", "what else",
+    "which is better", "which one", "which is more",
 })
+_PLURAL_FOLLOW_UP_SIGNALS = frozenset({"they", "those", "them", "these"})
+
+
+def _tokenize(lowered: str) -> set[str]:
+    return set(_WORD_RE.findall(lowered))
 
 
 class QueryUnderstanding:
@@ -87,13 +98,18 @@ class QueryUnderstanding:
 
         is_follow_up = self._detect_follow_up(lowered, history)
 
-        # When a follow-up signal is detected but no topics appear in the current
-        # message, scan history to resolve the implied topic (spec §5.3).
-        if is_follow_up and not mentioned_conditions and not mentioned_therapies:
+        effective_conditions = mentioned_conditions
+        effective_therapies = mentioned_therapies
+
+        # When a follow-up signal is detected, scan history to resolve the implied
+        # topic(s) and merge them with anything explicitly named in the current
+        # message (spec §5.3). History-derived topics come first.
+        if is_follow_up:
+            needs_multiple = self._needs_multiple_topics(lowered)
             hist_conditions, hist_therapies = self._extract_topics_from_history(
-                history, conditions, therapies, depth=5
+                history, conditions, therapies, depth=5, needs_multiple=needs_multiple,
             )
-            if not hist_conditions and not hist_therapies:
+            if not hist_conditions and not hist_therapies and not mentioned_conditions and not mentioned_therapies:
                 # Unresolvable follow-up — request clarification (spec §5.5)
                 return QueryContext(
                     intent=Intent.UNKNOWN,
@@ -104,11 +120,8 @@ class QueryUnderstanding:
                     is_follow_up=True,
                     confidence=0.0,
                 )
-            effective_conditions = hist_conditions
-            effective_therapies = hist_therapies
-        else:
-            effective_conditions = mentioned_conditions
-            effective_therapies = mentioned_therapies
+            effective_conditions = tuple(dict.fromkeys(hist_conditions + mentioned_conditions))
+            effective_therapies = tuple(dict.fromkeys(hist_therapies + mentioned_therapies))
 
         resolved_topics = tuple(dict.fromkeys(effective_conditions + effective_therapies))
         question_type = self._classify_question_type(lowered)
@@ -184,8 +197,66 @@ class QueryUnderstanding:
     def _detect_follow_up(self, lowered: str, history: list[dict]) -> bool:
         if not history:
             return False
-        words = set(lowered.split())
-        return bool(words & _FOLLOW_UP_SIGNALS)
+        words = _tokenize(lowered)
+        if words & _FOLLOW_UP_WORD_SIGNALS:
+            return True
+        return any(phrase in lowered for phrase in _FOLLOW_UP_PHRASE_SIGNALS)
+
+    def _needs_multiple_topics(self, lowered: str) -> bool:
+        """True when the current message implies more than one prior entity.
+
+        Plural pronouns ("they"/"those") and comparison phrasing ("which one")
+        both imply at least two referents, so history scanning should keep
+        looking past the single most recent mention until two are found.
+        """
+        if _tokenize(lowered) & _PLURAL_FOLLOW_UP_SIGNALS:
+            return True
+        return any(kw in lowered for kw in _COMPARISON_KEYWORDS)
+
+    def _extract_topics_from_history(
+        self,
+        history: list[dict],
+        conditions: frozenset[str],
+        therapies: frozenset[str],
+        depth: int,
+        needs_multiple: bool,
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Scan the most recent `depth` messages for condition/therapy slugs
+        (spec §5.3 Steps 2-4).
+
+        Stops at the first (most recent) message containing any known slug and
+        returns every slug mentioned in that message together — slugs introduced
+        in the same message (e.g. a comparison turn naming two therapies) are
+        treated as one candidate set rather than picked apart. When
+        `needs_multiple` is set, scanning continues into older messages until at
+        least two distinct topics are collected or the window is exhausted,
+        since the reference is to more than one prior entity.
+        """
+        recent = history[-depth:] if depth > 0 else []
+        found_conditions: list[str] = []
+        found_therapies: list[str] = []
+        seen: set[str] = set()
+
+        for turn in reversed(recent):
+            content = str(turn.get("content", "")).lower()
+            msg_conditions = [
+                s for s in sorted(conditions)
+                if s not in seen and (s in content or s.replace("-", " ") in content)
+            ]
+            msg_therapies = [
+                s for s in sorted(therapies)
+                if s not in seen and (s in content or s.replace("-", " ") in content)
+            ]
+            if not msg_conditions and not msg_therapies:
+                continue
+            found_conditions.extend(msg_conditions)
+            found_therapies.extend(msg_therapies)
+            seen.update(msg_conditions)
+            seen.update(msg_therapies)
+            if not needs_multiple or len(seen) >= 2:
+                break
+
+        return tuple(found_conditions), tuple(found_therapies)
 
     def _estimate_confidence(self, intent: Intent, resolved_topics: tuple[str, ...]) -> float:
         if intent == Intent.UNKNOWN:

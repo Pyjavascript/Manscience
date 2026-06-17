@@ -120,13 +120,30 @@ def test_follow_up_detected_with_history(tmp_path):
     ]
     ctx = qu.analyse("tell me more about it", history)
     assert ctx.is_follow_up is True
-    assert ctx.intent == Intent.FOLLOW_UP
+    # Topic resolves from history ("adhd") — a resolved follow-up takes on
+    # the appropriate domain intent, not a generic FOLLOW_UP marker (spec §5.4 Example D).
+    assert ctx.intent == Intent.CONDITION_LOOKUP
+    assert ctx.resolved_topics == ("adhd",)
 
 
 def test_no_follow_up_without_history(tmp_path):
     qu = _make_qu(tmp_path, ["adhd"], [])
     ctx = qu.analyse("tell me more about it", [])
     assert ctx.is_follow_up is False
+
+
+def test_unresolvable_follow_up_returns_unknown(tmp_path):
+    """Spec §5.4 Example E: no condition/therapy slug anywhere in history."""
+    qu = _make_qu(tmp_path, ["adhd"], [])
+    history = [
+        {"role": "user", "content": "Hello, can you help me?"},
+        {"role": "assistant", "content": "Of course! I can help you understand conditions and therapies."},
+    ]
+    ctx = qu.analyse("What about it?", history)
+    assert ctx.intent == Intent.UNKNOWN
+    assert ctx.is_follow_up is True
+    assert ctx.resolved_topics == ()
+    assert ctx.confidence == 0.0
 
 
 # --- Resolved topics ---

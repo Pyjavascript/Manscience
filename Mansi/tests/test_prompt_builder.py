@@ -95,7 +95,10 @@ def test_empty_quality_context_does_not_inject_block():
     ctx = _make_context(RetrievalQuality.EMPTY)
     messages = build_messages(user_message="Hello", history=[], context=ctx)
     system_content = messages[0]["content"]
-    assert "MANSI WEBSITE CONTENT" not in system_content
+    # The base prompt's history instruction legitimately names the
+    # "MANSI WEBSITE CONTENT" section by name — only the rendered block
+    # marker indicates whether content was actually injected.
+    assert "--- MANSI WEBSITE CONTENT ---" not in system_content
 
 
 def test_good_quality_context_injects_primary_content():
