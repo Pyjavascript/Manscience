@@ -9,3 +9,4 @@ import os
 
 os.environ.setdefault("OPENAI_API_KEY", "sk-test1234567890abcdef")
 os.environ.setdefault("MODEL_NAME", "gpt-4o-mini")
+os.environ.setdefault("WEBSITE_BASE_URL", "https://test.example.com")

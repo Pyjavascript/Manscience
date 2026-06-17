@@ -38,6 +38,11 @@ class Settings:
     memory_max_messages: int
     max_tokens_response: int
     temperature: float
+    website_base_url: str
+    scraper_delay_seconds: float
+    scraper_timeout_seconds: int
+    scraper_user_agent: str
+    scraper_max_retries: int
 
     def __repr__(self) -> str:
         key = self.openai_api_key
@@ -54,7 +59,12 @@ class Settings:
             f"openai_max_retries={self.openai_max_retries!r}, "
             f"memory_max_messages={self.memory_max_messages!r}, "
             f"max_tokens_response={self.max_tokens_response!r}, "
-            f"temperature={self.temperature!r})"
+            f"temperature={self.temperature!r}, "
+            f"website_base_url={self.website_base_url!r}, "
+            f"scraper_delay_seconds={self.scraper_delay_seconds!r}, "
+            f"scraper_timeout_seconds={self.scraper_timeout_seconds!r}, "
+            f"scraper_user_agent={self.scraper_user_agent!r}, "
+            f"scraper_max_retries={self.scraper_max_retries!r})"
         )
 
 
@@ -155,6 +165,39 @@ def _load_settings() -> Settings:
         maximum=2.0,
     )
 
+    website_base_url = os.getenv("WEBSITE_BASE_URL", "").strip()
+    if not website_base_url:
+        errors.append("WEBSITE_BASE_URL is required.")
+    elif not website_base_url.startswith(("http://", "https://")):
+        errors.append("WEBSITE_BASE_URL must start with 'http://' or 'https://'.")
+    else:
+        website_base_url = website_base_url.rstrip("/")
+
+    scraper_delay_seconds = _parse_float(
+        os.getenv("SCRAPER_DELAY_SECONDS"),
+        default=1.0,
+        name="SCRAPER_DELAY_SECONDS",
+        errors=errors,
+        minimum=0.0,
+        maximum=60.0,
+    )
+    scraper_timeout_seconds = _parse_int(
+        os.getenv("SCRAPER_TIMEOUT_SECONDS"),
+        default=10,
+        name="SCRAPER_TIMEOUT_SECONDS",
+        errors=errors,
+    )
+    scraper_user_agent = (
+        os.getenv("SCRAPER_USER_AGENT", "").strip()
+        or "MansiBot/1.0 (+https://manscience.com/bot)"
+    )
+    scraper_max_retries = _parse_int(
+        os.getenv("SCRAPER_MAX_RETRIES"),
+        default=3,
+        name="SCRAPER_MAX_RETRIES",
+        errors=errors,
+    )
+
     if errors:
         raise ConfigurationError(
             "Invalid configuration:\n" + "\n".join(f" - {e}" for e in errors)
@@ -172,6 +215,11 @@ def _load_settings() -> Settings:
         memory_max_messages=memory_max_messages,
         max_tokens_response=max_tokens_response,
         temperature=temperature,
+        website_base_url=website_base_url,
+        scraper_delay_seconds=scraper_delay_seconds,
+        scraper_timeout_seconds=scraper_timeout_seconds,
+        scraper_user_agent=scraper_user_agent,
+        scraper_max_retries=scraper_max_retries,
     )
 
 
