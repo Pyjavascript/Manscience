@@ -86,6 +86,12 @@ const Dashboard = () => {
     mainCategoryId: "",
   });
 
+  // --- CONDITION MANAGEMENT TAB STATES ---
+  const [conditionsList, setConditionsList] = useState([]);
+  const [conditionsLoading, setConditionsLoading] = useState(false);
+  const [newConditionName, setNewConditionName] = useState("");
+  const CONDITION_COLLECTION_ID = "6a2153b39dd6cbc89e2cd831";
+
   // Flat Key Map Tracker Dictionary helper
   const lookupTable = useMemo(() => {
     const map = new Map();
@@ -198,6 +204,121 @@ const Dashboard = () => {
       console.error("Critical error reading therapies data:", err);
     } finally {
       setTherapiesLoading(false);
+    }
+  };
+
+  // Fetch Conditions explicitly for the dedicated Management Tab
+  const fetchConditionsTabCms = async () => {
+    try {
+      setConditionsLoading(true);
+      const res = await fetch(
+        `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${CONDITION_COLLECTION_ID}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      if (!res.ok) throw new Error("Failed fetching system conditions layout.");
+      const data = await res.json();
+      setConditionsList(data?.items || []);
+      // Keep options synced as well
+      setConditionsOptions(data?.items || []);
+    } catch (err) {
+      console.error("Error parsing clinical condition records:", err);
+    } finally {
+      setConditionsLoading(false);
+    }
+  };
+
+  // Add a new Clinical Condition item to Webflow
+  const handleCreateCondition = async (e) => {
+    e.preventDefault();
+    if (!newConditionName.trim()) return;
+
+    const inferredSlug = newConditionName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-");
+
+    const payload = {
+      isArchived: false,
+      isDraft: false,
+      fieldData: {
+        name: newConditionName,
+        slug: inferredSlug,
+      },
+    };
+
+    try {
+      setConditionsLoading(true);
+      const response = await fetch(
+        `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${CONDITION_COLLECTION_ID}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData?.error || "Schema entry save validation rejected.",
+        );
+      }
+
+      alert("Clinical condition uploaded to Webflow successfully!");
+      setNewConditionName("");
+      fetchConditionsTabCms();
+    } catch (err) {
+      alert(`Failed writing condition entry: ${err.message}`);
+    } finally {
+      setConditionsLoading(false);
+    }
+  };
+
+  // Permanently delete a Condition layout row
+  const handleDeleteCondition = async (id) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this condition? This operation is permanent.",
+      )
+    )
+      return;
+
+    try {
+      setConditionsLoading(true);
+
+      // Optimistic UI clear
+      setConditionsList((prev) => prev.filter((item) => item.id !== id));
+
+      const response = await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "delete",
+            itemId: id,
+            collectionId: CONDITION_COLLECTION_ID, // Passes the condition layout collection ID mapping safely!
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.error || "Server rejected deletion endpoint request.",
+        );
+      }
+
+      alert("Condition completely deleted.");
+    } catch (err) {
+      console.error("Delete handler error details:", err);
+      alert(`Error deleting record: ${err.message}`);
+    } finally {
+      setConditionsLoading(false);
+      fetchConditionsTabCms();
     }
   };
 
@@ -624,6 +745,9 @@ const Dashboard = () => {
     if (activeTab === "TherapiesManagement") {
       fetchTherapiesFromCms();
     }
+    if (activeTab === "ConditionManagement") {
+      fetchConditionsTabCms();
+    }
   }, [practitionerSubTab, activeTab]);
 
   useEffect(() => {
@@ -631,9 +755,9 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-100 flex font-sans text-gray-800">
+    <main className="h-screen bg-gray-100 flex font-sans text-gray-800 overflow-hidden">
       {/* SIDEBAR NAVIGATION */}
-      <aside className="w-72 bg-white border-r border-gray-200 flex flex-col p-2 shrink-0">
+      <aside className="w-72 bg-white border-r border-gray-200 flex flex-col p-2 shrink-0 h-full">
         <div className="p-6 text-2xl font-semibold text-black tracking-tight">
           Dashboard
         </div>
@@ -693,7 +817,7 @@ const Dashboard = () => {
       </aside>
 
       {/* VIEWPORT LAYOUT WRAPPER */}
-      <section className="flex-1 p-8 overflow-y-auto min-w-0 relative">
+      <section className="flex-1 h-full p-8 overflow-y-auto min-w-0 relative">
         <header className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-medium text-gray-800 capitalize">
@@ -1141,6 +1265,7 @@ const Dashboard = () => {
                             <button
                               onClick={() => setSelectedUser(user)}
                               className="bg-blue-100 text-blue-600 py-1.5 px-3 rounded-xl font-medium text-sm inline-flex items-center gap-1 hover:bg-blue-200 transition mx-auto"
+                              title="view user"
                             >
                               <FaEye size={14} /> View Details
                             </button>
@@ -1215,6 +1340,7 @@ const Dashboard = () => {
                               <button
                                 onClick={() => setSelectedPractitioner(p)}
                                 className="bg-blue-100 text-blue-600 py-1.5 px-3 rounded-xl font-medium text-sm flex items-center gap-1 hover:bg-blue-200 transition"
+                                title="view practitioner"
                               >
                                 <FaEye size={14} /> View
                               </button>
@@ -1224,6 +1350,7 @@ const Dashboard = () => {
                                   handleReviewAction(p.id, "approve")
                                 }
                                 className="bg-green-500 text-white py-1.5 px-3 rounded-xl font-medium text-sm flex items-center gap-1 hover:bg-green-600 disabled:opacity-50 transition"
+                                title="Approve practitioner"
                               >
                                 <FaCheck size={10} /> Approve
                               </button>
@@ -1233,6 +1360,7 @@ const Dashboard = () => {
                                   handleReviewAction(p.id, "reject")
                                 }
                                 className="bg-red-500 text-white py-1.5 px-3 rounded-xl font-medium text-sm flex items-center gap-1 hover:bg-red-600 disabled:opacity-50 transition"
+                                title="Reject practitioner"
                               >
                                 <FaTimes size={10} /> Reject
                               </button>
@@ -1359,12 +1487,14 @@ const Dashboard = () => {
                                 <button
                                   onClick={() => setSelectedTherapyDetail(item)}
                                   className="p-2.5 text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition"
+                                  title="view therapy"
                                 >
                                   <FaEye size={14} />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteTherapy(item.id)}
                                   className="p-2.5 text-red-500 hover:bg-red-50 border border-gray-200 rounded-xl transition"
+                                  title="Delete Therapy"
                                 >
                                   <FaTrash size={14} />
                                 </button>
@@ -1380,43 +1510,117 @@ const Dashboard = () => {
             </div>
           </div>
         )}
-      </section>
 
-      {/* --- PORTAL / GLOBAL MODALS ATTACHMENTS (SHADOWLESS FLAT THEME) --- */}
-      {/* {selectedUser && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
-          <div className="bg-white w-full max-w-xl rounded-2xl border border-gray-200 overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h2 className="text-xl font-medium text-gray-800 tracking-tight">
-                User Profile Summary
+        {/* CONDITION MANAGEMENT TAB CONTAINER VIEW */}
+        {activeTab === "ConditionManagement" && (
+          <div className="space-y-6">
+            {/* Inline creation widget form mapping code configuration box */}
+            <div className="bg-white p-6 rounded-3xl border border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 tracking-tight">
+                Add New Clinical Condition
               </h2>
-              <button
-                onClick={() => setSelectedUser(null)}
-                className="text-gray-400 hover:text-gray-600 p-2"
+              <form
+                onSubmit={handleCreateCondition}
+                className="flex flex-col sm:flex-row gap-3 max-w-xl"
               >
-                <FaTimes size={20} />
-              </button>
-            </div>
-            <div className="p-6 space-y-5 text-sm">
-              <div className="flex items-center gap-4 border-b pb-4 border-gray-100">
-                <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${selectedUser.isSubscribed ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                <input
+                  type="text"
+                  required
+                  value={newConditionName}
+                  onChange={(e) => setNewConditionName(e.target.value)}
+                  placeholder="e.g., Depression, Autism, Anxiety"
+                  className="flex-1 bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA] text-sm text-gray-800"
+                />
+                <button
+                  type="submit"
+                  disabled={conditionsLoading}
+                  className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 >
-                  {selectedUser.name
-                    ? selectedUser.name.charAt(0).toUpperCase()
-                    : "?"}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 tracking-tight">
-                    {selectedUser.name}
-                  </h3>
-                  <p className="text-gray-500">{selectedUser.email}</p>
-                </div>
+                  Create Condition
+                </button>
+              </form>
+            </div>
+
+            {/* Condition Data Inventory Layout View Listing Grid Section */}
+            <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                  Live Managed Target Conditions ({conditionsList.length})
+                </span>
+                <button
+                  onClick={fetchConditionsTabCms}
+                  className="text-xs text-[#5932EA] font-semibold hover:underline flex items-center gap-1"
+                >
+                  <FaSync
+                    size={10}
+                    className={conditionsLoading ? "animate-spin" : ""}
+                  />{" "}
+                  Force Sync Data
+                </button>
               </div>
+
+              {conditionsLoading && conditionsList.length === 0 ? (
+                <div className="text-center py-16 text-gray-400 italic text-sm space-y-2">
+                  <div className="w-8 h-8 border-4 border-[#5932EA] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p>Parsing active Webflow schemas variables...</p>
+                </div>
+              ) : conditionsList.length === 0 ? (
+                <div className="text-center py-16 text-gray-400 italic text-sm">
+                  No registered medical diagnostics configurations found
+                  matching index arrays keys.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                        <th className="py-4 px-6">Condition Name Key</th>
+                        <th className="py-4 px-6">Generated Slug String</th>
+                        <th className="py-4 px-6 select-none font-mono">
+                          Webflow Database ID
+                        </th>
+                        <th className="py-4 px-6 text-center">
+                          Actions Management
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                      {conditionsList.map((item) => {
+                        const data = item.fieldData || {};
+                        return (
+                          <tr
+                            key={item.id}
+                            className="hover:bg-slate-50 transition"
+                          >
+                            <td className="py-4 px-6 font-semibold text-gray-900 tracking-tight">
+                              {data.name || "Untitled Row Entry"}
+                            </td>
+                            <td className="py-4 px-6 text-gray-500 font-mono text-xs">
+                              {data.slug || "-"}
+                            </td>
+                            <td className="py-4 px-6 text-gray-400 select-all font-mono text-xs">
+                              {item.id}
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <button
+                                onClick={() => handleDeleteCondition(item.id)}
+                                className="p-2 text-red-500 hover:bg-red-50 border border-transparent hover:border-gray-200 rounded-xl transition mx-auto inline-flex items-center"
+                                title="Delete Condition Mapping Model"
+                              >
+                                <FaTrash size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )} */}
+        )}
+      </section>
 
       {selectedUser && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
@@ -1956,100 +2160,83 @@ const Dashboard = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                  {/* HERO IMAGE FILE INPUT */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                      Main Hero Image Asset *
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          setNewTherapyForm((prev) => ({
-                            ...prev,
-                            imageUrl: "Uploading...",
-                          }));
-                          const uploadedUrl = await uploadImageToSupabase(file);
-                          setNewTherapyForm((prev) => ({
-                            ...prev,
-                            imageUrl: uploadedUrl || "",
-                          }));
-                        }
-                      }}
-                      className="w-full bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA] hover:file:bg-indigo-100"
-                    />
-                    {newTherapyForm.imageUrl && (
-                      <p className="mt-1.5 text-xs text-gray-500 truncate max-w-xs">
-                        {newTherapyForm.imageUrl === "Uploading..." ? (
-                          <span className="text-amber-600 animate-pulse font-medium">
-                            Uploading file to Supabase...
-                          </span>
-                        ) : (
-                          <span className="text-green-600 font-medium">
-                            ✓ Uploaded: {newTherapyForm.imageUrl}
-                          </span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* THUMBNAIL IMAGE FILE INPUT */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                      Thumbnail Preview Image *
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          setNewTherapyForm((prev) => ({
-                            ...prev,
-                            thumbnailUrl: "Uploading...",
-                          }));
-                          const uploadedUrl = await uploadImageToSupabase(file);
-                          setNewTherapyForm((prev) => ({
-                            ...prev,
-                            thumbnailUrl: uploadedUrl || "",
-                          }));
-                        }
-                      }}
-                      className="w-full bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA] hover:file:bg-indigo-100"
-                    />
-                    {newTherapyForm.thumbnailUrl && (
-                      <p className="mt-1.5 text-xs text-gray-500 truncate max-w-xs">
-                        {newTherapyForm.thumbnailUrl === "Uploading..." ? (
-                          <span className="text-amber-600 animate-pulse font-medium">
-                            Uploading file to Supabase...
-                          </span>
-                        ) : (
-                          <span className="text-green-600 font-medium">
-                            ✓ Uploaded: {newTherapyForm.thumbnailUrl}
-                          </span>
-                        )}
-                      </p>
-                    )}
-                </div>
-                {/* <div>
+                {/* HERO IMAGE FILE INPUT */}
+                <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Thumbnail Preview Image Link
+                    Main Hero Image Asset *
                   </label>
                   <input
-                    type="url"
-                    value={newTherapyForm.thumbnailUrl}
-                    onChange={(e) =>
-                      setNewTherapyForm({
-                        ...newTherapyForm,
-                        thumbnailUrl: e.target.value,
-                      })
-                    }
-                    placeholder="https://cdn.prod.com/thumbnail_asset.jpg"
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setNewTherapyForm((prev) => ({
+                          ...prev,
+                          imageUrl: "Uploading...",
+                        }));
+                        const uploadedUrl = await uploadImageToSupabase(file);
+                        setNewTherapyForm((prev) => ({
+                          ...prev,
+                          imageUrl: uploadedUrl || "",
+                        }));
+                      }
+                    }}
+                    className="w-full bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA] hover:file:bg-indigo-100"
                   />
-                </div> */}
+                  {newTherapyForm.imageUrl && (
+                    <p className="mt-1.5 text-xs text-gray-500 truncate max-w-xs">
+                      {newTherapyForm.imageUrl === "Uploading..." ? (
+                        <span className="text-amber-600 animate-pulse font-medium">
+                          Uploading file to Supabase...
+                        </span>
+                      ) : (
+                        <span className="text-green-600 font-medium">
+                          ✓ Uploaded: {newTherapyForm.imageUrl}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                {/* THUMBNAIL IMAGE FILE INPUT */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Thumbnail Preview Image *
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setNewTherapyForm((prev) => ({
+                          ...prev,
+                          thumbnailUrl: "Uploading...",
+                        }));
+                        const uploadedUrl = await uploadImageToSupabase(file);
+                        setNewTherapyForm((prev) => ({
+                          ...prev,
+                          thumbnailUrl: uploadedUrl || "",
+                        }));
+                      }
+                    }}
+                    className="w-full bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA] hover:file:bg-indigo-100"
+                  />
+                  {newTherapyForm.thumbnailUrl && (
+                    <p className="mt-1.5 text-xs text-gray-500 truncate max-w-xs">
+                      {newTherapyForm.thumbnailUrl === "Uploading..." ? (
+                        <span className="text-amber-600 animate-pulse font-medium">
+                          Uploading file to Supabase...
+                        </span>
+                      ) : (
+                        <span className="text-green-600 font-medium">
+                          ✓ Uploaded: {newTherapyForm.thumbnailUrl}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div>

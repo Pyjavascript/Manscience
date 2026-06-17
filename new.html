@@ -1,429 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Community Stories</title>
-    <style>
-        :root {
-            --primary-accent: #b36b43;
-            --card-shadow: rgba(0, 0, 0, 0.08);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #faf6f0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        /* --- BACKGROUND ROTATING CIRCLE VIEW --- */
-        .circle-wrapper {
-            position: relative;
-            width: 600px;
-            height: 600px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .circle-container {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            animation: spin 40s linear infinite;
-        }
-
-        /* Stops ALL images when hovering anywhere over the circle ring loop */
-        .circle-container:hover {
-            animation-play-state: paused;
-        }
-
-        .center-text {
-            position: absolute;
-            text-align: center;
-            max-width: 280px;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .center-text h2 {
-            color: #4a3321;
-            font-size: 1.8rem;
-            font-weight: 500;
-            margin-bottom: 12px;
-        }
-
-        .center-text p {
-            color: #8a7360;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .circle-item {
-            position: absolute;
-            width: 70px;
-            height: 70px;
-            left: calc(50% - 35px);
-            top: calc(50% - 35px);
-            cursor: pointer;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .circle-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            /* Counter rotation keeps pictures facing upright while wheel turns */
-            animation: counter-spin 40s linear infinite;
-        }
-
-        .circle-container:hover .circle-item img {
-            animation-play-state: paused;
-        }
-
-        .circle-item:hover {
-            transform: scale(1.2) !important;
-            z-index: 10;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes counter-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(-360deg); }
-        }
-
-
-        /* --- SLIDER MODAL OVERLAY --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(140, 140, 140, 0.6);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-            z-index: 100;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-close-trigger {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-        }
-
-        /* --- 3D DECK CARD CONTAINER --- */
-        .deck-viewport {
-            position: relative;
-            width: 360px;
-            height: 400px;
-            z-index: 20;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            /* Activates 3D perspective field depth */
-            perspective: 1200px;
-            transform-style: preserve-3d;
-        }
-
-        .story-card {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: #ffffff;
-            border-radius: 24px;
-            padding: 32px 28px;
-            box-shadow: 0 15px 35px var(--card-shadow), 0 5px 15px rgba(0,0,0,0.04);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            /* Smoothly animates stack positions when switching */
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s ease, z-index 0.6s ease;
-            backface-visibility: hidden;
-        }
-
-        .card-tag {
-            align-self: flex-start;
-            border: 1px solid #e8e5e0;
-            padding: 5px 14px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            color: #7a7570;
-            font-weight: 500;
-            margin-bottom: 16px;
-        }
-
-        .card-title {
-            color: var(--primary-accent);
-            font-size: 1.35rem;
-            font-weight: 600;
-            line-height: 1.3;
-            margin-bottom: 14px;
-        }
-
-        .card-quote {
-            color: #3b3835;
-            font-size: 0.92rem;
-            line-height: 1.6;
-            flex-grow: 1;
-        }
-
-        .card-profile {
-            display: flex;
-            align-items: center;
-            margin-top: 24px;
-            border-top: 1px solid #f5f2ed;
-            padding-top: 16px;
-        }
-
-        .profile-pic {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 12px;
-            object-fit: cover;
-        }
-
-        .profile-info h4 {
-            font-size: 0.9rem;
-            color: #2b2927;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .profile-info span {
-            font-size: 0.78rem;
-            color: #807a75;
-        }
-
-        /* --- DYNAMIC STACK POSITIONS CONTROLLED BY JS --- */
-        
-        /* The Active Card sitting clean upfront */
-        .story-card.stack-front {
-            transform: translateZ(0px) scale(1) translateY(0px);
-            z-index: 10;
-            opacity: 1;
-        }
-
-        /* Second Card peeking slightly from behind */
-        .story-card.stack-middle {
-            transform: translateZ(-40px) scale(0.95) translateY(8px);
-            z-index: 5;
-            opacity: 0.95;
-        }
-
-        /* Third Card stacked at the base back */
-        .story-card.stack-back {
-            transform: translateZ(-80px) scale(0.90) translateY(16px);
-            z-index: 2;
-            opacity: 0.85;
-        }
-
-        /* Everything else hidden out of view */
-        .story-card.stack-hidden {
-            transform: translateZ(-120px) scale(0.85) translateY(24px);
-            opacity: 0;
-            z-index: 0;
-        }
-
-        /* --- CONTROL ARROW BUTTONS --- */
-        .slide-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 48px;
-            height: 48px;
-            background: var(--primary-accent);
-            border: none;
-            border-radius: 50%;
-            color: #ffffff;
-            font-size: 1.4rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(179, 107, 67, 0.3);
-            z-index: 30;
-            transition: background 0.2s, transform 0.2s;
-        }
-
-        .slide-btn:hover {
-            background: #965632;
-            transform: translateY(-50%) scale(1.05);
-        }
-
-        .slide-btn:active {
-            transform: translateY(-50%) scale(0.95);
-        }
-
-        .slide-btn.left-arrow { left: -75px; }
-        .slide-btn.right-arrow { right: -75px; }
-    </style>
-</head>
-<body>
-
-    <div class="circle-wrapper">
-        <div class="center-text">
-            <h2>Stories from the community</h2>
-            <p>Hear experienced lives reflect meaningful progress, support, and other outcomes.</p>
-        </div>
-        
-        <div class="circle-container" id="avatarRing"></div>
-    </div>
-
-    <div class="modal-overlay" id="storyModal">
-        <div class="modal-close-trigger" id="closeModalArea"></div>
-        
-        <div class="deck-viewport">
-            <button class="slide-btn left-arrow" id="btnPrev">&#10216;</button>
-            
-            <div id="deckWrapper" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d;"></div>
-
-            <button class="slide-btn right-arrow" id="btnNext">&#10217;</button>
-        </div>
-    </div>
-
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    main {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      display: flex;
+      gap: 10px;
+      transition: all cubic-bezier(0.075, 0.82, 0.165, 1);
+    }
+    .box {
+      background: red;
+      height: 300px;
+      width: 100px;
+      border-radius: 30px;
+      transition: width 0.2s ease-out;
+    }
+  </style>
+  <body>
+    <main>
+      <div class="container">
+        <div class="box box1"></div>
+        <div class="box box2"></div>
+        <div class="box box3"></div>
+        <div class="box box4"></div>
+      </div>
+    </main>
     <script>
-        // Data containing custom tag classes and imagery corresponding to user layouts
-        const datasets = [
-            { id: 0, tag: "Arrowsmith Program", title: "Improved reading skills in 8 months", text: '"For the first time, my son wanted to read on his own. After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected..."', name: "Sarah M.", detail: "Parent of a 10 year old with Dyslexia", pic: "https://picsum.photos/id/64/150/150" },
-            { id: 1, tag: "Cognitive Training", title: "Sharp focus returned completely", text: '"I can structure my workday without feeling overwhelmed. The mental fog is completely gone, and I am finishing production architecture maps in half the time it used to take me before joining standard modules."', name: "David K.", detail: "Adult Professional", pic: "https://picsum.photos/id/91/150/150" },
-            { id: 2, tag: "Part-time Program", title: "Transformed social confidence", text: '"Anxiety used to rule my interactions. Now I feel grounded and confident speaking in public or expressing my thoughts in large structural design meets without second guessing myself."', name: "Elena R.", detail: "University Student", pic: "https://picsum.photos/id/177/150/150" },
-            { id: 3, tag: "Arrowsmith Program", title: "Remarkable processing speeds", text: '"Homework is no longer a nightly battlefield. He processes instructions immediately now, meaning tasks that used to take three excruciating hours are done seamlessly within forty minutes."', name: "James L.", detail: "Parent of 12 year old", pic: "https://picsum.photos/id/338/150/150" },
-            { id: 4, tag: "Adult Cognitive Track", title: "A new lease on engineering rules", text: '"My logical reasoning speeds spiked dramatically after completing my structural logic training sessions. I find tracking recursive codebase logic execution routes far simpler now."', name: "Amir T.", detail: "Software Engineer", pic: "https://picsum.photos/id/447/150/150" }
-        ];
-
-        const avatarRing = document.getElementById('avatarRing');
-        const storyModal = document.getElementById('storyModal');
-        const deckWrapper = document.getElementById('deckWrapper');
-        const btnPrev = document.getElementById('btnPrev');
-        const btnNext = document.getElementById('btnNext');
-        const closeModalArea = document.getElementById('closeModalArea');
-
-        let activeIndex = 0;
-        const totalItems = datasets.length;
-
-        // --- Step 1: Render the Circular Ring elements ---
-        function renderRing() {
-            const radius = 230; // Radius distance from absolute midpoint center block
-            datasets.forEach((data, i) => {
-                const angle = (i / totalItems) * 360;
-                const node = document.createElement('div');
-                node.classList.add('circle-item');
-                
-                // Set layout coordinates based on rotation placement formulas
-                node.style.transform = `rotate(${angle}deg) translate(${radius}px) rotate(-${angle}deg)`;
-                node.innerHTML = `<img src="${data.pic}" alt="Community user profile picture">`;
-                
-                // Click handler targets specific card index positioning configuration directly
-                node.addEventListener('click', () => {
-                    activeIndex = i;
-                    renderDeckPlacements();
-                    storyModal.classList.add('active');
-                });
-                
-                avatarRing.appendChild(node);
-            });
+      const container = document.querySelector(".container");
+      const allDivs = container.querySelectorAll("div");
+      container.addEventListener("mouseover", (e) => {
+        if (e.target.tagName === "DIV") {
+          allDivs.forEach((div) => {
+            if (div === e.target) {
+              div.style.width = "300px";
+            } else {
+              div.style.width = "100px";
+            }
+          });
         }
-
-        // --- Step 2: Render Card nodes inside viewport stack elements ---
-        function buildDeckMarkup() {
-            deckWrapper.innerHTML = '';
-            datasets.forEach((data) => {
-                const card = document.createElement('div');
-                card.classList.add('story-card');
-                card.setAttribute('data-index', data.id);
-                
-                card.innerHTML = `
-                    <div>
-                        <div class="card-tag">${data.tag}</div>
-                        <h3 class="card-title">${data.title}</h3>
-                        <p class="card-quote">${data.text}</p>
-                    </div>
-                    <div class="card-profile">
-                        <img class="profile-pic" src="${data.pic}" alt="Profile avatar picture image">
-                        <div class="profile-info">
-                            <h4>${data.name}</h4>
-                            <span>${data.detail}</span>
-                        </div>
-                    </div>
-                `;
-                deckWrapper.appendChild(card);
-            });
-        }
-
-        // --- Step 3: Rearrange 3D Layer assignments cleanly ---
-        function renderDeckPlacements() {
-            const cards = document.querySelectorAll('.story-card');
-            cards.forEach((card) => {
-                const cardIndex = parseInt(card.getAttribute('data-index'));
-                
-                // Calculate position index relative to what index is currently front-facing
-                let relativeOffset = (cardIndex - activeIndex + totalItems) % totalItems;
-                
-                card.className = 'story-card'; // clear current configuration classes
-                
-                if (relativeOffset === 0) {
-                    card.classList.add('stack-front');
-                } else if (relativeOffset === 1) {
-                    card.classList.add('stack-middle');
-                } else if (relativeOffset === 2) {
-                    card.classList.add('stack-back');
-                } else {
-                    card.classList.add('stack-hidden');
-                }
-            });
-        }
-
-        // --- Navigation Deck Action Listeners ---
-        btnNext.addEventListener('click', () => {
-            activeIndex = (activeIndex + 1) % totalItems;
-            renderDeckPlacements();
+      });
+      container.addEventListener("mouseleave", () => {
+        allDivs.forEach((div) => {
+          div.style.width = "100px";
         });
-
-        btnPrev.addEventListener('click', () => {
-            activeIndex = (activeIndex - 1 + totalItems) % totalItems;
-            renderDeckPlacements();
-        });
-
-        closeModalArea.addEventListener('click', () => {
-            storyModal.classList.remove('active');
-        });
-
-        // Init Layout Build sequences
-        renderRing();
-        buildDeckMarkup();
+      });
     </script>
-</body>
+  </body>
 </html>
