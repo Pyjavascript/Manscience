@@ -1,8 +1,8 @@
-"""One-time content collection for Mansi AI.
+"""Content collection and normalisation for Mansi AI.
 
-Run this once to populate Mansi's local knowledge base with content from
-the Mansi website. The collected content is what Mansi will use to answer
-user questions about conditions and therapies in any conversation.
+Run this to populate Mansi's local knowledge base with structured content
+from the Mansi website. The collected content is what Mansi will use to
+answer user questions about conditions and therapies in any conversation.
 
 Usage:
     python scripts/collect_content.py
@@ -11,10 +11,12 @@ Steps run automatically in sequence:
     1. Discover all condition and therapy page URLs
     2. Fetch and store the raw HTML for each page
     3. Analyse the content and write a content model summary
+    4. Normalise raw HTML into versioned structured JSON
 
 Output is written to:
     data/discovery/   — URL inventory and acquisition log
     data/raw/         — Raw HTML files (one per page)
+    data/normalized/  — Normalised JSON documents (one per page)
     docs/specs/phase-1-content-model.md  — Content structure summary
 """
 
@@ -33,6 +35,7 @@ from app.integrations.web_scraper import WebScraper  # noqa: E402
 from app.services.acquisition_service import AcquisitionError, AcquisitionService  # noqa: E402
 from app.services.analysis_service import AnalysisError, AnalysisService  # noqa: E402
 from app.services.discovery_service import DiscoveryError, DiscoveryService  # noqa: E402
+from app.services.normalisation_service import NormalisationError, NormalisationService  # noqa: E402
 
 
 def _setup_logging() -> None:
@@ -83,14 +86,30 @@ def main() -> None:
         )
 
         # Step 3: Analyse content structure
-        logger.info("--- Step 3/3: Content Analysis ---")
+        logger.info("--- Step 3/4: Content Analysis ---")
         analysis = AnalysisService()
         output = analysis.run()
         logger.info("Content model written to %s", output)
 
+        # Step 4: Normalise raw HTML into versioned structured JSON
+        logger.info("--- Step 4/4: Content Normalisation ---")
+        normalisation = NormalisationService()
+        norm_records = normalisation.run()
+        norm_done = sum(1 for r in norm_records if r.status == "normalised")
+        norm_unchanged = sum(1 for r in norm_records if r.status == "unchanged")
+        norm_failed = sum(1 for r in norm_records if r.status == "failed")
         logger.info(
-            "Collection complete. Mansi now has %d pages ready for use.",
+            "Normalisation done: %d normalised, %d unchanged, %d failed.",
+            norm_done,
+            norm_unchanged,
+            norm_failed,
+        )
+
+        logger.info(
+            "Collection complete. Mansi now has %d pages ready for use "
+            "(%d normalised JSON documents).",
             fetched + skipped,
+            norm_done + norm_unchanged,
         )
 
     except DiscoveryError as exc:
@@ -101,6 +120,9 @@ def main() -> None:
         sys.exit(1)
     except AnalysisError as exc:
         logger.error("Analysis failed: %s", exc)
+        sys.exit(1)
+    except NormalisationError as exc:
+        logger.error("Normalisation failed: %s", exc)
         sys.exit(1)
     except Exception:
         logger.exception("Unexpected error during content collection.")
