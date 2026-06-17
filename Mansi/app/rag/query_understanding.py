@@ -32,9 +32,11 @@ _RELATIONSHIP_KEYWORDS = frozenset({
 _AVAILABILITY_KEYWORDS = frozenset({
     "available", "offer", "do you have", "can i get", "access", "book",
 })
-_FOLLOW_UP_SIGNALS = frozenset({
-    "it", "that", "this", "them", "these", "those",
-    "the condition", "the therapy", "more about it", "tell me more",
+_FOLLOW_UP_WORD_SIGNALS = frozenset({
+    "it", "that", "this", "them", "these", "those", "one", "more", "they",
+})
+_FOLLOW_UP_PHRASE_SIGNALS = frozenset({
+    "the condition", "the therapy", "tell me more", "other options", "what else",
 })
 
 
@@ -82,16 +84,41 @@ class QueryUnderstanding:
             s for s in sorted(therapies)
             if s in lowered or s.replace("-", " ") in lowered
         )
-        resolved_topics = tuple(dict.fromkeys(mentioned_conditions + mentioned_therapies))
 
         is_follow_up = self._detect_follow_up(lowered, history)
+
+        # When a follow-up signal is detected but no topics appear in the current
+        # message, scan history to resolve the implied topic (spec §5.3).
+        if is_follow_up and not mentioned_conditions and not mentioned_therapies:
+            hist_conditions, hist_therapies = self._extract_topics_from_history(
+                history, conditions, therapies, depth=5
+            )
+            if not hist_conditions and not hist_therapies:
+                # Unresolvable follow-up — request clarification (spec §5.5)
+                return QueryContext(
+                    intent=Intent.UNKNOWN,
+                    question_type=QuestionType.GENERAL,
+                    mentioned_conditions=(),
+                    mentioned_therapies=(),
+                    resolved_topics=(),
+                    is_follow_up=True,
+                    confidence=0.0,
+                )
+            effective_conditions = hist_conditions
+            effective_therapies = hist_therapies
+        else:
+            effective_conditions = mentioned_conditions
+            effective_therapies = mentioned_therapies
+
+        resolved_topics = tuple(dict.fromkeys(effective_conditions + effective_therapies))
         question_type = self._classify_question_type(lowered)
-        intent = self._classify_intent(lowered, mentioned_conditions, mentioned_therapies, is_follow_up)
+        # Pass is_follow_up=False: topics are now resolved so FOLLOW_UP intent is not needed
+        intent = self._classify_intent(lowered, effective_conditions, effective_therapies, False)
         confidence = self._estimate_confidence(intent, resolved_topics)
 
         logger.debug(
             "QueryUnderstanding: intent=%s, conditions=%s, therapies=%s, follow_up=%s",
-            intent.value, mentioned_conditions, mentioned_therapies, is_follow_up,
+            intent.value, effective_conditions, effective_therapies, is_follow_up,
         )
 
         return QueryContext(

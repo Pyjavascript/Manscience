@@ -86,8 +86,11 @@ class ContextBuilder:
         primary_sections = self._apply_budget(primary_sections, _PRIMARY_BUDGET_CHARS)
         supporting_sections = self._apply_budget(supporting_sections, _SUPPORTING_BUDGET_CHARS)
 
-        # Step 6: History integration
-        history_context = self._select_history(history)
+        # Step 6: History integration (follow-ups and comparisons only — saves token budget)
+        if query_context.is_follow_up or query_context.intent == Intent.COMPARISON:
+            history_context = self._select_history(history)
+        else:
+            history_context = []
 
         # Step 7: Retrieval quality assessment
         quality = self._assess_quality(primary_sections, supporting_sections, deduped)
