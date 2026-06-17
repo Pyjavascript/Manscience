@@ -81,7 +81,7 @@ def test_prompt_builder_value_error_is_wrapped_and_memory_untouched():
     memory = FakeMemory()
     llm = FakeLLMClient(response=_fake_response())
 
-    def failing_builder(user_message, history):
+    def failing_builder(user_message, history, **kwargs):
         raise ValueError("bad history")
 
     chat = ChatService(memory=memory, llm_client=llm, prompt_builder=failing_builder)
