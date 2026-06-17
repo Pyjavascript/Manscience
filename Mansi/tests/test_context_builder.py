@@ -52,6 +52,7 @@ def _make_qc(
     intent: Intent = Intent.CONDITION_LOOKUP,
     conditions: tuple[str, ...] = ("adhd",),
     therapies: tuple[str, ...] = (),
+    is_follow_up: bool = False,
 ) -> QueryContext:
     resolved = tuple(dict.fromkeys(conditions + therapies))
     return QueryContext(
@@ -60,7 +61,7 @@ def _make_qc(
         mentioned_conditions=conditions,
         mentioned_therapies=therapies,
         resolved_topics=resolved,
-        is_follow_up=False,
+        is_follow_up=is_follow_up,
         confidence=0.9,
     )
 
@@ -164,12 +165,13 @@ def test_relational_intent_puts_mentioned_topics_in_primary():
 # --- History integration ---
 
 def test_history_included_in_context():
+    # History is only included for follow-ups / comparisons (spec §6.4).
     result = _make_result(slug="adhd")
     history = [
         {"role": "user", "content": "hi"},
         {"role": "assistant", "content": "hello"},
     ]
-    ctx = cb.assemble([result], _make_qc(), history)
+    ctx = cb.assemble([result], _make_qc(is_follow_up=True), history)
     assert len(ctx.history_context) >= 1
 
 
@@ -177,8 +179,20 @@ def test_history_capped_at_three_turns(tmp_path=None):
     result = _make_result(slug="adhd")
     # 8 turns = 4 user-assistant pairs → should be capped
     history = [{"role": "user" if i % 2 == 0 else "assistant", "content": f"msg {i}"} for i in range(8)]
-    ctx = cb.assemble([result], _make_qc(), history)
+    ctx = cb.assemble([result], _make_qc(is_follow_up=True), history)
     assert len(ctx.history_context) <= 6  # max 3 pairs = 6 messages
+
+
+def test_history_omitted_when_not_follow_up_or_comparison():
+    # Standalone (non-follow-up, non-comparison) questions omit history
+    # entirely to save token budget (spec §6.4).
+    result = _make_result(slug="adhd")
+    history = [
+        {"role": "user", "content": "hi"},
+        {"role": "assistant", "content": "hello"},
+    ]
+    ctx = cb.assemble([result], _make_qc(is_follow_up=False), history)
+    assert ctx.history_context == ()
 
 
 def test_empty_history_produces_empty_history_context():

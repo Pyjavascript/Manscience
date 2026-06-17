@@ -22,6 +22,11 @@ from app.services.prompt_builder import build_messages
 
 logger = logging.getLogger(__name__)
 
+CLARIFICATION_MESSAGE = (
+    "Could you let me know which condition or therapy you'd like to find out about? "
+    "I want to make sure I give you the right information."
+)
+
 
 class ChatServiceError(Exception):
     """User-safe error raised by `ChatService`. Never wraps raw provider details."""
@@ -52,17 +57,27 @@ class ChatService:
 
         logger.info("Processing message (length=%d)", len(user_message))
 
-        history = self.memory.get_history()
+        try:
+            history = self.memory.get_history()
+        except Exception:
+            logger.exception("Memory unavailable; treating message as a standalone question")
+            history = []
+
+        query_context = self._query_understanding.analyse(user_message, history)
+
+        if query_context.intent is Intent.UNKNOWN and query_context.is_follow_up:
+            # Unresolvable follow-up — ask for clarification without retrieval
+            # or an LLM call (spec §5.5, AC-6-07).
+            return self._respond_with_clarification(user_message)
 
         # RAG pipeline — guarded entirely; degrades to no-context on any error
         assembled_context = None
-        try:
-            query_context = self._query_understanding.analyse(user_message, history)
-            if query_context.intent is not Intent.UNKNOWN:
+        if query_context.intent is not Intent.UNKNOWN:
+            try:
                 results = self._retriever.retrieve(query_context)
                 assembled_context = self._context_builder.assemble(results, query_context, history)
-        except Exception:
-            logger.exception("RAG pipeline failed; proceeding without context")
+            except Exception:
+                logger.exception("RAG pipeline failed; proceeding without context")
 
         try:
             messages = self._build_messages(
@@ -88,12 +103,14 @@ class ChatService:
             logger.exception("Unexpected error during LLM call")
             raise ChatServiceError("An unexpected error occurred.") from exc
 
+        # Memory is written only after a successful response. A write failure
+        # here must never become a user-visible error — the response has
+        # already been generated successfully (spec §3.4, §4.7).
         try:
             self.memory.append("user", user_message)
             self.memory.append("assistant", llm_response.content)
-        except Exception as exc:
-            logger.exception("Unexpected error updating memory")
-            raise ChatServiceError("An unexpected error occurred.") from exc
+        except Exception:
+            logger.exception("Memory write failed after successful response; turn not persisted")
 
         logger.info(
             "Turn completed: response_length=%d, total_tokens=%d",
@@ -102,3 +119,12 @@ class ChatService:
         )
 
         return llm_response.content
+
+    def _respond_with_clarification(self, user_message: str) -> str:
+        logger.info("Unresolvable follow-up; returning clarification without retrieval or LLM call")
+        try:
+            self.memory.append("user", user_message)
+            self.memory.append("assistant", CLARIFICATION_MESSAGE)
+        except Exception:
+            logger.exception("Memory write failed after clarification response; turn not persisted")
+        return CLARIFICATION_MESSAGE
