@@ -44,10 +44,13 @@ export default function Auth() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/profile`,
+        redirectTo: `${window.location.origin}/profile`
       },
     });
   }
+
+
+  // https://manascience.webflow.io/profile  -> for URL configuration
 
   return (
     <main className="min-h-screen bg-gray-100 flex items-center justify-center font-mono">

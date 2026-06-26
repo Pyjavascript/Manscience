@@ -17,6 +17,9 @@ import {
   FaCrown,
   FaUserMinus,
   FaTrash,
+  FaComments,
+  FaPlus,
+  FaEdit,
 } from "react-icons/fa";
 import {
   BarChart,
@@ -54,6 +57,181 @@ const Dashboard = () => {
   const [practitionersLoading, setPractitionersLoading] = useState(false);
   const [actionProcessingId, setActionProcessingId] = useState(null);
 
+  const [communityPosts, setCommunityPosts] = useState([]);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [communityFilter, setCommunityFilter] = useState("pending"); // "pending" | "approved"
+  const [editingPost, setEditingPost] = useState(null); // Tracks post metadata details during updates
+  const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(false);
+  const [newTestimonialForm, setNewTestimonialForm] = useState({
+    username: "",
+    header: "",
+    content: "",
+    tag: "",
+  });
+
+  // --- ADD THESE LOGIC CONTROLS ---
+  const [tagsList, setTagsList] = useState([]);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const [newTagName, setNewConditionTagName] = useState("");
+  const [communitySubView, setCommunitySubTabFilter] = useState("posts"); // "posts" | "tags"
+  const fetchCommunityPosts = async () => {
+    try {
+      setCommunityLoading(true);
+      // Updates select path to join and bring down the tag name alias field
+      const { data, error } = await supabase
+        .from("community_hub")
+        .select(
+          `
+          *,
+          community_tags ( name )
+        `,
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCommunityPosts(data || []);
+    } catch (err) {
+      console.error("Error collecting community node assets:", err.message);
+    } finally {
+      setCommunityLoading(false);
+    }
+  };
+
+  const fetchCommunityTags = async () => {
+    try {
+      setTagsLoading(true);
+      const { data, error } = await supabase
+        .from("community_tags")
+        .select("*")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setTagsList(data || []);
+    } catch (err) {
+      console.error("Dynamic sync caught exception:", err.message);
+    } finally {
+      setTagsLoading(false);
+    }
+  };
+
+  const handleCreateTag = async (e) => {
+    e.preventDefault();
+    if (!newTagName.trim()) return;
+    try {
+      const { error } = await supabase
+        .from("community_tags")
+        .insert([{ name: newTagName.trim() }]);
+
+      if (error) throw error;
+      alert("New tag added successfully!");
+      setNewConditionTagName("");
+      fetchCommunityTags();
+    } catch (err) {
+      alert(`Tag generation failed: ${err.message}`);
+    }
+  };
+
+  const handleDeleteTag = async (id) => {
+    if (
+      !window.confirm(
+        "Permanently purge this item from layout dropdown configuration? Affected posts will default to unassigned.",
+      )
+    )
+      return;
+    try {
+      const { error } = await supabase
+        .from("community_tags")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      alert("Tag purged.");
+      fetchCommunityTags();
+      fetchCommunityPosts(); // Refresh posts to keep relational keys aligned
+    } catch (err) {
+      alert(`Action rejected: ${err.message}`);
+    }
+  };
+  const handleUpdatePostStatus = async (id, status) => {
+    try {
+      const { error } = await supabase
+        .from("community_hub")
+        .update({ status })
+        .eq("id", id);
+
+      if (error) throw error;
+      alert(`Post marked as ${status}!`);
+      fetchCommunityPosts();
+    } catch (err) {
+      alert(`Failed changing index configurations: ${err.message}`);
+    }
+  };
+
+  const handleDeletePost = async (id) => {
+    if (
+      !window.confirm(
+        "Permanently purge this item from community layout registries?",
+      )
+    )
+      return;
+    try {
+      const { error } = await supabase
+        .from("community_hub")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      alert("Post purged successfully.");
+      fetchCommunityPosts();
+    } catch (err) {
+      alert(`Action rejected: ${err.message}`);
+    }
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase
+        .from("community_hub")
+        .update({
+          username: editingPost.username,
+          header: editingPost.header || null,
+          tag_id: editingPost.tag_id || null,
+          content: editingPost.content,
+        })
+        .eq("id", editingPost.id);
+
+      if (error) throw error;
+      alert("Post details updated successfully.");
+      setEditingPost(null);
+      fetchCommunityPosts();
+    } catch (err) {
+      alert(`Update failed: ${err.message}`);
+    }
+  };
+
+  const handleCreateTestimonial = async (e) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from("community_hub").insert([
+        {
+          username: newTestimonialForm.username,
+          header: newTestimonialForm.header || null,
+          tag_id: newTestimonialForm.tag_id || null,
+          content: newTestimonialForm.content,
+          status: "approved", // Default admin creations directly to live view state
+        },
+      ]);
+
+      if (error) throw error;
+      alert("Testimonial registered successfully.");
+      setIsTestimonialModalOpen(false);
+      setNewTestimonialForm({ username: "", header: "", content: "", tag: "" });
+      fetchCommunityPosts();
+    } catch (err) {
+      alert(`Creation error: ${err.message}`);
+    }
+  };
   // Modal State
   const [selectedPractitioner, setSelectedPractitioner] = useState(null);
 
@@ -711,6 +889,8 @@ const Dashboard = () => {
         fetchPractitioners("pending"),
         fetchPractitioners("live"),
         fetchUserManagementData(),
+        fetchCommunityPosts(),
+        fetchCommunityTags(),
       ]);
     } catch (err) {
       console.error("Error running dashboard lifecycle:", err);
@@ -726,6 +906,7 @@ const Dashboard = () => {
     if (activeTab === "Usermanagement") return userManagementLoading;
     if (activeTab === "practitioners") return practitionersLoading;
     if (activeTab === "TherapiesManagement") return therapiesLoading;
+    if (activeTab === "CommunityHub") return communityLoading || tagsLoading;
     return false;
   }, [
     activeTab,
@@ -733,6 +914,8 @@ const Dashboard = () => {
     userManagementLoading,
     practitionersLoading,
     therapiesLoading,
+    communityLoading,
+    tagsLoading
   ]);
 
   useEffect(() => {
@@ -748,14 +931,22 @@ const Dashboard = () => {
     if (activeTab === "ConditionManagement") {
       fetchConditionsTabCms();
     }
+    if (activeTab === "CommunityHub") {
+      fetchCommunityPosts();
+      fetchCommunityTags();
+    }
   }, [practitionerSubTab, activeTab]);
+
+  const filteredCommunityList = useMemo(() => {
+    return communityPosts.filter((p) => p.status === communityFilter);
+  }, [communityPosts, communityFilter]);
 
   useEffect(() => {
     refreshOverviewData();
   }, []);
 
   return (
-    <main className="h-screen bg-gray-100 flex font-sans text-gray-800 overflow-hidden">
+    <main className="h-screen manrope bg-gray-100 flex font-sans text-gray-800 overflow-hidden">
       {/* SIDEBAR NAVIGATION */}
       <aside className="w-72 bg-white border-r border-gray-200 flex flex-col p-2 shrink-0 h-full">
         <div className="p-6 text-2xl font-semibold text-black tracking-tight">
@@ -782,6 +973,12 @@ const Dashboard = () => {
             <span className="text-white bg-[#5932EA] p-2.5 py-1 rounded-full text-sm">
               {pendingCount}
             </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("CommunityHub")}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "CommunityHub" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+          >
+            <FaComments /> Community Hub
           </button>
           <button
             onClick={() => setActiveTab("AiRoadmap")}
@@ -822,6 +1019,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-medium text-gray-800 capitalize">
               {activeTab === "overview" && "Overview Metrics Dashboard"}
+              {activeTab === "CommunityHub" && "Community Hub & Testimonials"}
               {activeTab === "Usermanagement" && "User Directory Management"}
               {activeTab === "practitioners" &&
                 "Practitioners Directory Management"}
@@ -842,6 +1040,10 @@ const Dashboard = () => {
                   fetchPractitioners(practitionerSubTab);
                 if (activeTab === "TherapiesManagement")
                   fetchTherapiesFromCms();
+                if (activeTab === "CommunityHub") {
+                  fetchCommunityPosts();
+                  fetchCommunityTags();
+                }
               }}
               className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
             >
@@ -855,7 +1057,11 @@ const Dashboard = () => {
           </div>
 
           <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium">
-            June 16, 2026
+            {new Date().toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
           </div>
         </header>
 
@@ -1280,6 +1486,258 @@ const Dashboard = () => {
           </div>
         )}
 
+        {activeTab === "CommunityHub" && (
+          <div className="space-y-6">
+            {/* Sub Tab Selection Controls Row Header element panel */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-3xl border border-gray-200 gap-4">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => setCommunitySubTabFilter("posts")}
+                  className={`px-6 py-2 text-sm font-semibold rounded-xl transition ${communitySubView === "posts" ? "bg-[#5932EA] text-white" : "text-gray-400 hover:text-gray-600 hover:bg-slate-50"}`}
+                >
+                  Manage Content & Reviews
+                </button>
+                <button
+                  onClick={() => setCommunitySubTabFilter("tags")}
+                  className={`px-6 py-2 text-sm font-semibold rounded-xl transition ${communitySubView === "tags" ? "bg-[#5932EA] text-white" : "text-gray-400 hover:text-gray-600 hover:bg-slate-50"}`}
+                >
+                  Pre-defined Tags Pipeline
+                </button>
+              </div>
+
+              {communitySubView === "posts" && (
+                <button
+                  onClick={() => setIsTestimonialModalOpen(true)}
+                  className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center justify-center gap-2 text-sm sm:w-auto w-full"
+                >
+                  <FaPlus size={12} /> Create Testimonial
+                </button>
+              )}
+            </div>
+
+            {/* SUB VIEW 1: RENDER POSTS PIPELINE */}
+            {communitySubView === "posts" && (
+              <div className="bg-white border border-gray-200 rounded-3xl p-6">
+                <div className="flex border-b border-gray-200 mb-6 gap-6">
+                  <button
+                    onClick={() => setCommunityFilter("pending")}
+                    className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${communityFilter === "pending" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                  >
+                    Pending Approvals (
+                    {
+                      communityPosts.filter((p) => p.status === "pending")
+                        .length
+                    }
+                    )
+                  </button>
+                  <button
+                    onClick={() => setCommunityFilter("approved")}
+                    className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${communityFilter === "approved" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                  >
+                    Live Directory (
+                    {
+                      communityPosts.filter((p) => p.status === "approved")
+                        .length
+                    }
+                    )
+                  </button>
+                </div>
+
+                {communityLoading ? (
+                  <p className="text-gray-500 italic py-6 text-sm">
+                    Synchronizing table indexes...
+                  </p>
+                ) : filteredCommunityList.length === 0 ? (
+                  <p className="text-gray-500 italic py-6 text-sm">
+                    No items matching this scope.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-200 bg-gray-50 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                          <th className="py-4 px-6">Header / Tag</th>
+                          <th className="py-4 px-6">Content Body</th>
+                          <th className="py-4 px-6">Username Author</th>
+                          <th className="py-4 px-6">Date Created</th>
+                          <th className="py-4 px-6 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-sm">
+                        {filteredCommunityList.map((post) => (
+                          <tr
+                            key={post.id}
+                            className="hover:bg-slate-50 transition"
+                          >
+                            <td className="py-4 px-6">
+                              <div className="font-semibold text-gray-900">
+                                {post.header || (
+                                  <span className="text-gray-300 italic">
+                                    None
+                                  </span>
+                                )}
+                              </div>
+                              {post.community_tags?.name && (
+                                <span className="inline-block bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded text-xs text-[#5932EA] font-semibold mt-1">
+                                  {post.community_tags.name}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6 max-w-sm truncate text-gray-600">
+                              {post.content}
+                            </td>
+                            <td className="py-4 px-6 font-medium text-gray-900">
+                              {post.username}
+                            </td>
+                            <td className="py-4 px-6 text-gray-400 text-xs">
+                              {new Date(post.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex justify-center gap-2">
+                                <button
+                                  onClick={() => setEditingPost(post)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition"
+                                  title="Edit post content"
+                                >
+                                  <FaEdit size={14} />
+                                </button>
+                                {post.status === "pending" && (
+                                  <button
+                                    onClick={() =>
+                                      handleUpdatePostStatus(
+                                        post.id,
+                                        "approved",
+                                      )
+                                    }
+                                    className="p-2 text-green-600 hover:bg-green-50 border border-gray-200 rounded-xl transition"
+                                    title="Approve post layout"
+                                  >
+                                    <FaCheck size={14} />
+                                  </button>
+                                )}
+                                {post.status === "approved" && (
+                                  <button
+                                    onClick={() =>
+                                      handleUpdatePostStatus(post.id, "pending")
+                                    }
+                                    className="p-2 text-amber-600 hover:bg-amber-50 border border-gray-200 rounded-xl transition"
+                                    title="Revoke post to drafts"
+                                  >
+                                    <FaTimes size={14} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeletePost(post.id)}
+                                  className="p-2 text-red-500 hover:bg-red-50 border border-gray-200 rounded-xl transition"
+                                  title="Remove Post"
+                                >
+                                  <FaTrash size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SUB VIEW 2: RENDER SYSTEM TAG MANAGEMENT PANEL PIPELINE INTERFACE */}
+            {communitySubView === "tags" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                {/* Left Column: Create New Tag Form Widget Box Layout view */}
+                <div className="bg-white p-6 rounded-3xl border border-gray-200 space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Add Pre-defined Tag
+                    </h3>
+                    <p className="text-gray-400 text-xs mt-0.5">
+                      Define metadata criteria properties for categorization
+                      selection drop-down boxes.
+                    </p>
+                  </div>
+                  <form onSubmit={handleCreateTag} className="space-y-3">
+                    <input
+                      type="text"
+                      required
+                      value={newTagName}
+                      onChange={(e) => setNewConditionTagName(e.target.value)}
+                      placeholder="e.g., Success Story, Feedback"
+                      className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-[#5932EA]"
+                    />
+                    <button
+                      type="submit"
+                      className="w-full bg-[#5932EA] text-white font-semibold py-2.5 rounded-xl transition text-sm hover:bg-[#4826c9]"
+                    >
+                      Add Tag
+                    </button>
+                  </form>
+                </div>
+
+                {/* Right Column: Manage & Delete Active Lookup Key Tags inventory grid views */}
+                <div className="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Active System Dropdown Options Collection
+                  </h3>
+
+                  {tagsLoading ? (
+                    <p className="text-gray-400 italic text-sm">
+                      Synchronizing schemas inventory models variables...
+                    </p>
+                  ) : tagsList.length === 0 ? (
+                    <p className="text-gray-400 italic text-sm">
+                      No lookups created yet.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-gray-200 bg-gray-50 text-gray-400 text-xs font-bold uppercase tracking-wider">
+                            <th className="py-3 px-6">Available Tags</th>
+                            <th className="py-3 px-6 select-all font-mono">
+                              Reference Record ID
+                            </th>
+                            <th className="py-3 px-6 text-center">
+                              Purge Control
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 text-sm">
+                          {tagsList.map((tag) => (
+                            <tr
+                              key={tag.id}
+                              className="hover:bg-slate-50 transition"
+                            >
+                              <td className="py-3.5 px-6 font-semibold text-gray-800">
+                                <span className="bg-indigo-50 border border-indigo-100 text-[#5932EA] px-3 py-1 rounded-lg font-bold text-xs uppercase tracking-wide">
+                                  {tag.name}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-6 text-xs text-gray-400 font-mono select-all truncate max-w-40">
+                                {tag.id}
+                              </td>
+                              <td className="py-3.5 px-6 text-center">
+                                <button
+                                  onClick={() => handleDeleteTag(tag.id)}
+                                  className="p-2 text-red-500 hover:bg-red-50 border border-gray-100 rounded-xl transition inline-flex"
+                                  title="Purge tag asset reference mapping constraint parameters"
+                                >
+                                  <FaTrash size={12} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {/* PRACTITIONERS MANAGEMENT TAB RENDER */}
 
         {activeTab === "practitioners" && (
@@ -1621,6 +2079,225 @@ const Dashboard = () => {
           </div>
         )}
       </section>
+
+      {editingPost && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+          <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="text-xl font-medium text-gray-800">
+                Review Testimonial / Review
+              </h2>
+              <button
+                onClick={() => setEditingPost(null)}
+                className="text-gray-400 hover:text-gray-600 p-2"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                  Display Username
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingPost.username}
+                  onChange={(e) =>
+                    setEditingPost({ ...editingPost, username: e.target.value })
+                  }
+                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    Header Label
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPost.header || ""}
+                    onChange={(e) =>
+                      setEditingPost({ ...editingPost, header: e.target.value })
+                    }
+                    placeholder="Set descriptive header"
+                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    Tag Group Mapping
+                  </label>
+                  <select
+                    value={editingPost.tag_id || ""}
+                    onChange={(e) =>
+                      setEditingPost({
+                        ...editingPost,
+                        tag_id: e.target.value || null,
+                      })
+                    }
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-[#5932EA] focus:outline-none text-sm text-gray-800"
+                  >
+                    <option value="">-- No Tag (Clear) --</option>
+                    {tagsList.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                  Content Body Post Text
+                </label>
+                <textarea
+                  rows="4"
+                  required
+                  value={editingPost.content}
+                  onChange={(e) =>
+                    setEditingPost({ ...editingPost, content: e.target.value })
+                  }
+                  className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                />
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingPost(null)}
+                  className="px-5 py-2 border rounded-xl text-gray-500"
+                >
+                  Dismiss
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-[#5932EA] text-white rounded-xl"
+                >
+                  Save & Sync
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL FOR CREATING OWN CUSTOM TESTIMONIAL --- */}
+      {isTestimonialModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+          <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="text-xl font-medium text-gray-800">
+                Create Hub Testimonial
+              </h2>
+              <button
+                onClick={() => setIsTestimonialModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 p-2"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+            <form
+              onSubmit={handleCreateTestimonial}
+              className="p-6 space-y-4 text-sm"
+            >
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                  Author Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., Jane Doe"
+                  value={newTestimonialForm.username}
+                  onChange={(e) =>
+                    setNewTestimonialForm({
+                      ...newTestimonialForm,
+                      username: e.target.value,
+                    })
+                  }
+                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    Header Text *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Amazing platform UI"
+                    value={newTestimonialForm.header}
+                    onChange={(e) =>
+                      setNewTestimonialForm({
+                        ...newTestimonialForm,
+                        header: e.target.value,
+                      })
+                    }
+                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    Tag Value *
+                  </label>
+                  <select
+                    required
+                    value={newTestimonialForm.tag_id || ""}
+                    onChange={(e) =>
+                      setNewTestimonialForm({
+                        ...newTestimonialForm,
+                        tag_id: e.target.value,
+                      })
+                    }
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-[#5932EA] focus:outline-none text-sm text-gray-800"
+                  >
+                    <option value="">-- Choose Assigned Tag --</option>
+                    {tagsList.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                  Content Review Text *
+                </label>
+                <textarea
+                  rows="4"
+                  required
+                  placeholder="Write comprehensive feedback review content..."
+                  value={newTestimonialForm.content}
+                  onChange={(e) =>
+                    setNewTestimonialForm({
+                      ...newTestimonialForm,
+                      content: e.target.value,
+                    })
+                  }
+                  className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                />
+              </div>
+              <div className="pt-4 border-t flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsTestimonialModalOpen(false)}
+                  className="px-5 py-2 border rounded-xl text-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-[#5932EA] text-white rounded-xl"
+                >
+                  Publish Live
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {selectedUser && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">

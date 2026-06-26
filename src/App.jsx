@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import PractitionerForm from "./pages/PractitionerForm";
 import ChatbotQuiz from "./pages/ChatbotQuiz";
 import Chatbot from "./pages/Chatbot";
+import Community from "./pages/Community";
 
 export default function App() {
   return (
@@ -26,8 +27,9 @@ export default function App() {
         <Route path="/cancel" element={<Cancel />} />
         <Route path="/admin" element={<Dashboard/>}/>
         <Route path="/practitioner-form" element={<PractitionerForm/>}/>
-        <Route path="/chatbot-quiz" element={<ChatbotQuiz/>}/>\
+        <Route path="/chatbot-quiz" element={<ChatbotQuiz/>}/>
         <Route path="/chatbot" element={<Chatbot/>}/>
+        <Route path="/community" element={<Community/>}/>
       </Routes>
     </BrowserRouter>
   );

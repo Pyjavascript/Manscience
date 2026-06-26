@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Manrope", sans-serif;
+    }
+    /* html {
+      font-size: 10px;
+    } */
+    main {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: brown;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width:0;
+      max-width: 550px;
+      background: white;
+      border-radius: 40px;
+      
+    }
+    .input {
+      font-size: 16px;
+      width: 0;
+      opacity: 0;
+      font-weight: 600;
+      border-radius: 40px;
+      border: none;
+      color:  #B05A36 ;
+      outline: none;
+      padding: 0; 
+      margin-right: 0;
+      transition:
+        width 0.4s ease-out,
+        opacity 0.3s ease-out,
+        padding 0.4s ease-out,
+        margin 0.4s ease-out;
+    }
+    
+    .input.activeBtn {
+      width: 100%;
+      opacity: 1;
+      padding: 20px; 
+      margin-right: 10px;
+    }
+    .container.active{
+      width:450px;
+      transition: width 0.3s ease;
+      
+    }
+    .subscribe {
+      background: white;
+      color: #B05A36 ;
+      font-weight: 600;
+      border: none;
+      padding: 19px 31px;
+      border-radius: 40px;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex; 
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      white-space: nowrap;
+      font-size: 16px;
+    }
+    .txt {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    @media (min-width: 768px) {
+      .input.activeBtn {
+        width: 350px;
+      }
+      .subscribe {
+        padding: 19px 31px;
+      }
+    }
+  </style>
+  <body>
+    <main>
+      <div class="container">
+        <input type="email" class="input" placeholder="Enter Your email" required />
+        <button class="subscribe">
+          <div class="txt">
+            <span>Subscribe</span>
+          </div>
+        </button>
+      </div>
+    </main>
+    <script>
+      const input = document.querySelector(".input");
+      const subscribe = document.querySelector(".subscribe");
+      const txtSpan = document.querySelector(".txt span");
+      const container = document.querySelector(".container");
+
+      const scriptURL = 'https://script.google.com/macros/s/AKfycbzp8JrWBzUvNjSsypoAc-JA0uDjBI0K63WdAszdMsZLt47vlXwn3H-YRILMsA6tHYWJ/exec';
+
+      async function handleSubscribe() {
+        const emailValue = input.value.trim();
+
+        if (emailValue !== "") {
+          txtSpan.textContent = "...";
+          
+          try {
+            const response = await fetch(scriptURL, {
+              method: 'POST',
+              mode: 'cors',
+              headers: {
+                'Content-Type': 'text/plain',
+              },
+              body: JSON.stringify({ email: emailValue })
+            });
+            
+            const result = await response.json();
+            txtSpan.style.fontSize = "1.6rem"
+            
+            if (result.result === 'success') {
+              txtSpan.style.fontSize = '16px'
+              txtSpan.textContent = "Thank you!";
+
+              input.classList.remove("activeBtn");
+              container.classList.remove("active");
+              input.value = "";
+            } else {
+              txtSpan.textContent = "Error";
+              container.classList.remove("active");
+              console.error(result.error);
+            }
+          } catch (error) {
+            txtSpan.textContent = "Network Error";
+            container.classList.remove("active");
+            console.error('Error sending data:', error);
+          }
+
+        } else {
+          input.focus();
+        }
+      }
+
+      subscribe.addEventListener("click", (event) => {
+        event.preventDefault();
+
+        if (!input.classList.contains("activeBtn")) {
+          input.classList.add("activeBtn");
+          input.focus();
+          txtSpan.textContent = "->";
+          txtSpan.style.fontSize = "25px"
+          container.classList.add("active");
+        } else {
+          handleSubscribe();
+        }
+      });
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          handleSubscribe();
+        }
+      });
+    </script>
+  </body>
+</html>

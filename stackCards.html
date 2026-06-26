@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Stacked Card Carousel Modal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+         font-family: "Manrope", sans-serif;
+      }
+
+      body {
+        background-color: #f3f4f6;
+        overflow-x: hidden;
+      }
+
+      .page-layout {
+        position: relative;
+        width: 100vw;
+      }
+
+      .top-screen-block {
+        width: 100vw;
+        height: 100vh;
+        background-color: #e5e7eb;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+        color: #4b5563;
+        font-weight: bold;
+      }
+
+      .trigger-card {
+        width: 240px;
+        height: 140px;
+        background: #c27d53;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        font-weight: bold;
+        transition: transform 0.2s;
+      }
+      .trigger-card:hover {
+        transform: translateY(-4px);
+      }
+      .modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(160, 160, 160, 0.85);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      }
+
+      .community-wrapper {
+        position: relative;
+        width: 600px;
+        height: 600px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .card-stack {
+        position: relative;
+        width: 360px;
+        height: 460px;
+      }
+
+      .card {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 32px;
+        padding: 35px;
+        background: #f0eae1;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        color: #4a3e3d;
+
+        transition:
+          transform 0.5s cubic-bezier(0.25, 1, 0.5, 1),
+          z-index 0.5s,
+          opacity 0.5s;
+        opacity: 0;
+        transform: scale(0.8);
+        pointer-events: none;
+        
+        transform-origin: bottom center;
+      }
+
+      .card-tag {
+        align-self: flex-start;
+        border: 1px solid #b05a36;
+        color: #b05a36;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+      }
+      .card h2 {
+        color: #b05a36;
+        font-size: 1.6rem;
+        line-height: 1.25;
+        font-weight: 600;
+        margin-bottom: 20px;
+      }
+      .card p {
+        font-size: 0.9rem;
+        color: #5c5251;
+        line-height: 1.6;
+      }
+      
+      .card-footer {
+        margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #4a3e3d;
+      }
+
+      .item-2 {
+        background: #fcf9f5;
+      }
+      .item-3 {
+        background: #b05a36;
+        color: white;
+      }
+      .item-3 h2,
+      .item-3 .card-tag {
+        color: white;
+        border-color: white;
+      }
+      .item-3 p, .item-3 .card-footer {
+        color: #f7f3f0;
+      }
+
+      .card.active {
+        opacity: 1;
+        z-index: 3;
+        pointer-events: auto;
+        transform: scale(1) translateY(0) rotate(0deg);
+      }
+      .card.next {
+        opacity: 0.95;
+        z-index: 2;
+        transform: scale(0.96) translateY(-25px) rotate(-3deg);
+      }
+
+      .card.last {
+        opacity: 0.9;
+        z-index: 1;
+        transform: scale(0.92) translateY(-45px) rotate(3deg);
+      }
+
+      .nav-btn {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #b05a36;
+        color: white;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        z-index: 10;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+      }
+      .nav-btn:hover {
+        background-color: #9c6c4f;
+      }
+      .nav-btn:active {
+        transform: scale(0.95);
+      }
+
+      #prevBtn {
+        left: 20px;
+      }
+      #nextBtn {
+        right: 20px;
+      }
+      .bottom-screen-block {
+        width: 100vw;
+        height: 100vh;
+        background-color: #d1d5db;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+        color: #4b5563;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="page-layout">
+      
+      <div class="top-screen-block">
+        <div id="openModalBtn" class="trigger-card">CLICK TO DECK</div>
+      </div>
+
+      <div id="modalOverlay" class="modal-overlay">
+        <div class="community-wrapper">
+          <button class="nav-btn" id="prevBtn">&#8249;</button>
+
+          <div class="card-stack">
+            <div class="card item-1">
+              <div>
+                <div class="card-tag">Arrowsmith Program</div>
+                <h2>Improved reading skills in 8 months</h2>
+                <p>
+                  "For the first time, my son wanted to read on his own. After
+                  years of struggling with books and avoiding reading, he began
+                  picking them up voluntarily. Watching him read with confidence and curiosity was
+                  a milestone our family never expected..."
+                </p>
+              </div>
+              <div class="card-footer">
+                <span>Sarah M.</span>
+                <span>2 mo. ago</span>
+              </div>
+            </div>
+
+            <div class="card item-2">
+              <div>
+                <div class="card-tag">Language Mastery</div>
+                <h2>Building Confidence Daily</h2>
+                <p>
+                  "Watching him read with confidence and curiosity was a milestone
+                  our family never expected. The layout process completely
+                  transformed his mindset."
+                </p>
+              </div>
+              <div class="card-footer">
+                <span>David K.</span>
+                <span>1 mo. ago</span>
+              </div>
+            </div>
+
+            <div class="card item-3">
+              <div>
+                <div class="card-tag">Cognitive Growth</div>
+                <h2>A Whole New Horizon</h2>
+                <p>
+                  "The program targets root difficulties rather than teaching
+                  workarounds. We've seen incredible structural progression over a
+                  short time."
+                </p>
+              </div>
+              <div class="card-footer">
+                <span>Elena R.</span>
+                <span>3 wk. ago</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="nav-btn" id="nextBtn">&#8250;</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="bottom-screen-block">
+      Bottom Screen Section
+    </div>
+
+    <script>
+      var openBtn = document.getElementById("openModalBtn");
+      var overlay = document.getElementById("modalOverlay");
+      var nextBtn = document.getElementById("nextBtn");
+      var prevBtn = document.getElementById("prevBtn");
+      var cards = document.getElementsByClassName("card");
+
+      let currentIndex = 0;
+
+      openBtn.onclick = function () {
+        overlay.style.display = "flex";
+      };
+
+      overlay.onclick = function (e) {
+        if (!e.target.closest('.card') && !e.target.closest('.nav-btn')) {
+          overlay.style.display = "none";
+        }
+      };
+
+      function renderDeck() {
+        for (var i = 0; i < cards.length; i++) {
+          cards[i].className = cards[i].className
+            .replace(" active", "")
+            .replace(" next", "")
+            .replace(" last", "");
+        }
+        cards[currentIndex].className += " active";
+        cards[(currentIndex + 1) % cards.length].className += " next";
+        cards[(currentIndex + 2) % cards.length].className += " last";
+      }
+
+      nextBtn.onclick = function () {
+        var activeCard = cards[currentIndex];
+        activeCard.style.transform = "translateX(100%) scale(0.95) rotate(10deg)";
+        activeCard.style.opacity = "0.3";
+
+        setTimeout(function () {
+          activeCard.style.transform = "";
+          activeCard.style.opacity = "";
+
+          currentIndex = (currentIndex + 1) % cards.length;
+          renderDeck();
+        }, 300);
+      };
+
+      prevBtn.onclick = function () {
+        currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+        renderDeck();
+      };
+
+      renderDeck();
+    </script>
+  </body>
+</html>
