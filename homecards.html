@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Responsive Modal Carousel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Manrope', sans-serif;
+    }
+    /* Custom Hide Scrollbar */
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-[#FAF4E8] min-h-screen flex items-center justify-center p-4">
+
+  <div class="text-center">
+    <div id="openModalTrigger" class="bg-[#B05A36] text-white font-medium py-4 px-8 rounded-full shadow-lg cursor-pointer transform transition active:scale-95 hover:bg-[#9c6c4f] select-none">
+      Open Community Testimonial Modal
+    </div>
+  </div>
+
+  <div id="carouselModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden justify-center items-center z-50 p-4 transition-opacity duration-300 opacity-0">
+    
+    <div id="modalContentWrapper" class="relative w-full max-w-150 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-0 transition-transform duration-300 scale-95">
+      
+      <div id="cardDeck" class="relative w-[320px] h-105 lg:w-122.5 lg:h-150 order-1">
+        </div>
+
+      <div class="flex items-center justify-center gap-2 order-2 md:absolute md:w-full md:justify-between md:px-0 pointer-events-none z-40">
+        <button id="prevBtn" class="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#B05A36] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:-translate-x-5 select-none">
+          &#8249;
+        </button>
+        <button id="nextBtn" class="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#b05a36] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:translate-x-5 select-none">
+          &#8250;
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Exact Static Mock Data match
+    const deckData = [
+      {
+        id: 1,
+        tag: "Arrowsmith Program",
+        title: "Improved reading skills in 8 months",
+        desc: '"For the first time, my son wanted to read on his own. After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected...After years of struggling with books and avoiding reading, he began picking them up voluntarily."',
+        author: "Sarah M.",
+        time: "2 mo. ago",
+        bgClass: "bg-[#f0eae1] text-[#4a3e3d]",
+        tagClass: "border-[#b05a36] text-[#b05a36]",
+        titleClass: "text-[#b05a36]",
+        descClass: "text-[#5c5251]",
+      },
+      {
+        id: 2,
+        tag: "Language Mastery",
+        title: "Building Confidence Daily",
+        desc: '"Watching him read with confidence and curiosity was a milestone our family never expected. The layout process completely transformed his mindset."',
+        author: "David K.",
+        time: "1 mo. ago",
+        bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
+        tagClass: "border-[#b05a36] text-[#b05a36]",
+        titleClass: "text-[#b05a36]",
+        descClass: "text-[#5c5251]",
+      },
+      {
+        id: 3,
+        tag: "Cognitive Growth",
+        title: "A Whole New Horizon",
+        desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
+        author: "Elena R.",
+        time: "3 wk. ago",
+        bgClass: "bg-[#b05a36] text-white",
+        tagClass: "border-white text-white",
+        titleClass: "text-white",
+        descClass: "text-[#f7f3f0]",
+      },
+      {
+        id: 4,
+        tag: "Arrowsmith Program",
+        title: "Improved reading skills in 8 months",
+        desc: '"For the first time, my son wanted to read on his own. After years of struggling with books and avoiding reading, he began picking them up voluntarily."',
+        author: "Sarah M.",
+        time: "2 mo. ago",
+        bgClass: "bg-[#f0eae1] text-[#4a3e3d]",
+        tagClass: "border-[#b05a36] text-[#b05a36]",
+        titleClass: "text-[#b05a36]",
+        descClass: "text-[#5c5251]",
+      },
+      {
+        id: 5,
+        tag: "Language Mastery",
+        title: "Building Confidence Daily",
+        desc: '"Watching him read with confidence and curiosity was a milestone our family never expected. The layout process completely transformed his mindset."',
+        author: "David K.",
+        time: "1 mo. ago",
+        bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
+        tagClass: "border-[#b05a36] text-[#b05a36]",
+        titleClass: "text-[#b05a36]",
+        descClass: "text-[#5c5251]",
+      },
+      {
+        id: 6,
+        tag: "Cognitive Growth",
+        title: "A Whole New Horizon",
+        desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
+        author: "Elena R.",
+        time: "3 wk. ago",
+        bgClass: "bg-[#b05a36] text-white",
+        tagClass: "border-white text-white",
+        titleClass: "text-white",
+        descClass: "text-[#f7f3f0]",
+      },
+      {
+        id: 7,
+        tag: "Cognitive Growth",
+        title: "A Whole New Horizon",
+        desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
+        author: "Elena R.",
+        time: "3 wk. ago",
+        bgClass: "bg-[#b05a36] text-white",
+        tagClass: "border-white text-white",
+        titleClass: "text-white",
+        descClass: "text-[#f7f3f0]",
+      },
+      {
+        id: 8,
+        tag: "Cognitive Growth",
+        title: "A Whole New Horizon",
+        desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
+        author: "Elena R.",
+        time: "3 wk. ago",
+        bgClass: "bg-[#b05a36] text-white",
+        tagClass: "border-white text-white",
+        titleClass: "text-white",
+        descClass: "text-[#f7f3f0]",
+      }
+    ];
+
+    let currentIndex = 0;
+    let isSwiping = false;
+
+    const carouselModal = document.getElementById('carouselModal');
+    const modalContentWrapper = document.getElementById('modalContentWrapper');
+    const cardDeck = document.getElementById('cardDeck');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const openModalTrigger = document.getElementById('openModalTrigger');
+
+    // 1. Build the HTML ONCE when loading up the page
+    function initializeDeck() {
+      cardDeck.innerHTML = '';
+      deckData.forEach((card, idx) => {
+        const cardElement = document.createElement('div');
+        // Keep standard structural styling baseline
+        cardElement.className = `absolute w-full h-full rounded-[30px] lg:rounded-[32px] p-6 lg:p-[35px] flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${card.bgClass}`;
+        cardElement.setAttribute('data-index', idx);
+        
+        cardElement.innerHTML = `
+          <div class="overflow-y-auto max-h-[90%] pr-1 scrollbar-none">
+            <div class="h-7.5 w-40 border rounded-[20px] text-[12px] font-normal lg:text-[0.75rem] mb-3 lg:mb-5 ${card.tagClass} flex justify-center items-center text-center">
+              <p>${card.tag}</p>
+            </div>
+            <h2 class="text-[18px] lg:text-[32px] font-normal leading-tight mb-3 lg:mb-5 ${card.titleClass} w-full lg:w-2/3">
+              ${card.title}
+            </h2>
+            <p class="text-[13px] lg:text-[0.9rem] leading-relaxed lg:leading-[1.6] font-normal ${card.descClass}">
+              ${card.desc}
+            </p>
+          </div>
+          <div class="mt-auto pt-2 flex justify-between items-center text-xs lg:text-[0.85rem] font-medium">
+            <span>${card.author}</span>
+            <span>${card.time}</span>
+          </div>
+        `;
+        cardElement.addEventListener('click', (e) => e.stopPropagation());
+        cardDeck.appendChild(cardElement);
+      });
+    }
+
+    // 2. Simply tweak classes dynamically over the existing DOM nodes (Exactly what React does)
+    function updateDeckPositions() {
+      const cards = cardDeck.querySelectorAll('[data-index]');
+      
+      cards.forEach((card) => {
+        const idx = parseInt(card.getAttribute('data-index'), 10);
+        const isActive = idx === currentIndex;
+
+        // Reset visibility layout states cleanly
+        card.className = card.className.replace(/\b(opacity-\S+|z-\S+|scale-\S+|translate-y-\S+|rotate-\S+|pointer-events-\S+)\b/g, '').trim();
+
+        let placementClasses = "";
+        if (idx === currentIndex) {
+          placementClasses = "opacity-100 z-30 scale-100 translate-y-0 rotate-0 pointer-events-auto";
+        } else if (idx === (currentIndex + 1) % deckData.length) {
+          placementClasses = "opacity-95 z-20 scale-96 -translate-y-[20px] md:-translate-y-[25px] -rotate-3 pointer-events-none";
+        } else if (idx === (currentIndex + 2) % deckData.length) {
+          placementClasses = "opacity-90 z-10 scale-92 -translate-y-[35px] md:-translate-y-[45px] rotate-3 pointer-events-none";
+        } else {
+          placementClasses = "opacity-0 scale-80 pointer-events-none";
+        }
+
+        card.classList.add(...placementClasses.split(' '));
+
+        // Manage inline structural styles dynamically during swipes
+        if (isSwiping && isActive) {
+          card.style.transformOrigin = "bottom center";
+          card.style.transform = "translateX(100%) scale(0.95) rotate(10deg)";
+          card.style.opacity = "0.3";
+        } else {
+          card.style.transformOrigin = "";
+          card.style.transform = "";
+          card.style.opacity = "";
+        }
+      });
+    }
+
+    // Modal Control Routines
+    function openModal() {
+      carouselModal.classList.remove('hidden');
+      carouselModal.classList.add('flex');
+      setTimeout(() => {
+        carouselModal.classList.remove('opacity-0');
+        carouselModal.classList.add('opacity-100');
+        modalContentWrapper.classList.remove('scale-95');
+        modalContentWrapper.classList.add('scale-100');
+      }, 10);
+      updateDeckPositions();
+    }
+
+    function closeModal() {
+      carouselModal.classList.remove('opacity-100');
+      carouselModal.classList.add('opacity-0');
+      modalContentWrapper.classList.remove('scale-100');
+      modalContentWrapper.classList.add('scale-95');
+      setTimeout(() => {
+        carouselModal.classList.remove('flex');
+        carouselModal.classList.add('hidden');
+      }, 300);
+    }
+
+    function handleNext(e) {
+      e.stopPropagation();
+      if (isSwiping) return;
+      isSwiping = true;
+      updateDeckPositions();
+
+      setTimeout(() => {
+        currentIndex = (currentIndex + 1) % deckData.length;
+        isSwiping = false;
+        updateDeckPositions();
+      }, 300);
+    }
+
+    function handlePrev(e) {
+      e.stopPropagation();
+      currentIndex = (currentIndex - 1 + deckData.length) % deckData.length;
+      updateDeckPositions();
+    }
+
+    // App Initialization Lifecycle Hook
+    initializeDeck();
+
+    openModalTrigger.addEventListener('click', openModal);
+    carouselModal.addEventListener('click', closeModal);
+    nextBtn.addEventListener('click', handleNext);
+    prevBtn.addEventListener('click', handlePrev);
+</script>

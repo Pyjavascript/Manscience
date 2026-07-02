@@ -58,6 +58,15 @@
           div.style.width = "100px";
         });
       });
+
+      img.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotationProfile}deg)`;
+
+      img.addEventListener("mouseover", () => {
+        img.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotationProfile}deg) scale(1.5)`;
+      })
+      img.addEventListener("mouseout", () => {
+  img.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotationProfile}deg)`;
+});
     </script>
   </body>
 </html>

@@ -6,106 +6,147 @@
     <title>Document</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
   </head>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: "Manrope", sans-serif;
-    }
-    /* html {
-      font-size: 10px;
-    } */
-    main {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: brown;
-      padding: 20px;
-    }
-    .container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width:0;
-      max-width: 550px;
-      background: white;
-      border-radius: 40px;
-      
-    }
-    .input {
-      font-size: 16px;
-      width: 0;
-      opacity: 0;
-      font-weight: 600;
-      border-radius: 40px;
-      border: none;
-      color:  #B05A36 ;
-      outline: none;
-      padding: 0; 
-      margin-right: 0;
-      transition:
+    
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Manrope", sans-serif;}
+  main {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: brown;
+    padding: 20px;}
+  .container {
+    background: white;
+    border: 3px solid rgba(255, 255, 255, 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    max-width: 550px;
+    border-radius: 40px;
+    transition:
         width 0.4s ease-out,
         opacity 0.3s ease-out,
         padding 0.4s ease-out,
-        margin 0.4s ease-out;
+        margin 0.4s ease-out,
+        color 0.3s ease;
     }
-    
-    .input.activeBtn {
-      width: 100%;
-      opacity: 1;
-      padding: 20px; 
-      margin-right: 10px;
+  .input.inpError {
+      color: red !important;
     }
-    .container.active{
-      width:450px;
-      transition: width 0.3s ease;
-      
-    }
-    .subscribe {
-      background: white;
-      color: #B05A36 ;
-      font-weight: 600;
-      border: none;
-      padding: 19px 31px;
-      border-radius: 40px;
-      cursor: pointer;
-      overflow: hidden;
-      display: flex; 
+  .input {
+    font-size: 16px;
+    width: 0;
+    opacity: 0;
+    font-weight: 600;
+    border-radius: 40px;
+    border: none;
+    color: #b05a36;
+    outline: none;
+    padding: 0;
+    margin-right: 0;
+    transition:
+      width 0.4s ease-out,
+      opacity 0.3s ease-out,
+      padding 0.4s ease-out,
+      margin 0.4s ease-out;}
+  .input.activeBtn {
+    width: 100%;
+    opacity: 1;
+    padding: 10px;
+    margin-right: 10px;}
+  .container.active {
+    width: 450px;}
+  .subscribe {
+    background: white;
+    color: #b05a36;
+    font-weight: 600;
+    border: none;
+    padding: 19px 31px;
+    border-radius: 40px;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 16px;
+    transition: padding 0.3s ease;}
+  .txt {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;}
+
+    .circle {
+      display: none;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
-      white-space: nowrap;
-      font-size: 16px;
+      font-size: 25px;
+      padding: 7px;
+      background: #b05a36;
+      color: white;
     }
-    .txt {
-      display: flex;
-      flex-direction: column;
-      gap: 30px;
-      position: relative;
-      transition: transform 0.3s ease;
+    .circle img {
+      width: 24px;
+      height: 24px;
     }
 
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
     @media (min-width: 768px) {
       .input.activeBtn {
         width: 350px;
       }
-      .subscribe {
-        padding: 19px 31px;
-      }
+       .input.activeBtn {
+      padding: 10px;
+      margin-right: 30px;
+    }
     }
   </style>
   <body>
     <main>
       <div class="container">
-        <input type="email" class="input" placeholder="Enter Your email" required />
+        <input
+          type="email"
+          class="input"
+          placeholder="Enter Your email"
+          required
+        />
         <button class="subscribe">
           <div class="txt">
             <span>Subscribe</span>
+              <div class="circle">
+                <img src="./src/assets/stagger.svg" alt="load"/>
+              </div>
+            </div>
           </div>
         </button>
       </div>
@@ -115,31 +156,57 @@
       const subscribe = document.querySelector(".subscribe");
       const txtSpan = document.querySelector(".txt span");
       const container = document.querySelector(".container");
+      const circle = document.querySelector(".circle");
 
-      const scriptURL = 'https://script.google.com/macros/s/AKfycbzp8JrWBzUvNjSsypoAc-JA0uDjBI0K63WdAszdMsZLt47vlXwn3H-YRILMsA6tHYWJ/exec';
+  function validateEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+      const scriptURL =
+        "https://script.google.com/macros/s/AKfycbzp8JrWBzUvNjSsypoAc-JA0uDjBI0K63WdAszdMsZLt47vlXwn3H-YRILMsA6tHYWJ/exec";
 
       async function handleSubscribe() {
         const emailValue = input.value.trim();
 
         if (emailValue !== "") {
-          txtSpan.textContent = "...";
-          
+          if (!validateEmail(emailValue)) {
+           input.classList.add("inpError");
+           return; 
+    }
+          input.classList.remove("inpError");
+          txtSpan.textContent = "";
+          txtSpan.style.cssText = "";
+          circle.style.display = "flex";
+          txtSpan.style.fontSize = "20px";
+          txtSpan.style.lineHeight = "1";
+
           try {
             const response = await fetch(scriptURL, {
-              method: 'POST',
-              mode: 'cors',
+              method: "POST",
+              mode: "cors",
               headers: {
-                'Content-Type': 'text/plain',
+                "Content-Type": "text/plain",
               },
-              body: JSON.stringify({ email: emailValue })
+              body: JSON.stringify({ email: emailValue }),
             });
-            
+
             const result = await response.json();
-            txtSpan.style.fontSize = "1.6rem"
-            
-            if (result.result === 'success') {
-              txtSpan.style.fontSize = '16px'
+
+            circle.style.display = "none";
+
+            if (result.result === "success") {
+              container.style.padding = "0";
+              subscribe.style.padding = "19px 31px";
+
               txtSpan.textContent = "Thank you!";
+              txtSpan.style.background = "none";
+              txtSpan.style.color = "#B05A36";
+              txtSpan.style.width = "auto";
+              txtSpan.style.height = "auto";
+              txtSpan.style.padding = "0";
+              txtSpan.style.fontSize = "16px";
+              txtSpan.style.display = "inline";
 
               input.classList.remove("activeBtn");
               container.classList.remove("active");
@@ -150,15 +217,18 @@
               console.error(result.error);
             }
           } catch (error) {
+            circle.style.display = "none";
             txtSpan.textContent = "Network Error";
             container.classList.remove("active");
-            console.error('Error sending data:', error);
+            console.error("Error sending data:", error);
           }
-
         } else {
           input.focus();
         }
       }
+      input.addEventListener("input", () => {
+        input.classList.remove("inpError");
+      });
 
       subscribe.addEventListener("click", (event) => {
         event.preventDefault();
@@ -166,9 +236,23 @@
         if (!input.classList.contains("activeBtn")) {
           input.classList.add("activeBtn");
           input.focus();
-          txtSpan.textContent = "->";
-          txtSpan.style.fontSize = "25px"
+
+          subscribe.style.padding = "0";
+          container.style.padding = "5px";
           container.classList.add("active");
+
+          txtSpan.textContent = "->";
+
+          txtSpan.style.background = "#B05A36";
+          txtSpan.style.color = "white";
+          txtSpan.style.width = "40px";
+          txtSpan.style.height = "40px";
+          txtSpan.style.display = "flex";
+          txtSpan.style.alignItems = "center";
+          txtSpan.style.justifyContent = "center";
+          txtSpan.style.borderRadius = "50%";
+          txtSpan.style.fontSize = "20px";
+          txtSpan.style.padding = "5px";
         } else {
           handleSubscribe();
         }
@@ -183,3 +267,24 @@
     </script>
   </body>
 </html>
+
+
+
+
+
+<div class="container">
+  <input
+    type="email"
+    class="input"
+    placeholder="Enter Your email"
+    required
+  />
+  <button class="subscribe">
+    <div class="txt">
+      <span>Subscribe</span>
+      <div class = "circle">
+      <img src="https://cdn.prod.website-files.com/6a1826bc669d4e5768e968dd/6a3e940f4d4e8d83d4731272_fade-stagger-circles.svg">
+        </div>
+    </div>
+  </button>
+</div>

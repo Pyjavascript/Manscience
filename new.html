@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>About Us | ManaScience</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* BASE RESETS */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #fff;
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* SECTION STYLING */
+        .bg-white {
+            background-color: #fff;
+            padding: 60px 0;
+            width: 100%;
+        }
+        .section {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        .bottom-component {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+            text-align: center;
+            gap: 30px;
+        }
+
+        /* TYPOGRAPHY */
+        .component-title.is-color {
+            border: 1px solid #b05a36;
+            color: #b05a36;
+            border-radius: 60px;
+            padding: 8px 15px;
+            display: inline-block;
+        }
+        .component-text {
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .heading-60-regular {
+            color: #b05a36;
+            font-size: 45px;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        /* CIRCLE LAYOUT & ANIMATION */
+        .circle-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 650px; 
+            position: relative;
+        }
+        
+        .main-circle {
+            width: 450px;  
+            height: 450px;
+            position: relative;
+            border-radius: 50%;
+            border: 2px dashed rgba(176, 90, 54, 0.2); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
+            /* CSS INFINITE ROTATION ENGINE */
+            animation: spinCircle 25s linear infinite;
+            transition: animation-play-state 0.3s ease;
+        }
+
+        /* Optional: Pause or slow down the spin when user hovers over the circle */
+        .circle-wrapper:hover .main-circle {
+            animation-play-state: paused;
+        }
+
+        .wrapper-bottom_images {
+            width: 140px;  
+            height: 165px;
+            position: absolute;
+            background: #faf4e8;
+            border-radius: 16px;
+            padding: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            inset: auto !important; 
+            
+            /* Counter-rotation configuration to keep images upright */
+            transition: transform 0.3s ease;
+        }
+
+        /* Counter-rotate inner content so images don't turn upside down while traveling */
+        .wrapper-bottom_images .bottom-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+            animation: keepUpright 25s linear infinite;
+            transition: animation-play-state 0.3s ease;
+        }
+
+        .circle-wrapper:hover .bottom-image {
+            animation-play-state: paused;
+        }
+
+        /* BUTTON */
+        .cta_main.is_secondary {
+            background-color: #b05a36;
+            color: #fff;
+            width: 200px;
+            height: 60px;
+            border-radius: 60px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+        .cta_main.is_secondary:hover {
+            transform: scale(1.05);
+        }
+
+        /* ANIMATION KEYFRAMES */
+        @keyframes spinCircle {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes keepUpright {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-white">
+        <div class="section">
+            <div class="bottom-component">
+                
+                <div class="component-title is-color">
+                    <div class="component-text">Testimonials</div>
+                </div>
+                
+                <h1 class="heading-60-regular">Insights backed by<br/> Real Experts</h1>
+                
+                <div class="circle-wrapper">
+                    <div class="main-circle">
+                        
+                        <div class="wrapper-bottom_images">
+                            <img loading="lazy" src="https://cdn.prod.website-files.com/6a1826bc669d4e5768e968dd/6a35165730f3515af98a24f5_Bottom-img1.png" alt="Expert 1" class="bottom-image"/>
+                        </div>
+                        <div class="wrapper-bottom_images">
+                            <img loading="lazy" src="https://cdn.prod.website-files.com/6a1826bc669d4e5768e968dd/6a3518c39c1be9130c0d2b01_BOttom-img2.png" alt="Expert 2" class="bottom-image"/>
+                        </div>
+                        <div class="wrapper-bottom_images">
+                            <img loading="lazy" src="https://cdn.prod.website-files.com/6a1826bc669d4e5768e968dd/6a3518f39c6bcdb0607bd44c_BOttom-img2.png" alt="Expert 3" class="bottom-image"/>
+                        </div>
+                        <div class="wrapper-bottom_images">
+                            <img loading="lazy" src="https://cdn.prod.website-files.com/6a1826bc669d4e5768e968dd/6a35192188a81a1186fafefd_Bottom-img4.png" alt="Expert 4" class="bottom-image"/>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                <a href="#" class="cta_main is_secondary">View all</a>
+                
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const circleContainer = document.querySelector('.main-circle');
+        const items = document.querySelectorAll('.wrapper-bottom_images');
+
+        if (!circleContainer || items.length === 0) return;
+
+        const totalItems = items.length;
+        const containerWidth = circleContainer.offsetWidth;
+        const radius = containerWidth > 0 ? (containerWidth / 2) : 225; 
+
+        items.forEach((item, index) => {
+            const angle = (index / totalItems) * 2 * Math.PI;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+
+            // We removed the static out-facing rotation loop because 
+            // the CSS engine now updates orientation continuously.
+            item.style.position = 'absolute';
+            item.style.left = '50%';
+            item.style.top = '50%';
+            item.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+        });
+    });
+    </script>
+</body>
+</html>

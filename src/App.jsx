@@ -10,6 +10,8 @@ import PractitionerForm from "./pages/PractitionerForm";
 import ChatbotQuiz from "./pages/ChatbotQuiz";
 import Chatbot from "./pages/Chatbot";
 import Community from "./pages/Community";
+import SmoothExpertSlider from './pages/SmoothExpertSlider'
+import ManasiAi from "./pages/ManasiAi"; 
 
 export default function App() {
   return (
@@ -30,6 +32,10 @@ export default function App() {
         <Route path="/chatbot-quiz" element={<ChatbotQuiz/>}/>
         <Route path="/chatbot" element={<Chatbot/>}/>
         <Route path="/community" element={<Community/>}/>
+        <Route path="/slider" element={<SmoothExpertSlider/>}/>
+        <Route path="/ai" element={<ManasiAi/>}/>
+
+
       </Routes>
     </BrowserRouter>
   );

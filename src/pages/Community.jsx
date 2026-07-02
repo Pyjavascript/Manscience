@@ -3,7 +3,25 @@ import logo from "../assets/logo-white.png";
 import toggle from "../assets/toggle.svg";
 import grid from "../assets/grid.svg";
 import { supabase } from "../supabase";
+import one from "../assets/circle/01.png";
 
+import two from "../assets/circle/02.png";
+
+import three from "../assets/circle/03.png";
+
+import four from "../assets/circle/04.jpg";
+
+import five from "../assets/circle/05.png";
+
+import six from "../assets/circle/06.png";
+
+import seven from "../assets/circle/07.png";
+
+import eight from "../assets/circle/08.png";
+
+import nine from "../assets/circle/09.png";
+
+import ten from "../assets/circle/10.png";
 const Community = () => {
   const [enabled, setEnabled] = useState(false);
   // --- State Functions for the Carousel Modal ---
@@ -43,6 +61,66 @@ const Community = () => {
     },
     {
       id: 3,
+      tag: "Cognitive Growth",
+      title: "A Whole New Horizon",
+      desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
+      author: "Elena R.",
+      time: "3 wk. ago",
+      bgClass: "bg-[#b05a36] text-white",
+      tagClass: "border-white text-white",
+      titleClass: "text-white",
+      descClass: "text-[#f7f3f0]",
+    },
+    {
+      id: 4,
+      tag: "Arrowsmith Program",
+      title: "Improved reading skills in 8 months",
+      desc: '"For the first time, my son wanted to read on his own. After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected...After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected...After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected... as a milestone our family never expected...as a milestone our family never expected..."',
+      author: "Sarah M.",
+      time: "2 mo. ago",
+      bgClass: "bg-[#f0eae1] text-[#4a3e3d]",
+      tagClass: "border-[#b05a36] text-[#b05a36]",
+      titleClass: "text-[#b05a36]",
+      descClass: "text-[#5c5251]",
+    },
+    {
+      id: 5,
+      tag: "Language Mastery",
+      title: "Building Confidence Daily",
+      desc: '"Watching him read with confidence and curiosity was a milestone our family never expected. The layout process completely transformed his mindset."',
+      author: "David K.",
+      time: "1 mo. ago",
+      bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
+      tagClass: "border-[#b05a36] text-[#b05a36]",
+      titleClass: "text-[#b05a36]",
+      descClass: "text-[#5c5251]",
+    },
+    {
+      id: 6,
+      tag: "Cognitive Growth",
+      title: "A Whole New Horizon",
+      desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
+      author: "Elena R.",
+      time: "3 wk. ago",
+      bgClass: "bg-[#b05a36] text-white",
+      tagClass: "border-white text-white",
+      titleClass: "text-white",
+      descClass: "text-[#f7f3f0]",
+    },
+    {
+      id: 7,
+      tag: "Cognitive Growth",
+      title: "A Whole New Horizon",
+      desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
+      author: "Elena R.",
+      time: "3 wk. ago",
+      bgClass: "bg-[#b05a36] text-white",
+      tagClass: "border-white text-white",
+      titleClass: "text-white",
+      descClass: "text-[#f7f3f0]",
+    },
+    {
+      id: 8,
       tag: "Cognitive Growth",
       title: "A Whole New Horizon",
       desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
@@ -125,14 +203,15 @@ const Community = () => {
   }
 
   const testimonials = communityPosts.filter((post) => {
-  const isApproved = post.status === "approved";
-  
-  const isTestimonial = post.community_tags?.name?.toLowerCase() === "testimonials";
-  
-  const matchesSelectedTag = !selectedTagId || post.tag_id === selectedTagId;
+    const isApproved = post.status === "approved";
 
-  return isApproved && isTestimonial && matchesSelectedTag;
-});
+    const isTestimonial =
+      post.community_tags?.name?.toLowerCase() === "testimonials";
+
+    const matchesSelectedTag = !selectedTagId || post.tag_id === selectedTagId;
+
+    return isApproved && isTestimonial && matchesSelectedTag;
+  });
   return (
     <main className="lg:p-10 py-7.5 manrope">
       <section className="px-5">
@@ -166,14 +245,16 @@ const Community = () => {
         </nav>
       </section>
 
-      <section className="text-center text-[#B05A36] lg:pt-17.5 pt-12.5 px-5">
-        <div className="lg:px-120">
+      <section
+        className={`text-center text-[#B05A36] lg:pt-17.5 pt-12.5 px-5 ${isModalOpen ? "hidden md:hidden lg:hidden" : "block md:block lg:block"}`}
+      >
+        <div className="lg:px-80">
           <h1 className="font-normal lg:text-[60px] text-[32px]">
             Stories from our community
           </h1>
         </div>
 
-        <div className=" lg:px-107.5">
+        <div className="lg:px-107.5">
           <p className="text-[16px] lg:text-[24px] font-normal">
             Real experiences from families, practitioners, and individuals
             across 20+ countries.
@@ -181,7 +262,7 @@ const Community = () => {
         </div>
       </section>
 
-      <section className="flex justify-between items-center mt-11.25 px-5 relative">
+      <section className="flex justify-between items-center mt-11.25 px-3.75 relative">
         {/* Left Side: Filter Toggler Button */}
         <div
           onClick={() => setShowFilters(!showFilters)}
@@ -268,13 +349,8 @@ const Community = () => {
       {/* Conditional Layout Injection Section */}
       {enabled ? (
         /* Grid Layout View Mode (Configured to 4 cards in a row on laptop/desktop viewports) */
-        <section className="w-full mt-15 lg:mt-24 px-5 flex flex-col items-center">
-          {/* 
-      grid-cols-1: Mobile view stacks columns vertically 
-      md:grid-cols-2: Tablet view shows 2 columns in a row
-      lg:grid-cols-4: Laptop/Desktop view displays exactly 4 cards in a row 
-    */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 w-full max-w-[1400px]">
+        <section className="w-full mt-15 lg:mt-24 px-3.75 flex flex-col items-center">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 w-full max-w-350">
             {communityPosts
               .filter(
                 (post) =>
@@ -284,22 +360,24 @@ const Community = () => {
               .map((post) => (
                 <div
                   key={post.id}
-                  className="w-full max-w-83.75 h-52.5 sm:h-100 bg-[#FAF4E8] rounded-[30px] sm:rounded-4xl mx-auto transition-transform px-[15px] lg:px-[20px] py-[25px] flex flex-col justify-between"
+                  className=" w-full max-w-83.75 h-52.5 sm:h-100 bg-[#FAF4E8] rounded-[20px] sm:rounded-4xl mx-auto transition-transform p-2.5 md:p-5 flex flex-col justify-between"
                 >
-                  <div className="flex flex-col gap-[16px] md:gap-[60px]">
+                  <div className="flex flex-col gap-4 md:gap-15">
                     <div
-                      className={`w-[120px] h-[20px] md:h-[40px] md:w-[175px] border rounded-[20px] text-[12px] font-normal md:text-[16px] flex justify-center items-center text-center text-[#B05A36]`}
+                      className={`px-1.5 py-0.5 md:h-10 md:w-43.75 border rounded-[20px] text-[12px] font-normal md:text-[16px] flex justify-center items-center text-center text-[#B05A36] w-[90%]`}
                     >
                       <p>{post.community_tags?.name || "General"}</p>
                     </div>
-                    <div className="text-[13px] md:text-[20px] text-[#B05A36]">
+                    <div className="text-[13px] md:text-[20px] text-[#B05A36] leading-[120%] ">
                       <p>{post.content}</p>
                     </div>
                   </div>
                   <div className="flex w-full justify-between">
                     <div>
-                      <h2 className="text-[15px]">{post.username}</h2>
-                      <p className="text-[12px]">
+                      <h2 className="text-[12px] md:text-[15px]">
+                        {post.username}
+                      </h2>
+                      <p className="text-[10px]">
                         {new Date(post.created_at).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -307,7 +385,7 @@ const Community = () => {
                         })}
                       </p>
                     </div>
-                    <div className="bg-[#B05A36] text-white text-[24px] h-12.5 w-12.5 flex justify-center items-center rounded-full">
+                    <div className="bg-[#B05A36] text-white text-[20px] md:text-[24px] h-7.5 w-7.5 md:h-12.5 md:w-12.5 flex justify-center items-center rounded-full">
                       <ion-icon name="add-outline"></ion-icon>
                     </div>
                   </div>
@@ -321,11 +399,11 @@ const Community = () => {
         </section>
       ) : (
         /* Default Spinning Wheel Carousel View Mode */
-        <section className="w-full h-[500px] lg:h-[700px] mt-15 lg:mt-32 flex justify-center items-center relative overflow-hidden lg:overflow-visible">
+        <section className="w-full min-h-125  lg:h-175 mt-15 lg:mt-32 flex justify-center items-center relative overflow-hidden lg:overflow-visible">
           <div className="absolute top-10 lg:top-1/2 -translate-y-1/2 z-10 text-[#B05A36] text-center pointer-events-none">
             <h1 className="text-[32px] lg:text-[45px]">MANASCIENCE</h1>
-            <div className="px-10 lg:px-130">
-              <p className="text-[12px] lg:text-[18px]">
+            <div className="max-w-70 sm:max-w-md lg:max-w-md">
+              <p className="text-[12px]  lg:text-[18px] w-auto">
                 Real experiences that reflect meaningful progress, support, &
                 positive outcomes real experiences.
               </p>
@@ -333,64 +411,83 @@ const Community = () => {
           </div>
 
           <div className="w-206.25 h-full flex justify-center items-center relative ">
-            <div className="h-50 lg:h-140 w-50 lg:w-140 rounded-full relative animate-spin-smooth flex justify-center items-center  mt-10">
+            <div className="h-50 lg:h-140 w-50 lg:w-140 rounded-full relative animate-spin-smooth flex justify-center items-center  mt-10 md:mt-20">
               {/* Card 1 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
+              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25  rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{
+                    backgroundImage: `url(${one})`,
+                    backgroundPosition: "center 0px",
+                  }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{ backgroundImage: `url(${two})` }}
                 ></div>
               </div>
 
               {/* Card 2 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
+              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{ backgroundImage: `url(${three})` }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{ backgroundImage: `url(${four})` }}
                 ></div>
               </div>
 
               {/* Card 3 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
+              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{ backgroundImage: `url(${five})` }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{
+                    backgroundImage: `url(${six})`,
+                    backgroundPosition: "center 0px",
+                  }}
                 ></div>
               </div>
 
               {/* Card 4 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
+              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{ backgroundImage: `url(${seven})` }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{ backgroundImage: `url(${eight})` }}
                 ></div>
               </div>
 
               {/* Card 5 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
+              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{
+                    backgroundImage: `url(${nine})`,
+                    backgroundPosition: "center 0px",
+                  }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-purple-400 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  style={{ backgroundImage: `url(${ten})` }}
                 ></div>
               </div>
             </div>
@@ -400,10 +497,10 @@ const Community = () => {
           {isModalOpen && (
             <div
               onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 -mx-5 w-[calc(100%+2.5rem)] md:mx-0 md:w-full h-full flex justify-center items-center z-50 overflow-visible transition-opacity duration-300"
+              className="absolute inset-0 -mx-5 w-[calc(100%+2.5rem)] lg:mx-0 lg:w-full h-full flex justify-center items-center z-50 overflow-visible transition-opacity duration-300"
             >
-              <div className="relative w-full max-w-150 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
-                <div className="relative w-[320px] h-[420px] md:w-122.5 md:h-150 order-1">
+              <div className="relative w-full max-w-150 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-0 ">
+                <div className="relative w-[320px] h-105 lg:w-122.5 lg:h-150 order-1">
                   {deckData.map((card, idx) => {
                     const isActive = idx === currentIndex;
                     return (
@@ -419,26 +516,26 @@ const Community = () => {
                           opacity: isSwiping && isActive ? 0.3 : undefined,
                           fontFamily: '"Manrope", sans-serif',
                         }}
-                        className={`absolute w-full h-full rounded-[30px] md:rounded-4xl p-6 md:p-8.75 flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${card.bgClass} ${getCardPlacementClass(idx)}`}
+                        className={`absolute w-full h-full rounded-[30px] lg:rounded-4xl p-6 lg:p-8.75 flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${card.bgClass} ${getCardPlacementClass(idx)}`}
                       >
                         <div className="overflow-y-auto max-h-[90%] pr-1 scrollbar-none">
                           <div
-                            className={`h-7.5 w-40 border rounded-[20px] text-[12px] font-normal md:text-[0.75rem] mb-3 md:mb-5 ${card.tagClass} flex justify-center items-center text-center`}
+                            className={`h-7.5 w-40 border rounded-[20px] text-[12px] font-normal lg:text-[0.75rem] mb-3 lg:mb-5 ${card.tagClass} flex justify-center items-center text-center`}
                           >
                             <p>{card.tag}</p>
                           </div>
                           <h2
-                            className={`text-[18px] md:text-[32px] font-normal leading-tight mb-3 md:mb-5 ${card.titleClass} w-full md:w-2/3`}
+                            className={`text-[18px] lg:text-[32px] font-normal leading-tight mb-3 lg:mb-5 ${card.titleClass} w-full lg:w-2/3`}
                           >
                             {card.title}
                           </h2>
                           <p
-                            className={`text-[13px] md:text-[0.9rem] leading-relaxed md:leading-[1.6] text-black font-normal ${card.descClass}`}
+                            className={`text-[13px] lg:text-[0.9rem] leading-relaxed lg:leading-[1.6] text-black font-normal ${card.descClass}`}
                           >
                             {card.desc}
                           </p>
                         </div>
-                        <div className="mt-auto pt-2 flex justify-between items-center text-xs md:text-[0.85rem] font-medium ">
+                        <div className="mt-auto pt-2 flex justify-between items-center text-xs lg:text-[0.85rem] font-medium ">
                           <span>{card.author}</span>
                           <span>{card.time}</span>
                         </div>
@@ -451,13 +548,13 @@ const Community = () => {
                 <div className="flex items-center justify-center gap-2 order-2 md:absolute md:w-full md:justify-between md:px-0 pointer-events-none">
                   <button
                     onClick={handlePrev}
-                    className="w-12 h-12 md:w-12.5 md:h-12.5 rounded-full bg-[#B05A36] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto md:-translate-x-5"
+                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#B05A36] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:-translate-x-5"
                   >
                     &#8249;
                   </button>
                   <button
                     onClick={handleNext}
-                    className="w-12 h-12 md:w-12.5 md:h-12.5 rounded-full bg-[#b05a36] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto md:translate-x-5"
+                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#b05a36] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:translate-x-5"
                   >
                     &#8250;
                   </button>

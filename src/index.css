@@ -4,14 +4,27 @@
 * {
   box-sizing: border-box;
 }
-.poppin{
+body::-webkit-scrollbar {
+  display: none;
+
+}
+.mainBox::-webkit-scrollbar {
+  display: none;
+
+}
+.mainBox {
+  overflow-y: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.poppin {
   font-family: "Poppins", sans-serif;
 }
-.manrope{
-   font-family: "Manrope", sans-serif;
+.manrope {
+  font-family: "Manrope", sans-serif;
 }
-.translate{
-  transform: translate(-50%,-50%);
+.translate {
+  transform: translate(-50%, -50%);
 }
 
 @keyframes spin-infinite {
@@ -25,4 +38,27 @@
 
 .animate-spin-smooth {
   animation: spin-infinite 20s linear infinite;
+}
+.card {
+  background: linear-gradient(
+    189.55deg,
+    rgba(255, 231, 211, 0) 5.17%,
+    #b05a36 41.63%,
+    #1f1f1f 96.25%
+  );
+}
+.ai {
+  background: linear-gradient(
+    180deg,
+    #ffffff 100%,
+    #faf3ee 18%,
+    #f1ddd1 36%,
+    #ddb09a 58%,
+    #c97d56 76%,
+    #9c5637 88%,
+    #4d291b 96%,
+    #1f1f1f 100%
+  );
+  background-attachment: fixed;
+  background-size: 100% 100vh;
 }
