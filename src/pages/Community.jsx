@@ -3,25 +3,6 @@ import logo from "../assets/logo-white.png";
 import toggle from "../assets/toggle.svg";
 import grid from "../assets/grid.svg";
 import { supabase } from "../supabase";
-import one from "../assets/circle/01.png";
-
-import two from "../assets/circle/02.png";
-
-import three from "../assets/circle/03.png";
-
-import four from "../assets/circle/04.jpg";
-
-import five from "../assets/circle/05.png";
-
-import six from "../assets/circle/06.png";
-
-import seven from "../assets/circle/07.png";
-
-import eight from "../assets/circle/08.png";
-
-import nine from "../assets/circle/09.png";
-
-import ten from "../assets/circle/10.png";
 const Community = () => {
   const [enabled, setEnabled] = useState(false);
   // --- State Functions for the Carousel Modal ---
@@ -418,14 +399,14 @@ const Community = () => {
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25  rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
-                    backgroundImage: `url(${one})`,
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/f_auto,q_auto/01_ljve7j)`,
                     backgroundPosition: "center 0px",
                   }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(${two})` }}
+                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261178/02_m9nzpu.png)` }}
                 ></div>
               </div>
 
@@ -434,12 +415,12 @@ const Community = () => {
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(${three})` }}
+                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/04_nygx31.jpg)` }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(${four})` }}
+                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/03_ybwukf.png)` }}
                 ></div>
               </div>
 
@@ -448,13 +429,13 @@ const Community = () => {
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(${five})` }}
+                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261274/09_jkepdg.png)` }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
-                    backgroundImage: `url(${six})`,
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/05_iizylf.png)`,
                     backgroundPosition: "center 0px",
                   }}
                 ></div>
@@ -465,12 +446,12 @@ const Community = () => {
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(${seven})` }}
+                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/08_v1as17.png)` }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(${eight})` }}
+                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/10_vcg7uz.png)` }}
                 ></div>
               </div>
 
@@ -480,14 +461,14 @@ const Community = () => {
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
-                    backgroundImage: `url(${nine})`,
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261277/07_shd07t.png)`,
                     backgroundPosition: "center 0px",
                   }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(${ten})` }}
+                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261279/06_igpmof.png)` }}
                 ></div>
               </div>
             </div>

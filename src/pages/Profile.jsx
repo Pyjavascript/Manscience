@@ -1,5 +1,4 @@
 
-
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +12,10 @@ export default function Profile() {
   const [reviewContent, setReviewContent] = useState("");
   const [anonName, setAnonName] = useState("");
   const [submittingPost, setSubmittingPost] = useState(false);
+
+  // 🔥 New state variables to handle the chat history preview
+  const [historyData, setHistoryData] = useState(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -30,6 +33,7 @@ export default function Profile() {
 
     setUser(user);
 
+    // 1. Fetch Subscription Data
     const { data } = await supabase
       .from("subscriptions")
       .select("*")
@@ -37,6 +41,20 @@ export default function Profile() {
       .maybeSingle();
 
     setSubscription(data);
+
+    // 🔥 2. Fetch Structured Chat History from your FastAPI backend
+    try {
+      setLoadingHistory(true);
+      const response = await fetch(`http://127.0.0.1:8000/chat/${user.id}/history`);
+      if (response.ok) {
+        const historyJson = await response.json();
+        setHistoryData(historyJson);
+      }
+    } catch (err) {
+      console.error("Could not load chat history preview:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
   }
 
   async function handlePostReview(e) {
@@ -93,6 +111,7 @@ export default function Profile() {
     await supabase.auth.signOut();
     setUser(null);
     setSubscription(null);
+    setHistoryData(null); // Clear history on logout
     navigate("/auth");
   }
 
@@ -162,7 +181,7 @@ export default function Profile() {
   return (
     <main className="min-h-screen bg-gray-100 flex flex-col items-center justify-center font-mono p-4 gap-6">
       {/* Profile Details Card */}
-      <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl">
+      <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
         <h2 className="text-2xl font-bold mb-5">User Profile</h2>
 
         {user ? (
@@ -235,15 +254,65 @@ export default function Profile() {
         )}
       </div>
 
+      {/* 🔥 3. CHAT HISTORY PREVIEW COMPONENT CARD BLOCK */}
+      {user && (
+        <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
+          <div className="flex justify-between items-center border-b pb-3 mb-4">
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">Your Chat History</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Stored conversation sessions with Manasi AI</p>
+            </div>
+            {historyData && (
+              <span className="bg-amber-100 text-amber-800 font-bold text-xs px-3 py-1 rounded-full">
+                Turns: {historyData.total_turns}
+              </span>
+            )}
+          </div>
+
+          {loadingHistory ? (
+            <p className="text-sm text-gray-500 font-sans py-4">Loading your conversations...</p>
+          ) : historyData && historyData.history.length > 0 ? (
+            <div className="flex flex-col gap-4 max-h-72 overflow-y-auto pr-1">
+              {historyData.history.map((turn, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-100 space-y-2">
+                  <div className="text-sm font-semibold text-gray-700">
+                    <span className="text-amber-700">Q:</span> {turn.question}
+                  </div>
+                  <div className="text-sm text-gray-600 pl-2 border-l-2 border-amber-600">
+                    <span className="text-gray-400 font-medium">A:</span> {turn.answer}
+                  </div>
+                  
+                  {turn.cta && turn.cta.cta_found && (
+                    <div className="pt-1">
+                      <a 
+                        href={turn.cta.cta_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-[11px] text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded px-2 py-0.5 font-sans transition"
+                      >
+                        🔗 Trigger Link: {turn.cta.cta_trigger || "Learn More"}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 font-sans py-2">
+              No chat logs found. Start a conversation with Manasi AI to back up your interaction logs!
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Community Hub Submission Box */}
-      <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl">
+      <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
         <h3 className="text-xl font-bold mb-3">Share to Community Hub</h3>
         <p className="text-sm text-gray-500 mb-4 font-sans">
           Post feedback, suggestions, or a general review. Your message will be visible in the hub upon admin approval.
         </p>
         
         <form onSubmit={handlePostReview} className="space-y-4">
-          {/* Guest Name input field renders only if user is unauthenticated */}
           {!user && (
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">

@@ -47,7 +47,7 @@ body::-webkit-scrollbar {
     #1f1f1f 96.25%
   );
 }
-.ai {
+/* .ai {
   background: linear-gradient(
     180deg,
     #ffffff 100%,
@@ -61,4 +61,14 @@ body::-webkit-scrollbar {
   );
   background-attachment: fixed;
   background-size: 100% 100vh;
+} */
+
+.ai{
+  background: linear-gradient(
+
+  #FFFFFF 14%, 
+  #B05A36 46%, 
+  #3C2015 86%, 
+  #1F1F1F 98%
+);
 }
