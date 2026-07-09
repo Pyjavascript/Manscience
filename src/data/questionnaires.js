@@ -1,6 +1,6 @@
 export const NEUROTYPICAL_SET = [
   {
-    domain: "A. Attention & Concentration",
+    domain: "Attention & Concentration",
     questions: [
       "I find it hard to concentrate or stay focused on a task",
       "My mind feels foggy or unclear ('brain fog')",
@@ -10,7 +10,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "B. Memory & Processing",
+    domain: "Memory & Processing",
     questions: [
       "I forget recent events, names, or where I put things",
       "I take longer to process or understand information",
@@ -20,7 +20,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "C. Executive Function",
+    domain: "Executive Function",
     questions: [
       "I find it hard to plan, organise, or prioritise tasks",
       "I struggle to start tasks even when I want to",
@@ -30,7 +30,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "D. Motor Function & Coordination",
+    domain: "Motor Function & Coordination",
     questions: [
       "I have weakness, stiffness, or reduced control on one/both sides",
       "My balance or steadiness is affected",
@@ -40,7 +40,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "E. Mood & Emotional Wellbeing",
+    domain:  "Mood & Emotional Wellbeing",
     questions: [
       "I feel low, sad, or down most of the day",
       "I've lost interest or pleasure in things I used to enjoy",
@@ -50,7 +50,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "F. Anxiety & Stress",
+    domain: " Anxiety & Stress",
     questions: [
       "I feel anxious, worried, or on edge",
       "I find it hard to relax or switch off",
@@ -60,7 +60,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "G. Trauma Responses",
+    domain: " Trauma Responses",
     questions: [
       "I have unwanted, intrusive memories of a distressing event",
       "I have flashbacks or nightmares about it",
@@ -70,7 +70,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "H. Sleep",
+    domain: " Sleep",
     questions: [
       "I have trouble falling asleep",
       "I wake frequently or can't stay asleep",
@@ -80,7 +80,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "I. Pain & Physical Regulation",
+    domain: " Pain & Physical Regulation",
     questions: [
       " I experience ongoing or recurring physical pain",
       "Pain interferes with my daily activities",
@@ -90,7 +90,7 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain: "J. Energy, Fatigue & Daily Function",
+    domain: " Energy, Fatigue & Daily Function",
     questions: [
       "I feel persistently fatigued or low on energy",
       "I need to rest much more than before",
@@ -103,7 +103,7 @@ export const NEUROTYPICAL_SET = [
 
 export const NEURODIVERGENT_SET = [
   {
-    domain: "A. Sensory Processing",
+    domain: " Sensory Processing",
     questions: [
       "Covers ears or gets overwhelmed by everyday sounds (vacuum, crowds, hand dryers)",
       "Bothered by clothing textures, tags, seams, or certain food textures",
@@ -114,7 +114,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "B. Auditory & Language Processing",
+    domain: " Auditory & Language Processing",
     questions: [
       "Needs instructions repeated or seems to 'not hear' in noisy settings",
       "Struggles to follow multi-step spoken directions",
@@ -125,7 +125,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "C. Cognitive Function & Processing",
+    domain: " Cognitive Function & Processing",
     questions: [
       "Difficulty paying attention or stays focused only briefly",
       "Easily distracted; mind 'going on simultaneously' affects following through",
@@ -135,7 +135,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "D. Academic & Learning",
+    domain: " Academic & Learning",
     questions: [
       "Trouble learning to read (slow, effortful, below age level)",
       "Difficulty with spelling or recognising familiar words",
@@ -145,7 +145,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "E. Motor Planning & Coordination",
+    domain: " Motor Planning & Coordination",
     questions: [
       "Clumsy - bumps into things, trips, drops items often",
       "Difficulty with fine-motor tasks (buttons, laces, cutlery, scissors)",
@@ -155,7 +155,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "F. Body Awareness & Skills",
+    domain: " Body Awareness & Skills",
     questions: [
       "Poor interoception - doesn't sense hunger, thirst, temperature, or toile needs",
       "Poor proprioception - can't judge body position without looking",
@@ -166,7 +166,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "G. Behaviour & Self-Regulation",
+    domain: " Behaviour & Self-Regulation",
     questions: [
       "Repetitive movements or sounds (flapping, rocking, tics, throat-clearing)",
       "Strong need for sameness; intense reaction when routines change",
@@ -176,7 +176,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "H. Emotional Regulation",
+    domain: " Emotional Regulation",
     questions: [
       "Big emotional reactions that are hard to calm (meltdowns for age)",
       "Highly reactive - small triggers cause large responses",
@@ -187,7 +187,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "I. Social Interaction & Communication",
+    domain: " Social Interaction & Communication",
     questions: [
       "Difficulty making or keeping friends with same-age peers",
       "Limited eye contact, facial expression, or gesture use",
@@ -197,7 +197,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: "J. General Health & Foundations",
+    domain: " General Health & Foundations",
     questions: [
       "Gut issues - constipation, bloating, pain, or food sensitivities",
       "Eczema, asthma, or allergies",
