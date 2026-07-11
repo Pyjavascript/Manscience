@@ -270,6 +270,145 @@ const Dashboard = () => {
   const [newConditionName, setNewConditionName] = useState("");
   const CONDITION_COLLECTION_ID = "6a2153b39dd6cbc89e2cd831";
 
+
+  // --- RESEARCH DIGEST (BLOGS) MANAGEMENT STATES ---
+  const [blogsList, setBlogsList] = useState([]);
+  const [blogsLoading, setBlogsLoading] = useState(false);
+  const [blogTagsOptions, setBlogTagsOptions] = useState([]);
+  const [selectedBlogDetail, setSelectedBlogDetail] = useState(null);
+  const [isCreateBlogModalOpen, setIsCreateBlogModalOpen] = useState(false);
+
+  const [newBlogForm, setNewBlogForm] = useState({
+    name: "",
+    heroText: "",
+    image: "",
+    thisIsTheMainParagraph: "",
+    filterTag: "",
+    thisTheFirstPlainText: "",
+    tagTitle: "", // Will hold the selected blog-tag ID
+    timeToRead: "",
+    authorsName: "",
+    podcastVideoUrl: "", // For podcast video uploads
+  });
+
+  const BLOGS_COLLECTION_ID = "6a23cdf5d3cdf3ce98515784";
+  const TAGS_COLLECTION_ID = "6a4a29998a1508d3ea0976f9";
+
+
+  // Upload video files to Supabase Storage if the tag type is a Podcast
+  const uploadVideoToSupabase = async (file) => {
+    if (!file) return null;
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `podcasts/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from("therapy-images") // Reusing your existing bucket allocation
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage
+        .from("therapy-images")
+        .getPublicUrl(filePath);
+
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error("Video storage upload error:", error.message);
+      alert(`Video upload failed: ${error.message}`);
+      return null;
+    }
+  };
+
+  // Fetch all Blogs / Podcasts from your Deno Edge Function
+  const fetchBlogsFromCms = async () => {
+    try {
+      setBlogsLoading(true);
+      const res = await fetch(`https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${BLOGS_COLLECTION_ID}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
+      });
+      if (!res.ok) throw new Error("Failed fetching blogs mapping archive");
+      const data = await res.json();
+      setBlogsList(data?.items || []);
+    } catch (err) {
+      console.error("Error reading blogs collection:", err);
+    } finally {
+      setBlogsLoading(false);
+    }
+  };
+
+  // Fetch Blog Tags options via Deno Edge Function
+  const fetchBlogTagsFromCms = async () => {
+    try {
+      const res = await fetch(`https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${TAGS_COLLECTION_ID}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
+      });
+      if (!res.ok) throw new Error("Failed fetching tags metadata options");
+      const data = await res.json();
+      setBlogTagsOptions(data?.items || []);
+    } catch (err) {
+      console.error("Error gathering blog tags parameters:", err);
+    }
+  };
+
+  // Submits a new dynamic item to Webflow via Deno Route Controller
+  const handleCreateBlogSubmit = async (e) => {
+    e.preventDefault();
+
+    const inferredSlug = newBlogForm.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-");
+
+    if (newBlogForm.image === "Uploading..." || newBlogForm.podcastVideoUrl === "Uploading...") {
+      alert("Please wait for your active media pipeline uploads to finish.");
+      return;
+    }
+
+    const payload = {
+      collectionId: BLOGS_COLLECTION_ID,
+      isArchived: false,
+      isDraft: false,
+      fieldData: {
+        name: newBlogForm.name,
+        slug: inferredSlug,
+        "hero-text": newBlogForm.heroText || null,
+        "image": newBlogForm.image ? { url: newBlogForm.image, alt: newBlogForm.name } : null,
+        "this-is-the-main-paragraph": newBlogForm.thisIsTheMainParagraph || null,
+        "filter-tag": newBlogForm.filterTag || null,
+        "this-the-first-plain-text": newBlogForm.thisTheFirstPlainText || null,
+        "tag-title": newBlogForm.tagTitle || null,
+        "time-to-read": newBlogForm.timeToRead || null,
+        "authors-name": newBlogForm.authorsName || null,
+        "cta-image": newBlogForm.tagTitle || null, // Keeping data architecture parallel where cta-image maps tag ID
+        "podcast-cta-main": newBlogForm.podcastVideoUrl ? { url: newBlogForm.podcastVideoUrl, alt: newBlogForm.name } : null,
+      }
+    };
+
+    try {
+      const response = await fetch("https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Server edge routing failed validation checks");
+
+      alert("Content entry successfully written to Webflow CMS Repository!");
+      setIsCreateBlogModalOpen(false);
+      setNewBlogForm({ name: "", heroText: "", image: "", thisIsTheMainParagraph: "", filterTag: "", thisTheFirstPlainText: "", tagTitle: "", timeToRead: "", authorsName: "", podcastVideoUrl: "" });
+      fetchBlogsFromCms();
+    } catch (err) {
+      alert(`Publish entry aborted: ${err.message}`);
+    }
+  };
+
   // Flat Key Map Tracker Dictionary helper
   const lookupTable = useMemo(() => {
     const map = new Map();
@@ -934,6 +1073,10 @@ const Dashboard = () => {
     if (activeTab === "CommunityHub") {
       fetchCommunityPosts();
       fetchCommunityTags();
+    }
+    if (activeTab === "ResearchDigest") {
+      fetchBlogsFromCms();
+      fetchBlogTagsFromCms();
     }
   }, [practitionerSubTab, activeTab]);
 
@@ -2078,6 +2221,103 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+        {/* MEDICAL RESEARCH DIGEST & PODCAST REPOSITORY ARCHIVE */}
+        {activeTab === "ResearchDigest" && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
+                  Research Digest & Podcasts
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsCreateBlogModalOpen(true)}
+                className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm"
+              >
+                Create New Entry
+              </button>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                  Live Digest Registries
+                </span>
+                <button
+                  onClick={fetchBlogsFromCms}
+                  className="text-xs text-[#5932EA] font-semibold hover:underline flex items-center gap-1"
+                >
+                  <FaSync size={10} className={blogsLoading ? "animate-spin" : ""} /> Force Sync Repository
+                </button>
+              </div>
+
+              {blogsLoading ? (
+                <div className="text-center py-16 text-gray-400 italic text-sm space-y-2">
+                  <div className="w-8 h-8 border-4 border-[#5932EA] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p>Syncing continuous entries lists variables...</p>
+                </div>
+              ) : blogsList.length === 0 ? (
+                <div className="text-center py-16 text-gray-400 italic text-sm">
+                  No blog parameters match current repository configurations.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                        <th className="py-4 px-6">Entry Item</th>
+                        <th className="py-4 px-6">Author</th>
+                        <th className="py-4 px-6">Assigned Tag</th>
+                        <th className="py-4 px-6 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                      {blogsList.map((blog) => {
+                        const data = blog.fieldData || {};
+                        // Dynamically map tag display names inside layout rows
+                        const matchedTag = blogTagsOptions.find(t => t.id === data["tag-title"]);
+                        return (
+                          <tr key={blog.id} className="hover:bg-slate-50 transition">
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3">
+                                {data.image?.url ? (
+                                  <img src={data.image.url} alt="" className="w-10 h-10 object-cover rounded-xl border shrink-0" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#5932EA] flex items-center justify-center font-bold text-xs shrink-0 border">
+                                    Doc
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-semibold text-gray-900 tracking-tight">{data.name || "Untitled"}</div>
+                                  <div className="text-xs text-gray-400 font-mono select-all truncate max-w-xs">{blog.id}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6 text-gray-600 font-medium">{data["authors-name"] || "System Admin"}</td>
+                            <td className="py-4 px-6">
+                              <span className="px-2.5 py-1 text-xs font-semibold bg-purple-50 border border-purple-100 rounded-md text-purple-600">
+                                {matchedTag ? matchedTag.fieldData?.name : "Standard Abstract"}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <button
+                                onClick={() => setSelectedBlogDetail(blog)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition"
+                                title="Inspect Entry"
+                              >
+                                <FaEye size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       {editingPost && (
@@ -2968,6 +3208,124 @@ const Dashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATION FORM DIALOG MODAL WIDGET */}
+      {isCreateBlogModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+          <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh] rounded-3xl shadow-xl">
+            <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">Publish Research Hub Content</h3>
+              <button onClick={() => setIsCreateBlogModalOpen(false)} className="text-gray-400 hover:text-gray-600"><FaTimes size={18} /></button>
+            </div>
+            <form onSubmit={handleCreateBlogSubmit} className="p-6 overflow-y-auto space-y-4 text-sm flex-1 text-[#222]">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Article Title *</label>
+                <input type="text" required value={newBlogForm.name} onChange={e => setNewBlogForm({...newBlogForm, name: e.target.value})} placeholder="e.g., Breakthrough CBT Methodologies" className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Select Content Tag Link *</label>
+                  <select required value={newBlogForm.tagTitle} onChange={e => setNewBlogForm({...newBlogForm, tagTitle: e.target.value})} className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none">
+                    <option value="">-- Choose Assigned Tag --</option>
+                    {blogTagsOptions.map(opt => (
+                      <option key={opt.id} value={opt.id}>{opt.fieldData?.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Author Label</label>
+                  <input type="text" value={newBlogForm.authorsName} onChange={e => setNewBlogForm({...newBlogForm, authorsName: e.target.value})} placeholder="e.g., Sarah M." className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]" />
+                </div>
+              </div>
+
+              {/* AUTOMATIC UPLOAD TRANSITION CONTROLLER */}
+              {newBlogForm.tagTitle === "6a4a2abf088ffb1e447f6680" ? (
+                <div className="bg-amber-50/50 p-4 border border-amber-200 border-dashed rounded-2xl">
+                  <label className="block text-xs font-bold text-amber-700 uppercase tracking-wider mb-1.5">Podcast Video Media Asset *</label>
+                  <input type="file" accept="video/*" onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setNewBlogForm(prev => ({ ...prev, podcastVideoUrl: "Uploading..." }));
+                      const url = await uploadVideoToSupabase(file);
+                      setNewBlogForm(prev => ({ ...prev, podcastVideoUrl: url || "" }));
+                    }
+                  }} className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800" />
+                  {newBlogForm.podcastVideoUrl && <p className="mt-1 text-xs font-mono text-gray-500 truncate">{newBlogForm.podcastVideoUrl === "Uploading..." ? "Uploading to Storage Node..." : `✓ Ready: ${newBlogForm.podcastVideoUrl}`}</p>}
+                </div>
+              ) : (
+                <div className="bg-gray-50 p-4 border border-gray-200 rounded-2xl">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Article Cover Image Banner *</label>
+                  <input type="file" accept="image/*" onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setNewBlogForm(prev => ({ ...prev, image: "Uploading..." }));
+                      const url = await uploadImageToSupabase(file);
+                      setNewBlogForm(prev => ({ ...prev, image: url || "" }));
+                    }
+                  }} className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA]" />
+                  {newBlogForm.image && <p className="mt-1 text-xs font-mono text-gray-500 truncate">{newBlogForm.image === "Uploading..." ? "Syncing storage arrays..." : `✓ Ready: ${newBlogForm.image}`}</p>}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Hero/Subtitle Headline</label>
+                  <input type="text" value={newBlogForm.heroText} onChange={e => setNewBlogForm({...newBlogForm, heroText: e.target.value})} placeholder="e.g., Overwhelmed to well informed." className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Reading Duration Metric</label>
+                  <input type="text" value={newBlogForm.timeToRead} onChange={e => setNewBlogForm({...newBlogForm, timeToRead: e.target.value})} placeholder="e.g., 5 min read" className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Article Body Structure (Rich HTML content supported)</label>
+                <textarea rows="4" value={newBlogForm.thisIsTheMainParagraph} onChange={e => setNewBlogForm({...newBlogForm, thisIsTheMainParagraph: e.target.value})} placeholder="<h2>Heading</h2><p>Core message block text strings...</p>" className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-[#5932EA]" />
+              </div>
+
+              <div className="pt-4 border-t flex justify-end gap-3 bg-white sticky bottom-0">
+                <button type="button" onClick={() => setIsCreateBlogModalOpen(false)} className="px-5 py-2.5 border rounded-xl font-semibold text-gray-500 hover:bg-gray-50">Dismiss</button>
+                <button type="submit" disabled={newBlogForm.image === "Uploading..." || newBlogForm.podcastVideoUrl === "Uploading..."} className="px-6 py-2.5 bg-[#5932EA] text-white font-semibold rounded-xl disabled:opacity-50">Publish Live</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* INSPECTION HOVER DIALOG BOX MODAL */}
+      {selectedBlogDetail && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+          <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[85vh] rounded-3xl">
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">Digest Registry Sheet Inspector</h3>
+              <button onClick={() => setSelectedBlogDetail(null)} className="text-gray-400 hover:text-gray-600 p-1"><FaTimes size={18} /></button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-4 text-sm text-[#222]">
+              <h4 className="text-2xl font-bold text-gray-900 tracking-tight">{selectedBlogDetail.fieldData?.name}</h4>
+              <p className="text-xs text-gray-400 font-mono">CMS Object Hash Key: {selectedBlogDetail.id}</p>
+              
+              <div className="bg-gray-50 p-4 rounded-xl border space-y-2">
+                <p><strong>Subtitle:</strong> {selectedBlogDetail.fieldData?.["hero-text"] || "None Specified"}</p>
+                <p><strong>Author:</strong> {selectedBlogDetail.fieldData?.["authors-name"] || "System Admin"}</p>
+                <p><strong>Reading Info:</strong> {selectedBlogDetail.fieldData?.["time-to-read"] || "N/A"}</p>
+              </div>
+
+              {selectedBlogDetail.fieldData?.["podcast-cta-main"]?.url && (
+                <div className="mt-2">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Attached Podcast Video Content</span>
+                  <video controls src={selectedBlogDetail.fieldData["podcast-cta-main"].url} className="w-full rounded-xl border bg-black max-h-64" />
+                </div>
+              )}
+
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Body Text Content Block Markup</span>
+                <div className="p-4 bg-gray-50 border border-dashed rounded-xl prose prose-sm max-h-48 overflow-y-auto" dangerouslySetInnerHTML={{ __html: selectedBlogDetail.fieldData?.["this-is-the-main-paragraph"] || "<i>Empty Body Content</i>" }} />
+              </div>
+            </div>
           </div>
         </div>
       )}
