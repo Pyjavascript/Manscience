@@ -8,7 +8,7 @@ Before executing requests, set up your **Collection Variables** or **Environment
 
 | Variable Name | Initial Value | Description |
 | :--- | :--- | :--- |
-| `base_url` | `http://localhost:8000` | The local base URL of your FastAPI server[cite: 4]. |
+| `base_url` | `https://manasi-production.up.railway.app` | The local base URL of your FastAPI server[cite: 4]. |
 | `session_id` | `test-session-999` | A tracking string used to group conversation turns in memory[cite: 4]. |
 
 ---

@@ -32,6 +32,9 @@ import {
   Cell,
 } from "recharts";
 import { supabase } from "../supabase";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { FaFilePdf, FaClipboardList } from "react-icons/fa";
 
 const Dashboard = () => {
   // System Metrics & Global States
@@ -69,7 +72,166 @@ const Dashboard = () => {
     tag: "",
   });
 
-  // --- ADD THESE LOGIC CONTROLS ---
+  // --- AI ROADMAP STORAGE STATES ---
+  const [roadmapsList, setRoadmapsList] = useState([]);
+  const [roadmapModalUser, setRoadmapModalUser] = useState(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  const generateRoadmapPdf = (user, roadmapData) => {
+    const doc = new jsPDF();
+
+    // Header Accent Banner Configuration
+    doc.setFillColor(89, 50, 234); // #5932EA Main Purple
+    doc.rect(0, 0, 210, 40, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(255, 255, 255);
+    doc.text("COGNITIVE PROFILE ROADMAP", 15, 26);
+
+    // User Profiling Demographic block area
+    doc.setFontSize(11);
+    doc.setTextColor(34, 34, 34);
+    doc.text("PATIENT / USER METRICS DIRECTORY", 15, 54);
+
+    doc.setFont("helvetica", "normal");
+    doc.text(`Full Account Name :  ${user?.name || "Anonymous Guest"}`, 15, 64);
+    doc.text(`Registered Email  :  ${user?.email || "N/A"}`, 15, 72);
+
+    // Dynamic Classification Label Placement
+    const classificationLabel =
+      roadmapData?.result?.classification_raw ||
+      roadmapData?.classification ||
+      "Neurotypical";
+    doc.setFont("helvetica", "bold");
+    doc.text(`Classification    :  ${classificationLabel}`, 15, 88);
+
+    doc.setDrawColor(226, 232, 240);
+    doc.line(15, 96, 195, 96);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("CLINICAL EVALUATION BREAKDOWN", 15, 108);
+
+    // Safely extract scores metrics array
+    const scoresArray = roadmapData?.result?.scores || [];
+    const tableRows = scoresArray.map((item) => [
+      item.domain || "General Domain",
+      `${item.score ?? item.Score}%`,
+      item.severity || item.Severity || "Low",
+    ]);
+
+    autoTable(doc, {
+      startY: 114,
+      head: [
+        ["Assessment Domain", "Cognitive Score Value", "Severity Status Tier"],
+      ],
+      body: tableRows,
+      headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
+      bodyStyles: { font: "helvetica", fontSize: 10 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      margin: { left: 15, right: 15 },
+      theme: "striped",
+    });
+
+    doc.save(`Roadmap_Report_${user?.name || "User"}.pdf`);
+  };
+
+  const emailRoadmapPdf = async (user, roadmapData) => {
+  if (!user?.email) {
+    alert("This profile lacks a valid destination email target.");
+    return;
+  }
+
+  try {
+    setIsSendingEmail(true);
+
+    // 1. Generate the jspdf instance identically to your local copy
+    const doc = new jsPDF();
+
+    doc.setFillColor(89, 50, 234); // #5932EA Main Purple
+    doc.rect(0, 0, 210, 40, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(255, 255, 255);
+    doc.text("COGNITIVE PROFILE ROADMAP", 15, 26);
+
+    doc.setFontSize(11);
+    doc.setTextColor(34, 34, 34);
+    doc.text("PATIENT / USER METRICS DIRECTORY", 15, 54);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Full Account Name :  ${user?.name || "Anonymous Guest"}`, 15, 64);
+    doc.text(`Registered Email  :  ${user?.email || "N/A"}`, 15, 72);
+
+    const classificationLabel = roadmapData?.result?.classification_raw || roadmapData?.classification || "Neurotypical";
+    doc.setFont("helvetica", "bold");
+    doc.text(`Classification    :  ${classificationLabel}`, 15, 88);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(15, 96, 195, 96);
+    doc.setFont("helvetica", "bold");
+    doc.text("CLINICAL EVALUATION BREAKDOWN", 15, 108);
+
+    const scoresArray = roadmapData?.result?.scores || [];
+    const tableRows = scoresArray.map((item) => [
+      item.domain || "General Domain",
+      `${item.score ?? item.Score}%`,
+      item.severity || item.Severity || "Low",
+    ]);
+
+    autoTable(doc, {
+      startY: 114,
+      head: [["Assessment Domain", "Cognitive Score Value", "Severity Status Tier"]],
+      body: tableRows,
+      headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
+      bodyStyles: { font: "helvetica", fontSize: 10 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      margin: { left: 15, right: 15 },
+      theme: "striped"
+    });
+
+    // 2. Output document data array buffer as clean Base64 string
+    const pdfBase64Raw = doc.output("datauristring");
+    // Strip metadata header prefix down to strict base64 contents data payload
+    const base64Content = pdfBase64Raw.split(",")[1];
+
+    // 3. Dispatch the payload securely through your Supabase Functions invoke pipeline
+    const { data, error } = await supabase.functions.invoke("send-roadmap-email", {
+      method: "POST",
+      body: {
+        recipientEmail: user.email,
+        recipientName: user.name || "Valued Member",
+        pdfAttachment: base64Content,
+        fileName: `Roadmap_Report_${user.name || "User"}.pdf`,
+      },
+    });
+
+    if (error) throw error;
+
+    if (data?.success) {
+      alert(`Roadmap layout successfully dispatched to ${user.email}!`);
+    } else {
+      throw new Error(data?.error || "Pipeline processed with unknown validation errors.");
+    }
+  } catch (err) {
+    console.error("Email workflow tracking error:", err);
+    alert(`Failed mailing metrics sheet document: ${err.message}`);
+  } finally {
+    setIsSendingEmail(false);
+  }
+};
+  const fetchRoadmapsFromDb = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("user_roadmap_results")
+        .select("*")
+        .order("updated_at", { ascending: false });
+
+      if (error) throw error;
+      setRoadmapsList(data || []);
+    } catch (err) {
+      console.error("Error gathering system roadmap parameters:", err.message);
+    }
+  };
+
   const [tagsList, setTagsList] = useState([]);
   const [tagsLoading, setTagsLoading] = useState(false);
   const [newTagName, setNewConditionTagName] = useState("");
@@ -270,7 +432,6 @@ const Dashboard = () => {
   const [newConditionName, setNewConditionName] = useState("");
   const CONDITION_COLLECTION_ID = "6a2153b39dd6cbc89e2cd831";
 
-
   // --- RESEARCH DIGEST (BLOGS) MANAGEMENT STATES ---
   const [blogsList, setBlogsList] = useState([]);
   const [blogsLoading, setBlogsLoading] = useState(false);
@@ -293,7 +454,6 @@ const Dashboard = () => {
 
   const BLOGS_COLLECTION_ID = "6a23cdf5d3cdf3ce98515784";
   const TAGS_COLLECTION_ID = "6a4a29998a1508d3ea0976f9";
-
 
   // Upload video files to Supabase Storage if the tag type is a Podcast
   const uploadVideoToSupabase = async (file) => {
@@ -328,10 +488,13 @@ const Dashboard = () => {
   const fetchBlogsFromCms = async () => {
     try {
       setBlogsLoading(true);
-      const res = await fetch(`https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${BLOGS_COLLECTION_ID}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" }
-      });
+      const res = await fetch(
+        `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${BLOGS_COLLECTION_ID}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       if (!res.ok) throw new Error("Failed fetching blogs mapping archive");
       const data = await res.json();
       setBlogsList(data?.items || []);
@@ -345,10 +508,13 @@ const Dashboard = () => {
   // Fetch Blog Tags options via Deno Edge Function
   const fetchBlogTagsFromCms = async () => {
     try {
-      const res = await fetch(`https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${TAGS_COLLECTION_ID}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" }
-      });
+      const res = await fetch(
+        `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${TAGS_COLLECTION_ID}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       if (!res.ok) throw new Error("Failed fetching tags metadata options");
       const data = await res.json();
       setBlogTagsOptions(data?.items || []);
@@ -366,7 +532,10 @@ const Dashboard = () => {
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-");
 
-    if (newBlogForm.image === "Uploading..." || newBlogForm.podcastVideoUrl === "Uploading...") {
+    if (
+      newBlogForm.image === "Uploading..." ||
+      newBlogForm.podcastVideoUrl === "Uploading..."
+    ) {
       alert("Please wait for your active media pipeline uploads to finish.");
       return;
     }
@@ -379,30 +548,50 @@ const Dashboard = () => {
         name: newBlogForm.name,
         slug: inferredSlug,
         "hero-text": newBlogForm.heroText || null,
-        "image": newBlogForm.image ? { url: newBlogForm.image, alt: newBlogForm.name } : null,
-        "this-is-the-main-paragraph": newBlogForm.thisIsTheMainParagraph || null,
+        image: newBlogForm.image
+          ? { url: newBlogForm.image, alt: newBlogForm.name }
+          : null,
+        "this-is-the-main-paragraph":
+          newBlogForm.thisIsTheMainParagraph || null,
         "filter-tag": newBlogForm.filterTag || null,
         "this-the-first-plain-text": newBlogForm.thisTheFirstPlainText || null,
         "tag-title": newBlogForm.tagTitle || null,
         "time-to-read": newBlogForm.timeToRead || null,
         "authors-name": newBlogForm.authorsName || null,
         "cta-image": newBlogForm.tagTitle || null, // Keeping data architecture parallel where cta-image maps tag ID
-        "podcast-cta-main": newBlogForm.podcastVideoUrl ? { url: newBlogForm.podcastVideoUrl, alt: newBlogForm.name } : null,
-      }
+        "podcast-cta-main": newBlogForm.podcastVideoUrl
+          ? { url: newBlogForm.podcastVideoUrl, alt: newBlogForm.name }
+          : null,
+      },
     };
 
     try {
-      const response = await fetch("https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
-      if (!response.ok) throw new Error("Server edge routing failed validation checks");
+      if (!response.ok)
+        throw new Error("Server edge routing failed validation checks");
 
       alert("Content entry successfully written to Webflow CMS Repository!");
       setIsCreateBlogModalOpen(false);
-      setNewBlogForm({ name: "", heroText: "", image: "", thisIsTheMainParagraph: "", filterTag: "", thisTheFirstPlainText: "", tagTitle: "", timeToRead: "", authorsName: "", podcastVideoUrl: "" });
+      setNewBlogForm({
+        name: "",
+        heroText: "",
+        image: "",
+        thisIsTheMainParagraph: "",
+        filterTag: "",
+        thisTheFirstPlainText: "",
+        tagTitle: "",
+        timeToRead: "",
+        authorsName: "",
+        podcastVideoUrl: "",
+      });
       fetchBlogsFromCms();
     } catch (err) {
       alert(`Publish entry aborted: ${err.message}`);
@@ -1054,7 +1243,7 @@ const Dashboard = () => {
     practitionersLoading,
     therapiesLoading,
     communityLoading,
-    tagsLoading
+    tagsLoading,
   ]);
 
   useEffect(() => {
@@ -1077,6 +1266,10 @@ const Dashboard = () => {
     if (activeTab === "ResearchDigest") {
       fetchBlogsFromCms();
       fetchBlogTagsFromCms();
+    }
+    if (activeTab === "AiRoadmap") {
+      fetchRoadmapsFromDb();
+      fetchUserManagementData();
     }
   }, [practitionerSubTab, activeTab]);
 
@@ -2247,7 +2440,11 @@ const Dashboard = () => {
                   onClick={fetchBlogsFromCms}
                   className="text-xs text-[#5932EA] font-semibold hover:underline flex items-center gap-1"
                 >
-                  <FaSync size={10} className={blogsLoading ? "animate-spin" : ""} /> Force Sync Repository
+                  <FaSync
+                    size={10}
+                    className={blogsLoading ? "animate-spin" : ""}
+                  />{" "}
+                  Force Sync Repository
                 </button>
               </div>
 
@@ -2275,28 +2472,45 @@ const Dashboard = () => {
                       {blogsList.map((blog) => {
                         const data = blog.fieldData || {};
                         // Dynamically map tag display names inside layout rows
-                        const matchedTag = blogTagsOptions.find(t => t.id === data["tag-title"]);
+                        const matchedTag = blogTagsOptions.find(
+                          (t) => t.id === data["tag-title"],
+                        );
                         return (
-                          <tr key={blog.id} className="hover:bg-slate-50 transition">
+                          <tr
+                            key={blog.id}
+                            className="hover:bg-slate-50 transition"
+                          >
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-3">
                                 {data.image?.url ? (
-                                  <img src={data.image.url} alt="" className="w-10 h-10 object-cover rounded-xl border shrink-0" />
+                                  <img
+                                    src={data.image.url}
+                                    alt=""
+                                    className="w-10 h-10 object-cover rounded-xl border shrink-0"
+                                  />
                                 ) : (
                                   <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#5932EA] flex items-center justify-center font-bold text-xs shrink-0 border">
                                     Doc
                                   </div>
                                 )}
                                 <div>
-                                  <div className="font-semibold text-gray-900 tracking-tight">{data.name || "Untitled"}</div>
-                                  <div className="text-xs text-gray-400 font-mono select-all truncate max-w-xs">{blog.id}</div>
+                                  <div className="font-semibold text-gray-900 tracking-tight">
+                                    {data.name || "Untitled"}
+                                  </div>
+                                  <div className="text-xs text-gray-400 font-mono select-all truncate max-w-xs">
+                                    {blog.id}
+                                  </div>
                                 </div>
                               </div>
                             </td>
-                            <td className="py-4 px-6 text-gray-600 font-medium">{data["authors-name"] || "System Admin"}</td>
+                            <td className="py-4 px-6 text-gray-600 font-medium">
+                              {data["authors-name"] || "System Admin"}
+                            </td>
                             <td className="py-4 px-6">
                               <span className="px-2.5 py-1 text-xs font-semibold bg-purple-50 border border-purple-100 rounded-md text-purple-600">
-                                {matchedTag ? matchedTag.fieldData?.name : "Standard Abstract"}
+                                {matchedTag
+                                  ? matchedTag.fieldData?.name
+                                  : "Standard Abstract"}
                               </span>
                             </td>
                             <td className="py-4 px-6 text-center">
@@ -2316,6 +2530,238 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* AI ROADMAP ASSESSMENT DIRECTORY SECTION */}
+        {activeTab === "AiRoadmap" && (
+          <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-3xl p-6">
+              <div className="border-b border-gray-100 pb-4 mb-6">
+                <h2 className="text-xl font-medium text-gray-800">
+                  Saved Cognitive Screening Records
+                </h2>
+                <p className="text-gray-400 text-xs mt-1">
+                  Cross-reference clinical diagnostics assessment histories
+                  across verified users profile models.
+                </p>
+              </div>
+
+              {roadmapsList.length === 0 ? (
+                <p className="text-gray-500 italic py-6 text-sm">
+                  No clinical assessment roadmaps committed to database rows
+                  registries.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                        <th className="py-4 px-6">User Name</th>
+                        <th className="py-4 px-6">Email Address</th>
+                        <th className="py-4 px-6 text-center">
+                          Diagnostic Profile Target
+                        </th>
+                        <th className="py-4 px-6 text-center">
+                          Action Controls
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm text-gray-800">
+                      {roadmapsList.map((rm) => {
+                        const matchUser = allUsersList.find(
+                          (u) => u.id === rm.user_id,
+                        );
+                        const rawClassification =
+                          rm.result?.classification_raw ||
+                          rm.classification ||
+                          "Neurotypical";
+                        return (
+                          <tr
+                            key={rm.user_id}
+                            className="hover:bg-slate-50/80 transition"
+                          >
+                            <td className="py-4 px-6 font-semibold text-gray-900">
+                              {matchUser?.name || "Anonymous Guest"}
+                            </td>
+                            <td className="py-4 px-6 text-gray-500 font-medium">
+                              {matchUser?.email || "No Email Provided"}
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <span
+                                className={`inline-block font-semibold px-3 py-1 rounded-full text-xs uppercase ${rawClassification === "Neurodivergent" ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-blue-50 text-blue-700 border border-blue-200"}`}
+                              >
+                                {rawClassification}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <button
+                                onClick={() =>
+                                  setRoadmapModalUser({
+                                    mapData: rm,
+                                    profile: matchUser,
+                                  })
+                                }
+                                className="bg-indigo-50 border border-indigo-100 text-[#5932EA] py-1.5 px-4 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 hover:bg-indigo-100 transition"
+                              >
+                                <FaClipboardList size={12} />
+                                Recommendation
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* OVERLAY DRILLDOWN MODAL DIALOG DISPLAYING THE FIGMA STYLE METRIC TABLE */}
+            {roadmapModalUser && (
+              <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+                <div className="bg-white w-full max-w-2xl rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[88vh]">
+                  <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
+                      Recommendation Overview Panel
+                    </h3>
+                    <button
+                      onClick={() => setRoadmapModalUser(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <FaTimes size={18} />
+                    </button>
+                  </div>
+
+                  <div className="p-6 overflow-y-auto space-y-6 text-sm">
+                    {/* Header Profiler Elements */}
+                    <div className="bg-slate-50 border border-gray-100 rounded-2xl p-4 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                        <div>
+                          <h4 className="text-base font-bold text-gray-900">
+                            {roadmapModalUser.profile?.name ||
+                              "Anonymous Guest"}
+                          </h4>
+                          <p className="text-xs text-gray-500 font-medium font-sans mt-0.5">
+                            {roadmapModalUser.profile?.email ||
+                              "Unregistered Context Link"}
+                          </p>
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <span className="text-xs font-bold text-gray-400 uppercase block tracking-wider">
+                            Classification Profile
+                          </span>
+                          <span className="font-extrabold text-[#5932EA] text-sm">
+                            {roadmapModalUser.mapData?.result
+                              ?.classification_raw || "Neurotypical"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Figma-Inspired Metrics Table Block */}
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block pl-1">
+                        Metrics Domains Assessment Breakdown
+                      </span>
+                      <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-[#E0F2FE]/40 border-b border-gray-200 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                              <th className="py-3 px-5 font-semibold">
+                                Domain
+                              </th>
+                              <th className="py-3 px-5 text-center font-semibold">
+                                Score
+                              </th>
+                              <th className="py-3 px-5 text-center font-semibold">
+                                Severity
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 text-xs font-medium text-gray-700">
+                            {(
+                              roadmapModalUser.mapData?.result?.scores || []
+                            ).map((item, idx) => {
+                              const scoreVal = item.score ?? item.Score ?? 0;
+                              const severityText =
+                                item.severity || item.Severity || "Low";
+                              return (
+                                <tr
+                                  key={idx}
+                                  className="hover:bg-slate-50/50 transition"
+                                >
+                                  <td className="py-3.5 px-5 font-semibold text-gray-800 bg-white">
+                                    {item.domain}
+                                  </td>
+                                  <td className="py-3.5 px-5 text-center text-gray-600 bg-slate-50/30 font-semibold">
+                                    {scoreVal}%
+                                  </td>
+                                  <td className="py-3.5 px-5 text-center bg-white">
+                                    <span
+                                      className={`inline-block font-bold px-3 py-1 rounded-lg text-[10px] uppercase tracking-wide ${
+                                        severityText === "Extreme" ||
+                                        severityText === "High"
+                                          ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                          : severityText === "Moderate"
+                                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                            : "bg-green-50 text-green-700 border border-green-100"
+                                      }`}
+                                    >
+                                      {severityText}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+                    <button
+                      onClick={() => setRoadmapModalUser(null)}
+                      className="px-5 py-2 border rounded-xl text-gray-500 text-xs font-semibold hover:bg-white transition"
+                    >
+                      Dismiss View
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        generateRoadmapPdf(
+                          roadmapModalUser.profile,
+                          roadmapModalUser.mapData,
+                        )
+                      }
+                      className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl transition text-xs flex items-center gap-1.5 shadow-sm"
+                    >
+                      <FaFilePdf size={12} /> Download PDF
+                    </button>
+
+                    {/* NEW SEND EMAIL BUTTON */}
+                    <button
+                      disabled={
+                        isSendingEmail || !roadmapModalUser.profile?.email
+                      }
+                      onClick={() =>
+                        emailRoadmapPdf(
+                          roadmapModalUser.profile,
+                          roadmapModalUser.mapData,
+                        )
+                      }
+                      className="bg-[#5932EA] hover:bg-[#4826c9] disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-xl transition text-xs flex items-center gap-1.5 shadow-sm"
+                    >
+                      <FaRegNewspaper size={12} />
+                      {isSendingEmail
+                        ? "Sending Email..."
+                        : "Send to User Email"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -3217,79 +3663,219 @@ const Dashboard = () => {
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
           <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh] rounded-3xl shadow-xl">
             <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">Publish Research Hub Content</h3>
-              <button onClick={() => setIsCreateBlogModalOpen(false)} className="text-gray-400 hover:text-gray-600"><FaTimes size={18} /></button>
+              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
+                Publish Research Hub Content
+              </h3>
+              <button
+                onClick={() => setIsCreateBlogModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes size={18} />
+              </button>
             </div>
-            <form onSubmit={handleCreateBlogSubmit} className="p-6 overflow-y-auto space-y-4 text-sm flex-1 text-[#222]">
+            <form
+              onSubmit={handleCreateBlogSubmit}
+              className="p-6 overflow-y-auto space-y-4 text-sm flex-1 text-[#222]"
+            >
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Article Title *</label>
-                <input type="text" required value={newBlogForm.name} onChange={e => setNewBlogForm({...newBlogForm, name: e.target.value})} placeholder="e.g., Breakthrough CBT Methodologies" className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]" />
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Article Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newBlogForm.name}
+                  onChange={(e) =>
+                    setNewBlogForm({ ...newBlogForm, name: e.target.value })
+                  }
+                  placeholder="e.g., Breakthrough CBT Methodologies"
+                  className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Select Content Tag Link *</label>
-                  <select required value={newBlogForm.tagTitle} onChange={e => setNewBlogForm({...newBlogForm, tagTitle: e.target.value})} className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Select Content Tag Link *
+                  </label>
+                  <select
+                    required
+                    value={newBlogForm.tagTitle}
+                    onChange={(e) =>
+                      setNewBlogForm({
+                        ...newBlogForm,
+                        tagTitle: e.target.value,
+                      })
+                    }
+                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
+                  >
                     <option value="">-- Choose Assigned Tag --</option>
-                    {blogTagsOptions.map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.fieldData?.name}</option>
+                    {blogTagsOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.fieldData?.name}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Author Label</label>
-                  <input type="text" value={newBlogForm.authorsName} onChange={e => setNewBlogForm({...newBlogForm, authorsName: e.target.value})} placeholder="e.g., Sarah M." className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]" />
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Author Label
+                  </label>
+                  <input
+                    type="text"
+                    value={newBlogForm.authorsName}
+                    onChange={(e) =>
+                      setNewBlogForm({
+                        ...newBlogForm,
+                        authorsName: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Sarah M."
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                  />
                 </div>
               </div>
 
               {/* AUTOMATIC UPLOAD TRANSITION CONTROLLER */}
               {newBlogForm.tagTitle === "6a4a2abf088ffb1e447f6680" ? (
                 <div className="bg-amber-50/50 p-4 border border-amber-200 border-dashed rounded-2xl">
-                  <label className="block text-xs font-bold text-amber-700 uppercase tracking-wider mb-1.5">Podcast Video Media Asset *</label>
-                  <input type="file" accept="video/*" onChange={async (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      setNewBlogForm(prev => ({ ...prev, podcastVideoUrl: "Uploading..." }));
-                      const url = await uploadVideoToSupabase(file);
-                      setNewBlogForm(prev => ({ ...prev, podcastVideoUrl: url || "" }));
-                    }
-                  }} className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800" />
-                  {newBlogForm.podcastVideoUrl && <p className="mt-1 text-xs font-mono text-gray-500 truncate">{newBlogForm.podcastVideoUrl === "Uploading..." ? "Uploading to Storage Node..." : `✓ Ready: ${newBlogForm.podcastVideoUrl}`}</p>}
+                  <label className="block text-xs font-bold text-amber-700 uppercase tracking-wider mb-1.5">
+                    Podcast Video Media Asset *
+                  </label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setNewBlogForm((prev) => ({
+                          ...prev,
+                          podcastVideoUrl: "Uploading...",
+                        }));
+                        const url = await uploadVideoToSupabase(file);
+                        setNewBlogForm((prev) => ({
+                          ...prev,
+                          podcastVideoUrl: url || "",
+                        }));
+                      }
+                    }}
+                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800"
+                  />
+                  {newBlogForm.podcastVideoUrl && (
+                    <p className="mt-1 text-xs font-mono text-gray-500 truncate">
+                      {newBlogForm.podcastVideoUrl === "Uploading..."
+                        ? "Uploading to Storage Node..."
+                        : `✓ Ready: ${newBlogForm.podcastVideoUrl}`}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="bg-gray-50 p-4 border border-gray-200 rounded-2xl">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Article Cover Image Banner *</label>
-                  <input type="file" accept="image/*" onChange={async (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      setNewBlogForm(prev => ({ ...prev, image: "Uploading..." }));
-                      const url = await uploadImageToSupabase(file);
-                      setNewBlogForm(prev => ({ ...prev, image: url || "" }));
-                    }
-                  }} className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA]" />
-                  {newBlogForm.image && <p className="mt-1 text-xs font-mono text-gray-500 truncate">{newBlogForm.image === "Uploading..." ? "Syncing storage arrays..." : `✓ Ready: ${newBlogForm.image}`}</p>}
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Article Cover Image Banner *
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setNewBlogForm((prev) => ({
+                          ...prev,
+                          image: "Uploading...",
+                        }));
+                        const url = await uploadImageToSupabase(file);
+                        setNewBlogForm((prev) => ({
+                          ...prev,
+                          image: url || "",
+                        }));
+                      }
+                    }}
+                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA]"
+                  />
+                  {newBlogForm.image && (
+                    <p className="mt-1 text-xs font-mono text-gray-500 truncate">
+                      {newBlogForm.image === "Uploading..."
+                        ? "Syncing storage arrays..."
+                        : `✓ Ready: ${newBlogForm.image}`}
+                    </p>
+                  )}
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Hero/Subtitle Headline</label>
-                  <input type="text" value={newBlogForm.heroText} onChange={e => setNewBlogForm({...newBlogForm, heroText: e.target.value})} placeholder="e.g., Overwhelmed to well informed." className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]" />
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Hero/Subtitle Headline
+                  </label>
+                  <input
+                    type="text"
+                    value={newBlogForm.heroText}
+                    onChange={(e) =>
+                      setNewBlogForm({
+                        ...newBlogForm,
+                        heroText: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Overwhelmed to well informed."
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Reading Duration Metric</label>
-                  <input type="text" value={newBlogForm.timeToRead} onChange={e => setNewBlogForm({...newBlogForm, timeToRead: e.target.value})} placeholder="e.g., 5 min read" className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]" />
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Reading Duration Metric
+                  </label>
+                  <input
+                    type="text"
+                    value={newBlogForm.timeToRead}
+                    onChange={(e) =>
+                      setNewBlogForm({
+                        ...newBlogForm,
+                        timeToRead: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., 5 min read"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Article Body Structure (Rich HTML content supported)</label>
-                <textarea rows="4" value={newBlogForm.thisIsTheMainParagraph} onChange={e => setNewBlogForm({...newBlogForm, thisIsTheMainParagraph: e.target.value})} placeholder="<h2>Heading</h2><p>Core message block text strings...</p>" className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-[#5932EA]" />
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Article Body Structure (Rich HTML content supported)
+                </label>
+                <textarea
+                  rows="4"
+                  value={newBlogForm.thisIsTheMainParagraph}
+                  onChange={(e) =>
+                    setNewBlogForm({
+                      ...newBlogForm,
+                      thisIsTheMainParagraph: e.target.value,
+                    })
+                  }
+                  placeholder="<h2>Heading</h2><p>Core message block text strings...</p>"
+                  className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-[#5932EA]"
+                />
               </div>
 
               <div className="pt-4 border-t flex justify-end gap-3 bg-white sticky bottom-0">
-                <button type="button" onClick={() => setIsCreateBlogModalOpen(false)} className="px-5 py-2.5 border rounded-xl font-semibold text-gray-500 hover:bg-gray-50">Dismiss</button>
-                <button type="submit" disabled={newBlogForm.image === "Uploading..." || newBlogForm.podcastVideoUrl === "Uploading..."} className="px-6 py-2.5 bg-[#5932EA] text-white font-semibold rounded-xl disabled:opacity-50">Publish Live</button>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateBlogModalOpen(false)}
+                  className="px-5 py-2.5 border rounded-xl font-semibold text-gray-500 hover:bg-gray-50"
+                >
+                  Dismiss
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    newBlogForm.image === "Uploading..." ||
+                    newBlogForm.podcastVideoUrl === "Uploading..."
+                  }
+                  className="px-6 py-2.5 bg-[#5932EA] text-white font-semibold rounded-xl disabled:opacity-50"
+                >
+                  Publish Live
+                </button>
               </div>
             </form>
           </div>
@@ -3301,29 +3887,67 @@ const Dashboard = () => {
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
           <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[85vh] rounded-3xl">
             <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">Digest Registry Sheet Inspector</h3>
-              <button onClick={() => setSelectedBlogDetail(null)} className="text-gray-400 hover:text-gray-600 p-1"><FaTimes size={18} /></button>
+              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
+                Digest Registry Sheet Inspector
+              </h3>
+              <button
+                onClick={() => setSelectedBlogDetail(null)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <FaTimes size={18} />
+              </button>
             </div>
             <div className="p-6 overflow-y-auto space-y-4 text-sm text-[#222]">
-              <h4 className="text-2xl font-bold text-gray-900 tracking-tight">{selectedBlogDetail.fieldData?.name}</h4>
-              <p className="text-xs text-gray-400 font-mono">CMS Object Hash Key: {selectedBlogDetail.id}</p>
-              
+              <h4 className="text-2xl font-bold text-gray-900 tracking-tight">
+                {selectedBlogDetail.fieldData?.name}
+              </h4>
+              <p className="text-xs text-gray-400 font-mono">
+                CMS Object Hash Key: {selectedBlogDetail.id}
+              </p>
+
               <div className="bg-gray-50 p-4 rounded-xl border space-y-2">
-                <p><strong>Subtitle:</strong> {selectedBlogDetail.fieldData?.["hero-text"] || "None Specified"}</p>
-                <p><strong>Author:</strong> {selectedBlogDetail.fieldData?.["authors-name"] || "System Admin"}</p>
-                <p><strong>Reading Info:</strong> {selectedBlogDetail.fieldData?.["time-to-read"] || "N/A"}</p>
+                <p>
+                  <strong>Subtitle:</strong>{" "}
+                  {selectedBlogDetail.fieldData?.["hero-text"] ||
+                    "None Specified"}
+                </p>
+                <p>
+                  <strong>Author:</strong>{" "}
+                  {selectedBlogDetail.fieldData?.["authors-name"] ||
+                    "System Admin"}
+                </p>
+                <p>
+                  <strong>Reading Info:</strong>{" "}
+                  {selectedBlogDetail.fieldData?.["time-to-read"] || "N/A"}
+                </p>
               </div>
 
               {selectedBlogDetail.fieldData?.["podcast-cta-main"]?.url && (
                 <div className="mt-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Attached Podcast Video Content</span>
-                  <video controls src={selectedBlogDetail.fieldData["podcast-cta-main"].url} className="w-full rounded-xl border bg-black max-h-64" />
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                    Attached Podcast Video Content
+                  </span>
+                  <video
+                    controls
+                    src={selectedBlogDetail.fieldData["podcast-cta-main"].url}
+                    className="w-full rounded-xl border bg-black max-h-64"
+                  />
                 </div>
               )}
 
               <div>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Body Text Content Block Markup</span>
-                <div className="p-4 bg-gray-50 border border-dashed rounded-xl prose prose-sm max-h-48 overflow-y-auto" dangerouslySetInnerHTML={{ __html: selectedBlogDetail.fieldData?.["this-is-the-main-paragraph"] || "<i>Empty Body Content</i>" }} />
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                  Body Text Content Block Markup
+                </span>
+                <div
+                  className="p-4 bg-gray-50 border border-dashed rounded-xl prose prose-sm max-h-48 overflow-y-auto"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      selectedBlogDetail.fieldData?.[
+                        "this-is-the-main-paragraph"
+                      ] || "<i>Empty Body Content</i>",
+                  }}
+                />
               </div>
             </div>
           </div>

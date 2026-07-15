@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +6,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [subscription, setSubscription] = useState(null);
   const [user, setUser] = useState(null);
-  
+
   // State variables for post submission
   const [reviewContent, setReviewContent] = useState("");
   const [anonName, setAnonName] = useState("");
@@ -45,7 +44,9 @@ export default function Profile() {
     // 🔥 2. Fetch Structured Chat History from your FastAPI backend
     try {
       setLoadingHistory(true);
-      const response = await fetch(`http://127.0.0.1:8000/chat/${user.id}/history`);
+      const response = await fetch(
+        `https://manasi-production.up.railway.app/chat/user/${user.id}/history`,
+      );
       if (response.ok) {
         const historyJson = await response.json();
         setHistoryData(historyJson);
@@ -88,8 +89,8 @@ export default function Profile() {
           user_id: userIdField,
           username: displayName,
           content: reviewContent.trim(),
-          header: null,    // initially null, admin populates later
-          tag_id: null,    // initially null, admin maps later
+          header: null, // initially null, admin populates later
+          tag_id: null, // initially null, admin maps later
           status: "pending", // routes to admin dashboard stream
         },
       ]);
@@ -161,7 +162,7 @@ export default function Profile() {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-      }
+      },
     );
 
     await fetch(
@@ -171,7 +172,7 @@ export default function Profile() {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-      }
+      },
     );
 
     setSubscription(null);
@@ -202,7 +203,9 @@ export default function Profile() {
               <p>
                 <strong>Next Billing Date:</strong>{" "}
                 {subscription.current_period_end
-                  ? new Date(subscription.current_period_end).toLocaleDateString()
+                  ? new Date(
+                      subscription.current_period_end,
+                    ).toLocaleDateString()
                   : "—"}
               </p>
             )}
@@ -226,9 +229,12 @@ export default function Profile() {
                 </button>
               )}
             </div>
-            
+
             <div className="flex gap-3 mt-6 border-t pt-4">
-              <button onClick={logout} className="px-5 py-2 border rounded-lg hover:bg-gray-50">
+              <button
+                onClick={logout}
+                className="px-5 py-2 border rounded-lg hover:bg-gray-50"
+              >
                 Logout
               </button>
               <button
@@ -242,7 +248,8 @@ export default function Profile() {
         ) : (
           <div className="space-y-4">
             <p className="text-gray-500 text-sm">
-              You are currently viewing this page as a guest anonymous reader. Log in to sync account profile parameters.
+              You are currently viewing this page as a guest anonymous reader.
+              Log in to sync account profile parameters.
             </p>
             <button
               onClick={() => navigate("/auth")}
@@ -253,65 +260,75 @@ export default function Profile() {
           </div>
         )}
       </div>
+      {/* Your Chat History Card Block */}
+{user && (
+  <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
+    <div className="flex justify-between items-center border-b pb-3 mb-4">
+      <div>
+        <h3 className="text-xl font-bold text-gray-800">Your Chat History</h3>
+        <p className="text-xs text-gray-500 mt-0.5">Stored conversation sessions with Manasi AI</p>
+      </div>
+      {historyData && historyData.history_records && (
+        <span className="bg-amber-100 text-amber-800 font-bold text-xs px-3 py-1 rounded-full">
+          Sessions: {historyData.history_records.length}
+        </span>
+      )}
+    </div>
 
-      {/* 🔥 3. CHAT HISTORY PREVIEW COMPONENT CARD BLOCK */}
-      {user && (
-        <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
-          <div className="flex justify-between items-center border-b pb-3 mb-4">
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">Your Chat History</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Stored conversation sessions with Manasi AI</p>
-            </div>
-            {historyData && (
-              <span className="bg-amber-100 text-amber-800 font-bold text-xs px-3 py-1 rounded-full">
-                Turns: {historyData.total_turns}
+    {loadingHistory ? (
+      <p className="text-sm text-gray-500 font-sans py-4">Loading your conversations...</p>
+    ) : historyData && historyData.history_records && historyData.history_records.length > 0 ? (
+      <div className="flex flex-col gap-4 max-h-96 overflow-y-auto pr-1">
+        {/* 1. Map through the separate conversation logs/sessions */}
+        {historyData.history_records.map((session, sIndex) => (
+          <div key={sIndex} className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
+            <div className="flex justify-between items-center border-b pb-2">
+              <span className="text-xs font-bold text-amber-700 uppercase tracking-tight truncate max-w-[70%]">
+                {session.title || "Roadmap Assessment / Chat"}
               </span>
-            )}
-          </div>
-
-          {loadingHistory ? (
-            <p className="text-sm text-gray-500 font-sans py-4">Loading your conversations...</p>
-          ) : historyData && historyData.history.length > 0 ? (
-            <div className="flex flex-col gap-4 max-h-72 overflow-y-auto pr-1">
-              {historyData.history.map((turn, index) => (
-                <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-100 space-y-2">
-                  <div className="text-sm font-semibold text-gray-700">
-                    <span className="text-amber-700">Q:</span> {turn.question}
+              <span className="text-[10px] text-gray-400 font-mono">
+                {session.updated_at ? new Date(session.updated_at).toLocaleDateString() : "—"}
+              </span>
+            </div>
+            
+            {/* 2. Map through a small preview snippet (first 2 turns) of this specific conversation window */}
+            <div className="space-y-2 pl-1">
+              {session.history && session.history.slice(0, 2).map((turn, tIndex) => (
+                <div key={tIndex} className="text-xs space-y-1">
+                  <div className="truncate text-gray-700">
+                    <strong className="text-amber-800">Q:</strong> {turn.question}
                   </div>
-                  <div className="text-sm text-gray-600 pl-2 border-l-2 border-amber-600">
-                    <span className="text-gray-400 font-medium">A:</span> {turn.answer}
+                  <div className="text-gray-600 pl-2 border-l-2 border-amber-600/40 truncate">
+                    <strong className="text-gray-400">A:</strong> {turn.answer}
                   </div>
-                  
-                  {turn.cta && turn.cta.cta_found && (
-                    <div className="pt-1">
-                      <a 
-                        href={turn.cta.cta_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-[11px] text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded px-2 py-0.5 font-sans transition"
-                      >
-                        🔗 Trigger Link: {turn.cta.cta_trigger || "Learn More"}
-                      </a>
-                    </div>
-                  )}
                 </div>
               ))}
+              
+              {session.history && session.history.length > 2 && (
+                <p className="text-[10px] text-amber-700/70 font-medium italic pt-1">
+                  + {session.history.length - 2} more turns in this window...
+                </p>
+              )}
             </div>
-          ) : (
-            <p className="text-sm text-gray-500 font-sans py-2">
-              No chat logs found. Start a conversation with Manasi AI to back up your interaction logs!
-            </p>
-          )}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-gray-500 font-sans py-2">
+        No chat logs found. Start a conversation with Manasi AI to back up your interaction logs!
+      </p>
+    )}
+  </div>
+)}
 
       {/* Community Hub Submission Box */}
       <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
         <h3 className="text-xl font-bold mb-3">Share to Community Hub</h3>
         <p className="text-sm text-gray-500 mb-4 font-sans">
-          Post feedback, suggestions, or a general review. Your message will be visible in the hub upon admin approval.
+          Post feedback, suggestions, or a general review. Your message will be
+          visible in the hub upon admin approval.
         </p>
-        
+
         <form onSubmit={handlePostReview} className="space-y-4">
           {!user && (
             <div>
@@ -344,11 +361,15 @@ export default function Profile() {
               className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:border-black font-sans resize-none text-sm"
             />
           </div>
-          
+
           <div className="flex justify-end">
             <button
               type="submit"
-              disabled={submittingPost || !reviewContent.trim() || (!user && !anonName.trim())}
+              disabled={
+                submittingPost ||
+                !reviewContent.trim() ||
+                (!user && !anonName.trim())
+              }
               className="bg-black text-white px-6 py-2 rounded-lg text-sm disabled:opacity-50 transition"
             >
               {submittingPost ? "Submitting..." : "Submit Post"}
