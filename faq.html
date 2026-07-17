@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frequently Asked Questions</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg-color: #ffffff;
+        --faq-bg: #faf4e8;
+        --primary-brand: #b05a36;
+        --mobile-text: #68270b;
+        --icon-color: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Manrope", sans-serif;
+      }
+
+      /* body {
+        background-color: var(--bg-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 24px;
+      }
+      body::-webkit-scrollbar {
+        display: none;
+      } */
+      .faq-container {
+        width: 100%;
+        max-width: 650px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .faq-title {
+        font-size: 64px;
+        font-weight: 400;
+        color: var(--primary-brand);
+        line-height: 110%;
+        letter-spacing: -0.02em;
+        margin-bottom: 40px;
+      }
+
+      .faq-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+
+      .faq-item {
+        background-color: var(--faq-bg);
+        border-radius: 34px;
+        overflow: hidden;
+        text-align: left;
+        transition: all 0.3s ease;
+      }
+
+      .faq-header {
+        padding: 24px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        gap: 16px;
+      }
+
+      .faq-question {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--primary-brand);
+        line-height: 23.4px;
+        letter-spacing: 0px;
+      }
+
+      .faq-toggle-btn {
+        background-color: var(--primary-brand);
+        color: var(--icon-color);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        font-size: 20px;
+      }
+
+      .faq-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+
+      .faq-answer {
+        padding: 0 28px 24px 28px;
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--primary-brand);
+        line-height: 1.5;
+        opacity: 0.9;
+      }
+
+      .view-all-btn {
+        background-color: var(--primary-brand);
+        color: #ffffff;
+        border: none;
+        padding: 25px 55px;
+        border-radius: 35px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .view-all-btn:hover {
+        opacity: 0.9;
+      }
+
+      @media (max-width: 480px) {
+        .faq-item {
+          border-radius: 24px;
+        }
+        .faq-title {
+          font-size: 32px;
+          line-height: 121%;
+          letter-spacing: -0.01em;
+          margin-bottom: 28px;
+        }
+
+        .faq-header {
+          padding: 18px 20px;
+        }
+
+        .faq-question {
+          font-size: 15px;
+          font-weight: 500;
+          color: var(--mobile-text);
+          line-height: 120%;
+          letter-spacing: 0px;
+        }
+
+        .faq-answer {
+          padding: 0 20px 18px 20px;
+          font-size: 13.5px;
+          color: var(--mobile-text);
+        }
+
+        .faq-toggle-btn {
+          width: 32px;
+          height: 32px;
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="faq-container">
+      <h2 class="faq-title">Frequently Asked<br />Questions</h2>
+
+      <div class="faq-wrapper">
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question"
+              >How does Manasi provide recommendations?</span
+            >
+            <div class="faq-toggle-btn">
+              <ion-icon name="add-outline"></ion-icon>
+            </div>
+          </div>
+          <div class="faq-content">
+            <div class="faq-answer">
+              ManaScience features evidence-informed therapies such as
+              Neurofeedback, MNRI, Occupational Therapy, Speech Therapy. Sensory
+              Integration, and Cognitive Training, with simple explanations and
+              research-backed insights.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question"
+              >Is my conversation with Manasi private?</span
+            >
+            <div class="faq-toggle-btn">
+              <ion-icon name="add-outline"></ion-icon>
+            </div>
+          </div>
+          <div class="faq-content">
+            <div class="faq-answer">
+              ManaScience features evidence-informed therapies such as
+              Neurofeedback, MNRI, Occupational Therapy, Speech Therapy. Sensory
+              Integration, and Cognitive Training, with simple explanations and
+              research-backed insights.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question">Can Manasi recommend therapies?</span>
+            <div class="faq-toggle-btn">
+              <ion-icon name="add-outline"></ion-icon>
+            </div>
+          </div>
+          <div class="faq-content">
+            <div class="faq-answer">
+              ManaScience features evidence-informed therapies such as
+              Neurofeedback, MNRI, Occupational Therapy, Speech Therapy. Sensory
+              Integration, and Cognitive Training, with simple explanations and
+              research-backed insights.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question"
+              >Does Manasi remember previous conversations?</span
+            >
+            <div class="faq-toggle-btn">
+              <ion-icon name="add-outline"></ion-icon>
+            </div>
+          </div>
+          <div class="faq-content">
+            <div class="faq-answer">
+              ManaScience features evidence-informed therapies such as
+              Neurofeedback, MNRI, Occupational Therapy, Speech Therapy. Sensory
+              Integration, and Cognitive Training, with simple explanations and
+              research-backed insights.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question"
+              >Can I ask Manasi about specific conditions?</span
+            >
+            <div class="faq-toggle-btn">
+              <ion-icon name="add-outline"></ion-icon>
+            </div>
+          </div>
+          <div class="faq-content">
+            <div class="faq-answer">
+              ManaScience features evidence-informed therapies such as
+              Neurofeedback, MNRI, Occupational Therapy, Speech Therapy. Sensory
+              Integration, and Cognitive Training, with simple explanations and
+              research-backed insights.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="view-all-btn">View All</button>
+    </div>
+
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+
+    <script>
+      document.querySelectorAll(".faq-header").forEach((header) => {
+        header.addEventListener("click", () => {
+          const currentItem = header.parentElement;
+          const currentContent = currentItem.querySelector(".faq-content");
+          const currentIcon = currentItem.querySelector("ion-icon");
+
+          const isOpen =
+            currentContent.style.maxHeight &&
+            currentContent.style.maxHeight !== "0px";
+
+          document.querySelectorAll(".faq-content").forEach((content) => {
+            content.style.maxHeight = "0px";
+          });
+          document
+            .querySelectorAll(".faq-toggle-btn ion-icon")
+            .forEach((icon) => {
+              icon.setAttribute("name", "add-outline");
+            });
+
+          if (!isOpen) {
+            currentContent.style.maxHeight = currentContent.scrollHeight + "px";
+            currentIcon.setAttribute("name", "remove-outline");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

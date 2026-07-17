@@ -182,7 +182,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: " Behaviour & Self-Regulation",
+    domain: " Behaviour & Self-Regulation", // Social Interaction & Communication 
     type:'Complementary',
     questions: [
       "Repetitive movements or sounds (flapping, rocking, tics, throat-clearing)",
@@ -205,7 +205,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   // {
-  //   domain: " Social Interaction & Communication",
+  //   domain: " Social Interaction & Communication", 
   //   type:'Complementary',
   //   questions: [
   //     "Difficulty making or keeping friends with same-age peers",
@@ -216,7 +216,7 @@ export const NEURODIVERGENT_SET = [
   //   ],
   // },
   {
-    domain: " General Health & Foundations",
+    domain: " General Health & Foundations", // + gut health
     type:'Complementary',
     questions: [
       "Gut issues - constipation, bloating, pain, or food sensitivities",

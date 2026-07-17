@@ -24,10 +24,11 @@ const Community = () => {
       desc: '"For the first time, my son wanted to read on his own. After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected...After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected...After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected... as a milestone our family never expected...as a milestone our family never expected..."',
       author: "Sarah M.",
       time: "2 mo. ago",
-      bgClass: "bg-[#f0eae1] text-[#4a3e3d]",
-      tagClass: "border-[#b05a36] text-[#b05a36]",
+      bgClass: "bg-[#fff] text-[#4a3e3d]",
+      tagClass: "border-[#b05a36] text-[#b05a36] text-white",
       titleClass: "text-[#b05a36]",
       descClass: "text-[#5c5251]",
+      authorClass: "text-[#5c5251]",
     },
     {
       id: 2,
@@ -37,7 +38,7 @@ const Community = () => {
       author: "David K.",
       time: "1 mo. ago",
       bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
-      tagClass: "border-[#b05a36] text-[#b05a36]",
+      tagClass: "border-[#b05a36] text-[#b05a36] text-white",
       titleClass: "text-[#b05a36]",
       descClass: "text-[#5c5251]",
     },
@@ -49,7 +50,8 @@ const Community = () => {
       author: "Elena R.",
       time: "3 wk. ago",
       bgClass: "bg-[#b05a36] text-white",
-      tagClass: "border-white text-white",
+      tagClass: "border-none bg-[#fff] text-[#B05A36]",
+      authorClass: "text-[#5c5251]",
       titleClass: "text-white",
       descClass: "text-[#f7f3f0]",
     },
@@ -61,7 +63,7 @@ const Community = () => {
       author: "Sarah M.",
       time: "2 mo. ago",
       bgClass: "bg-[#f0eae1] text-[#4a3e3d]",
-      tagClass: "border-[#b05a36] text-[#b05a36]",
+      tagClass: "border-[#b05a36] text-[#b05a36] text-white",
       titleClass: "text-[#b05a36]",
       descClass: "text-[#5c5251]",
     },
@@ -73,7 +75,7 @@ const Community = () => {
       author: "David K.",
       time: "1 mo. ago",
       bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
-      tagClass: "border-[#b05a36] text-[#b05a36]",
+      tagClass: "border-[#b05a36] text-white",
       titleClass: "text-[#b05a36]",
       descClass: "text-[#5c5251]",
     },
@@ -85,7 +87,9 @@ const Community = () => {
       author: "Elena R.",
       time: "3 wk. ago",
       bgClass: "bg-[#b05a36] text-white",
-      tagClass: "border-white text-white",
+      tagClass: "border-none bg-[#fff] text-[#B05A36]",
+      aurthorClass:'text-[#5c5251]',
+
       titleClass: "text-white",
       descClass: "text-[#f7f3f0]",
     },
@@ -97,7 +101,8 @@ const Community = () => {
       author: "Elena R.",
       time: "3 wk. ago",
       bgClass: "bg-[#b05a36] text-white",
-      tagClass: "border-white text-white",
+      tagClass: "border-none bg-[#fff] text-[#B05A36]",
+      authorClass: "text-[#5c5251]",
       titleClass: "text-white",
       descClass: "text-[#f7f3f0]",
     },
@@ -109,7 +114,8 @@ const Community = () => {
       author: "Elena R.",
       time: "3 wk. ago",
       bgClass: "bg-[#b05a36] text-white",
-      tagClass: "border-white text-white",
+      tagClass: "border-none bg-[#fff] text-[#B05A36]",
+      authorClass: "text-[#5c5251]",
       titleClass: "text-white",
       descClass: "text-[#f7f3f0]",
     },
@@ -196,7 +202,7 @@ const Community = () => {
   });
   return (
     <main className="lg:p-10 py-7.5 manrope">
-      <Nav />
+      {/* <Nav /> */}
       <section
         className={`text-center text-[#B05A36] lg:pt-17.5 pt-12.5 px-5 ${isModalOpen ? "hidden md:hidden lg:hidden" : "block md:block lg:block"}`}
       >
@@ -472,7 +478,7 @@ const Community = () => {
                       >
                         <div className="overflow-y-auto max-h-[90%] pr-1 scrollbar-none">
                           <div
-                            className={`h-7.5 w-40 border rounded-[20px] text-[12px] font-normal lg:text-[0.75rem] mb-3 lg:mb-5 ${card.tagClass} flex justify-center items-center text-center`}
+                            className={`h-[40px] w-40 border rounded-full text-[13px] font-normal lg:text-[13px] mb-3 lg:mb-5 ${card.tagClass} flex justify-center items-center text-center  bg-[#B05A36]`}
                           >
                             <p>{card.tag}</p>
                           </div>
@@ -481,16 +487,17 @@ const Community = () => {
                           >
                             {card.title}
                           </h2>
+                           <div className="mt-auto mb-[30px] pt-2 flex justify-between items-center text-xs lg:text-[0.85rem] font-medium text-[#68270B]">
+                          <span>{card.author}</span>
+                          <span>{card.time}</span>
+                        </div>
                           <p
-                            className={`text-[13px] lg:text-[0.9rem] leading-relaxed lg:leading-[1.6] text-black font-normal ${card.descClass}`}
+                            className={`text-[13px] lg:text-[0.9rem] leading-relaxed lg:leading-[1.6] text-[#68270B] font-normal ${card.descClass}`}
                           >
                             {card.desc}
                           </p>
                         </div>
-                        <div className="mt-auto pt-2 flex justify-between items-center text-xs lg:text-[0.85rem] font-medium ">
-                          <span>{card.author}</span>
-                          <span>{card.time}</span>
-                        </div>
+                       
                       </div>
                     );
                   })}

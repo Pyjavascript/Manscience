@@ -64,40 +64,52 @@ export default function PractitionerForm() {
         profileImageUrl = await uploadFile(profileImage, "profile-images");
       }
 
+      // Format certificates matching Webflow image schema constraints
       const certificateImages = [];
       for (const cert of certificates) {
         const url = await uploadFile(cert, "certificates");
-        certificateImages.push({ url });
+        certificateImages.push({
+          url: url,
+          alt: null // Webflow schema requires an explicit alt node property
+        });
       }
 
-      const { error: invokeError } = await supabase.functions.invoke(
+      const response = await supabase.functions.invoke(
         "submit-practitioner",
         {
           body: {
             ...form,
             profile_image: profileImageUrl,
-            certificate_images: certificateImages,
+            certificate_images: certificateImages, // Array of structured objects
           },
         }
       );
 
-      if (invokeError) throw invokeError;
+      if (response.error) {
+        let failureMessage = "Bad Request Pipeline Exception";
+        if (response.error.context) {
+          try {
+            const errorData = await response.error.context.json();
+            failureMessage = errorData.error || errorData.details || failureMessage;
+          } catch (e) {
+            failureMessage = response.error.message || failureMessage;
+          }
+        } else {
+          failureMessage = response.error.message || failureMessage;
+        }
+        throw new Error(failureMessage);
+      }
 
       setSubmitted(true);
       setForm({
-        name: "",
-        email: "",
-        phone: "",
-        specialization: "",
-        education: "",
-        experience: "",
-        approach_to_care: "",
-        therapies_offered: "",
-        research_papers: "",
+        name: "", email: "", phone: "", specialization: "",
+        education: "", experience: "", approach_to_care: "",
+        therapies_offered: "", research_papers: "",
       });
       setProfileImage(null);
       setCertificates([]);
     } catch (err) {
+      console.error("Form Submission Caught Error Layer:", err);
       setError(err.message);
     } finally {
       setSubmitting(false);

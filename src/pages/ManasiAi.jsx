@@ -323,30 +323,11 @@ const ManasiAi = () => {
           selectedRating: null,
         }));
       } else {
+        // Map classification values precisely to match the API guide criteria ('ND' or 'NT')
         const targetClassification =
-          scoringState.dataset === NEURODIVERGENT_SET
-            ? "Neurodivergent"
-            : "Neurotypical";
+          scoringState.dataset === NEURODIVERGENT_SET ? "ND" : "NT";
 
-        // const scorePayloadArray = Object.keys(updatedAnswers).map((dName) => {
-        //   const scoresArray = updatedAnswers[dName];
-        //   const rawScore = scoresArray.reduce((sum, val) => sum + val, 0);
-        //   const maxPossible = scoresArray.length * 5;
-        //   const percentage = Math.round((rawScore / maxPossible) * 100);
-
-        //   let calculatedSeverity = "Low";
-        //   if (percentage >= 40 && percentage <= 69)
-        //     calculatedSeverity = "Moderate";
-        //   if (percentage >= 70) calculatedSeverity = "High";
-
-        //   return {
-        //     domain: dName,
-        //     Score: percentage,
-        //     Severity: calculatedSeverity,
-        //   };
-        // });
-
-        //  UPDATED LOGIC WITH INDIVIDUAL DOMAIN TYPE INCLUSION
+        // 1. Build the exact scorePayloadArray matching the backend request contract casing
         const scorePayloadArray = Object.keys(updatedAnswers).map((dName) => {
           const scoresArray = updatedAnswers[dName];
           const rawScore = scoresArray.reduce((sum, val) => sum + val, 0);
@@ -358,58 +339,98 @@ const ManasiAi = () => {
             calculatedSeverity = "Moderate";
           if (percentage >= 70) calculatedSeverity = "High";
 
-          // Match the active processing key back to its origin dataset declaration
           const originalDomainObj = scoringState.dataset.find(
             (item) => item.domain === dName,
           );
-          const currentEntryType = originalDomainObj?.type || "None";
+          const currentEntryType = originalDomainObj?.type || null;
 
           return {
             domain: dName,
-            Score: percentage,
-            Severity: calculatedSeverity,
-            domain_type: currentEntryType, // 🌟 Now parsed inside each entry object correctly!
+            domain_type: currentEntryType,
+            Score: percentage, // ⚠️ Exact Contract Casing: Capital S
+            Severity: calculatedSeverity, // ⚠️ Exact Contract Casing: Capital S
           };
         });
+
         setScoringState((prev) => ({ ...prev, isActive: false }));
         setIsLoading(true);
 
         const wireFormatBody = {
           user_id: currentUserId || sessionId,
-          Classification: targetClassification,
-          score: scorePayloadArray,
+          Classification: targetClassification, // ⚠️ Exact Contract Casing: Capital C
+          score: scorePayloadArray, // ⚠️ Exact Contract Casing: Lowercase array
         };
 
+        // PIPELINE STEP 1: Submit base questionnaire configurations to the original backend database
         fetch("https://manasi-production.up.railway.app/roadmap/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(wireFormatBody),
         })
           .then((res) => {
-            if (!res.ok) throw new Error("Backend submission rejected");
+            if (!res.ok)
+              throw new Error("Base database roadmap submission failed.");
             return res.json();
           })
-          .then(() => {
+          .then((submitDbData) => {
+            // PIPELINE STEP 2: Fetch mapped therapies configuration instantly matching the payload
+            return fetch(
+              "https://manasi-production.up.railway.app/roadmap/mapped-therapies",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+                body: JSON.stringify(wireFormatBody),
+              },
+            );
+          })
+          .then((res) => {
+            if (!res.ok)
+              throw new Error(
+                `Therapy API rejected request with status: ${res.status}`,
+              );
+            return res.json();
+          })
+          .then((therapyData) => {
+            // 🌟 TARGET VIEWING STAGE: Data has successfully arrived
+            console.log(
+              "Step 2 Success — Mapped Therapies payload received:",
+              therapyData,
+            );
+
+            // Save the complete object structure cleanly to your Supabase table
+            return supabase.from("user_roadmap_mapped").upsert({
+              user_id: currentUserId || sessionId,
+              classification: therapyData.classification,
+              mapped_domains: therapyData.mapped_domains, // Saves your mapped_domains array
+              updated_at: new Date().toISOString(),
+            });
+          })
+          .then(({ error: supabaseError }) => {
+            if (supabaseError) throw supabaseError;
+
             setIsLoading(false);
             setMessages((prev) => [
               ...prev,
               {
                 role: "assistant",
                 content:
-                  "Thank you for completing your assessment! Your cognitive profile roadmap has been saved securely to your session records. You can now chat normally.",
+                  "Thank you for completing your assessment! Your cognitive profile roadmap has been securely logged and processed.",
               },
             ]);
             if (currentUserId) fetchHistoryRecords(currentUserId);
           })
           .catch((err) => {
-            console.error("Error committing roadmap data package:", err);
+            console.error("Pipeline trace error:", err);
             setIsLoading(false);
             setMessages((prev) => [
               ...prev,
               {
                 role: "assistant",
                 content:
-                  "Your assessment completed, but we encountered an issue saving it to your profile history. You can still proceed with your conversation.",
+                  "Your assessment completed, but we encountered an issue saving or processing your profile data records.",
               },
             ]);
           });
@@ -492,7 +513,17 @@ const ManasiAi = () => {
     <div className="flex h-screen w-full text-white ai select-none manrope overflow-hidden relative">
       {/* Dynamic Slide-Out Drawer Panel (ChatGPT style history panel) */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-black border-r border-white/10 z-50 transform transition-transform duration-300 flex flex-col p-4 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed top-0 left-0 h-full w-64 
+          bg-black border-r border-white/10 z-50 transform transition-transform duration-300 ease-in-out flex flex-col p-4 ${
+          isSidebarOpen
+            ? "translate-x-0 opacity-100 visible"
+            : "-translate-x-full opacity-0 invisible"
+        }`}
+        style={{
+          // Inline style safety layer to force override Webflow container defaults if needed
+          transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",
+          visibility: isSidebarOpen ? "visible" : "hidden",
+        }}
       >
         <div className="flex justify-between items-center pb-4 border-b border-white/10 mb-4">
           <h3 className="font-semibold text-sm text-white/80">Chat History</h3>
@@ -529,7 +560,6 @@ const ManasiAi = () => {
           )}
         </div>
       </div>
-
       {/* Main Container Layout */}
       <div className="flex-1 flex flex-col h-full mainBox overflow-y-scroll relative">
         {/* Top Floating Control Bar */}

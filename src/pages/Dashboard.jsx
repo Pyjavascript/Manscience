@@ -100,9 +100,9 @@ const Dashboard = () => {
 
     // Dynamic Classification Label Placement
     const classificationLabel =
-      roadmapData?.result?.classification_raw ||
-      roadmapData?.classification ||
-      "Neurotypical";
+      roadmapData?.classification === "neurodivergent"
+        ? "Neurodivergent"
+        : "Neurotypical";
     doc.setFont("helvetica", "bold");
     doc.text(`Classification    :  ${classificationLabel}`, 15, 88);
 
@@ -110,20 +110,25 @@ const Dashboard = () => {
     doc.line(15, 96, 195, 96);
 
     doc.setFont("helvetica", "bold");
-    doc.text("CLINICAL EVALUATION BREAKDOWN", 15, 108);
+    doc.text("Profile Summary", 15, 108);
 
-    // Safely extract scores metrics array
-    const scoresArray = roadmapData?.result?.scores || [];
-    const tableRows = scoresArray.map((item) => [
+    // Safely extract scores metrics array from mapped_domains structure
+    const mappedDomainsArray = roadmapData?.mapped_domains || [];
+    const tableRows = mappedDomainsArray.map((item) => [
       item.domain || "General Domain",
-      `${item.score ?? item.Score}%`,
-      item.severity || item.Severity || "Low",
+      `${item.score ?? 0}%`,
+      item.severity || "Low",
+      item.therapies
+        ? item.therapies
+            .map((t) => `${t.therapy} (${t.relevance || "N/A"})`)
+            .join(", ")
+        : "None",
     ]);
 
     autoTable(doc, {
       startY: 114,
       head: [
-        ["Assessment Domain", "Cognitive Score Value", "Severity Status Tier"],
+        ["Assessment Domain", "Score", "Severity", "Recommended Therapies"],
       ],
       body: tableRows,
       headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
@@ -137,91 +142,105 @@ const Dashboard = () => {
   };
 
   const emailRoadmapPdf = async (user, roadmapData) => {
-  if (!user?.email) {
-    alert("This profile lacks a valid destination email target.");
-    return;
-  }
-
-  try {
-    setIsSendingEmail(true);
-
-    // 1. Generate the jspdf instance identically to your local copy
-    const doc = new jsPDF();
-
-    doc.setFillColor(89, 50, 234); // #5932EA Main Purple
-    doc.rect(0, 0, 210, 40, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.setTextColor(255, 255, 255);
-    doc.text("COGNITIVE PROFILE ROADMAP", 15, 26);
-
-    doc.setFontSize(11);
-    doc.setTextColor(34, 34, 34);
-    doc.text("PATIENT / USER METRICS DIRECTORY", 15, 54);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Full Account Name :  ${user?.name || "Anonymous Guest"}`, 15, 64);
-    doc.text(`Registered Email  :  ${user?.email || "N/A"}`, 15, 72);
-
-    const classificationLabel = roadmapData?.result?.classification_raw || roadmapData?.classification || "Neurotypical";
-    doc.setFont("helvetica", "bold");
-    doc.text(`Classification    :  ${classificationLabel}`, 15, 88);
-    doc.setDrawColor(226, 232, 240);
-    doc.line(15, 96, 195, 96);
-    doc.setFont("helvetica", "bold");
-    doc.text("CLINICAL EVALUATION BREAKDOWN", 15, 108);
-
-    const scoresArray = roadmapData?.result?.scores || [];
-    const tableRows = scoresArray.map((item) => [
-      item.domain || "General Domain",
-      `${item.score ?? item.Score}%`,
-      item.severity || item.Severity || "Low",
-    ]);
-
-    autoTable(doc, {
-      startY: 114,
-      head: [["Assessment Domain", "Cognitive Score Value", "Severity Status Tier"]],
-      body: tableRows,
-      headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
-      bodyStyles: { font: "helvetica", fontSize: 10 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-      margin: { left: 15, right: 15 },
-      theme: "striped"
-    });
-
-    // 2. Output document data array buffer as clean Base64 string
-    const pdfBase64Raw = doc.output("datauristring");
-    // Strip metadata header prefix down to strict base64 contents data payload
-    const base64Content = pdfBase64Raw.split(",")[1];
-
-    // 3. Dispatch the payload securely through your Supabase Functions invoke pipeline
-    const { data, error } = await supabase.functions.invoke("send-roadmap-email", {
-      method: "POST",
-      body: {
-        recipientEmail: user.email,
-        recipientName: user.name || "Valued Member",
-        pdfAttachment: base64Content,
-        fileName: `Roadmap_Report_${user.name || "User"}.pdf`,
-      },
-    });
-
-    if (error) throw error;
-
-    if (data?.success) {
-      alert(`Roadmap layout successfully dispatched to ${user.email}!`);
-    } else {
-      throw new Error(data?.error || "Pipeline processed with unknown validation errors.");
+    if (!user?.email) {
+      alert("This profile lacks a valid destination email target.");
+      return;
     }
-  } catch (err) {
-    console.error("Email workflow tracking error:", err);
-    alert(`Failed mailing metrics sheet document: ${err.message}`);
-  } finally {
-    setIsSendingEmail(false);
-  }
-};
+
+    try {
+      setIsSendingEmail(true);
+
+      const doc = new jsPDF();
+
+      doc.setFillColor(89, 50, 234); // #5932EA Main Purple
+      doc.rect(0, 0, 210, 40, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(255, 255, 255);
+      doc.text("COGNITIVE PROFILE ROADMAP", 15, 26);
+
+      doc.setFontSize(11);
+      doc.setTextColor(34, 34, 34);
+      doc.text("PATIENT / USER METRICS DIRECTORY", 15, 54);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Full Account Name :  ${user?.name || "Anonymous Guest"}`,
+        15,
+        64,
+      );
+      doc.text(`Registered Email  :  ${user?.email || "N/A"}`, 15, 72);
+
+      const classificationLabel = roadmapData?.classification || "Neurotypical";
+      doc.setFont("helvetica", "bold");
+      doc.text(`Classification    :  ${classificationLabel}`, 15, 88);
+      doc.setDrawColor(226, 232, 240);
+      doc.line(15, 96, 195, 96);
+      doc.setFont("helvetica", "bold");
+      doc.text("Profile Summary", 15, 108);
+
+      const mappedDomainsArray = roadmapData?.mapped_domains || [];
+      const tableRows = mappedDomainsArray.map((item) => [
+        item.domain || "General Domain",
+        `${item.score ?? 0}%`,
+        item.severity || "Low",
+        item.therapies
+          ? item.therapies
+              .map((t) => `${t.therapy} (${t.relevance || "N/A"})`)
+              .join(", ")
+          : "None",
+      ]);
+
+      autoTable(doc, {
+        startY: 114,
+        head: [
+          ["Assessment Domain", "Score", "Severity", "Recommended Therapies"],
+        ],
+        headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
+        body: tableRows,
+        bodyStyles: { font: "helvetica", fontSize: 10 },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: 15, right: 15 },
+        theme: "striped",
+      });
+
+      const pdfBase64Raw = doc.output("datauristring");
+      const base64Content = pdfBase64Raw.split(",")[1];
+
+      const { data, error } = await supabase.functions.invoke(
+        "send-roadmap-email",
+        {
+          method: "POST",
+          body: {
+            recipientEmail: user.email,
+            recipientName: user.name || "Valued Member",
+            pdfAttachment: base64Content,
+            fileName: `Roadmap_Report_${user.name || "User"}.pdf`,
+          },
+        },
+      );
+
+      if (error) throw error;
+
+      if (data?.success) {
+        alert(`Roadmap layout successfully dispatched to ${user.email}!`);
+      } else {
+        throw new Error(
+          data?.error || "Pipeline processed with unknown validation errors.",
+        );
+      }
+    } catch (err) {
+      console.error("Email workflow tracking error:", err);
+      alert(`Failed mailing metrics sheet document: ${err.message}`);
+    }
+    {
+      setIsSendingEmail(false);
+    }
+  };
+
   const fetchRoadmapsFromDb = async () => {
     try {
       const { data, error } = await supabase
-        .from("user_roadmap_results")
+        .from("user_roadmap_mapped") // 🌟 Pointed exactly to your new table configuration
         .select("*")
         .order("updated_at", { ascending: false });
 
@@ -239,7 +258,6 @@ const Dashboard = () => {
   const fetchCommunityPosts = async () => {
     try {
       setCommunityLoading(true);
-      // Updates select path to join and bring down the tag name alias field
       const { data, error } = await supabase
         .from("community_hub")
         .select(
@@ -309,7 +327,7 @@ const Dashboard = () => {
       if (error) throw error;
       alert("Tag purged.");
       fetchCommunityTags();
-      fetchCommunityPosts(); // Refresh posts to keep relational keys aligned
+      fetchCommunityPosts();
     } catch (err) {
       alert(`Action rejected: ${err.message}`);
     }
@@ -381,7 +399,7 @@ const Dashboard = () => {
           header: newTestimonialForm.header || null,
           tag_id: newTestimonialForm.tag_id || null,
           content: newTestimonialForm.content,
-          status: "approved", // Default admin creations directly to live view state
+          status: "approved",
         },
       ]);
 
@@ -446,16 +464,15 @@ const Dashboard = () => {
     thisIsTheMainParagraph: "",
     filterTag: "",
     thisTheFirstPlainText: "",
-    tagTitle: "", // Will hold the selected blog-tag ID
+    tagTitle: "",
     timeToRead: "",
     authorsName: "",
-    podcastVideoUrl: "", // For podcast video uploads
+    podcastVideoUrl: "",
   });
 
   const BLOGS_COLLECTION_ID = "6a23cdf5d3cdf3ce98515784";
   const TAGS_COLLECTION_ID = "6a4a29998a1508d3ea0976f9";
 
-  // Upload video files to Supabase Storage if the tag type is a Podcast
   const uploadVideoToSupabase = async (file) => {
     if (!file) return null;
     try {
@@ -464,7 +481,7 @@ const Dashboard = () => {
       const filePath = `podcasts/${fileName}`;
 
       const { data, error } = await supabase.storage
-        .from("therapy-images") // Reusing your existing bucket allocation
+        .from("therapy-images")
         .upload(filePath, file, {
           cacheControl: "3600",
           upsert: false,
@@ -484,7 +501,6 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch all Blogs / Podcasts from your Deno Edge Function
   const fetchBlogsFromCms = async () => {
     try {
       setBlogsLoading(true);
@@ -505,7 +521,6 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch Blog Tags options via Deno Edge Function
   const fetchBlogTagsFromCms = async () => {
     try {
       const res = await fetch(
@@ -523,7 +538,6 @@ const Dashboard = () => {
     }
   };
 
-  // Submits a new dynamic item to Webflow via Deno Route Controller
   const handleCreateBlogSubmit = async (e) => {
     e.preventDefault();
 
@@ -558,7 +572,7 @@ const Dashboard = () => {
         "tag-title": newBlogForm.tagTitle || null,
         "time-to-read": newBlogForm.timeToRead || null,
         "authors-name": newBlogForm.authorsName || null,
-        "cta-image": newBlogForm.tagTitle || null, // Keeping data architecture parallel where cta-image maps tag ID
+        "cta-image": newBlogForm.tagTitle || null,
         "podcast-cta-main": newBlogForm.podcastVideoUrl
           ? { url: newBlogForm.podcastVideoUrl, alt: newBlogForm.name }
           : null,
@@ -598,7 +612,6 @@ const Dashboard = () => {
     }
   };
 
-  // Flat Key Map Tracker Dictionary helper
   const lookupTable = useMemo(() => {
     const map = new Map();
     const arrays = [
@@ -627,12 +640,10 @@ const Dashboard = () => {
     if (!file) return null;
 
     try {
-      // Generate a unique file name to avoid overwrite conflicts
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `therapies/${fileName}`;
 
-      // Upload file directly to your Supabase bucket
       const { data, error } = await supabase.storage
         .from("therapy-images")
         .upload(filePath, file, {
@@ -642,7 +653,6 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      // Retrieve the public URL string
       const { data: publicUrlData } = supabase.storage
         .from("therapy-images")
         .getPublicUrl(filePath);
@@ -655,7 +665,6 @@ const Dashboard = () => {
     }
   };
 
-  // Sync Form Dropdown lists from dynamic route query parameters
   const fetchFormDropdownOptions = async () => {
     try {
       const fetchItems = async (collectionId) => {
@@ -672,10 +681,10 @@ const Dashboard = () => {
       };
 
       const [cond, deliv, form, mainF] = await Promise.all([
-        fetchItems("6a2153b39dd6cbc89e2cd831"), // Conditions
-        fetchItems("6a21538114f11fc132b07488"), // Deliveries
-        fetchItems("6a21534a0abca22da70d9c92"), // Formats
-        fetchItems("6a1c7c260e4017306f072008"), // Main Filters
+        fetchItems("6a2153b39dd6cbc89e2cd831"),
+        fetchItems("6a21538114f11fc132b07488"),
+        fetchItems("6a21534a0abca22da70d9c92"),
+        fetchItems("6a1c7c260e4017306f072008"),
       ]);
 
       setConditionsOptions(cond);
@@ -713,7 +722,6 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch Conditions explicitly for the dedicated Management Tab
   const fetchConditionsTabCms = async () => {
     try {
       setConditionsLoading(true);
@@ -727,7 +735,6 @@ const Dashboard = () => {
       if (!res.ok) throw new Error("Failed fetching system conditions layout.");
       const data = await res.json();
       setConditionsList(data?.items || []);
-      // Keep options synced as well
       setConditionsOptions(data?.items || []);
     } catch (err) {
       console.error("Error parsing clinical condition records:", err);
@@ -736,7 +743,6 @@ const Dashboard = () => {
     }
   };
 
-  // Add a new Clinical Condition item to Webflow
   const handleCreateCondition = async (e) => {
     e.preventDefault();
     if (!newConditionName.trim()) return;
@@ -783,7 +789,6 @@ const Dashboard = () => {
     }
   };
 
-  // Permanently delete a Condition layout row
   const handleDeleteCondition = async (id) => {
     if (
       !window.confirm(
@@ -794,8 +799,6 @@ const Dashboard = () => {
 
     try {
       setConditionsLoading(true);
-
-      // Optimistic UI clear
       setConditionsList((prev) => prev.filter((item) => item.id !== id));
 
       const response = await fetch(
@@ -806,7 +809,7 @@ const Dashboard = () => {
           body: JSON.stringify({
             action: "delete",
             itemId: id,
-            collectionId: CONDITION_COLLECTION_ID, // Passes the condition layout collection ID mapping safely!
+            collectionId: CONDITION_COLLECTION_ID,
           }),
         },
       );
@@ -945,7 +948,6 @@ const Dashboard = () => {
     try {
       setUserManagementLoading(true);
 
-      // 1. Fetch all system users from your admin-users edge function
       const usersResponse = await fetch(
         "https://obzogpozgoolhededqkb.supabase.co/functions/v1/admin-users",
         {
@@ -957,7 +959,6 @@ const Dashboard = () => {
       const usersData = await usersResponse.json();
       const profiles = usersData.users || [];
 
-      // 2. Fetch all subscription bundles from your subscriptions edge function
       const subsResponse = await fetch(
         "https://obzogpozgoolhededqkb.supabase.co/functions/v1/subscriptions",
         {
@@ -971,7 +972,6 @@ const Dashboard = () => {
 
       const subMap = new Map(activeSubs.map((s) => [s.userid, s]));
 
-      // 3. Blend them together client-side for your metrics calculations
       const blendedUsers = profiles.map((user) => {
         const userSub = subMap.get(user.id);
         const isSubscribed =
@@ -999,7 +999,6 @@ const Dashboard = () => {
     }
   };
 
-  // Math Metrics Computations
   const computedTotalUsersCount = allUsersList.length;
   const computedSubscribedCount = allUsersList.filter(
     (u) => u.isSubscribed,
@@ -1007,14 +1006,12 @@ const Dashboard = () => {
   const computedUnsubscribedCount =
     computedTotalUsersCount - computedSubscribedCount;
 
-  // COMPUTE MONTHLY GROWTH DATA FOR CHART GRAPH
   const monthlyGrowthData = useMemo(() => {
     const monthlyMap = {};
 
     allUsersList.forEach((user) => {
       if (!user.created_at) return;
       const date = new Date(user.created_at);
-      // Grouping by "MMM YY" (e.g., "Jan 26")
       const monthLabel = date.toLocaleString("en-US", {
         month: "short",
         year: "2-digit",
@@ -1027,15 +1024,13 @@ const Dashboard = () => {
       monthlyMap[monthLabel].Users += 1;
     });
 
-    // Return chronological order dataset
     return Object.values(monthlyMap).sort((a, b) => a.sortKey - b.sortKey);
   }, [allUsersList]);
 
-  // Filter list display data
   const filteredUsersDisplayList = allUsersList.filter((u) => {
     if (userFilter === "subscribed") return u.isSubscribed;
     if (userFilter === "unsubscribed") return !u.isSubscribed;
-    return true; // "all"
+    return true;
   });
 
   const fetchPractitioners = async (type) => {
@@ -1228,7 +1223,6 @@ const Dashboard = () => {
     }
   };
 
-  // CHECK ACTIVE FETCH LOADING STATUS FOR DYNAMIC ROTATION
   const isCurrentlyRefreshing = useMemo(() => {
     if (activeTab === "overview") return loading;
     if (activeTab === "Usermanagement") return userManagementLoading;
@@ -1533,12 +1527,10 @@ const Dashboard = () => {
           </>
         )}
 
-        {/* USER MANAGEMENT TAB RENDER (UPDATED WITH GRAPH LAYOUT) */}
+        {/* USER MANAGEMENT TAB RENDER */}
         {activeTab === "Usermanagement" && (
           <div className="space-y-6">
-            {/* NEW GRAPH AND METRIC GRID WRAPPER LAYOUT */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* GRAPH SECTION (Updated to Match the Reference Bar Style) */}
               <div className="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6 flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start">
@@ -1547,14 +1539,12 @@ const Dashboard = () => {
                         User Registration Growth
                       </h2>
                     </div>
-                    {/* Optional Legend Badge */}
                     <span className="text-xs font-semibold bg-indigo-50 text-[#5932EA] px-3 py-1 rounded-full border border-indigo-100">
                       Monthly Total
                     </span>
                   </div>
                 </div>
 
-                {/* Live Recharts Bar Canvas */}
                 <div className="w-full h-64 mt-2">
                   {userManagementLoading ? (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 italic text-sm">
@@ -1569,7 +1559,7 @@ const Dashboard = () => {
                       <BarChart
                         data={monthlyGrowthData}
                         margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
-                        barSize={40} // Adjusts bar thickness to look clean like your reference img
+                        barSize={40}
                       >
                         <CartesianGrid
                           strokeDasharray="3 3"
@@ -1598,11 +1588,7 @@ const Dashboard = () => {
                             border: "1px solid #E2E8F0",
                           }}
                         />
-                        <Bar
-                          dataKey="Users"
-                          radius={[8, 8, 0, 0]} // Gives sleek rounded tops to the bars
-                        >
-                          {/* dynamically fills the bars with your dashboard brand color */}
+                        <Bar dataKey="Users" radius={[8, 8, 0, 0]}>
                           {monthlyGrowthData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill="#5932EA" />
                           ))}
@@ -1612,7 +1598,6 @@ const Dashboard = () => {
                   )}
                 </div>
 
-                {/* FOOTER ROW: Dynamic Percentage Changes (Matches your image layout) */}
                 {!userManagementLoading && monthlyGrowthData.length > 0 && (
                   <div className="border-t border-gray-100 mt-4 pt-4">
                     <div className="grid grid-flow-col auto-cols-fr gap-2 text-center text-xs">
@@ -1629,19 +1614,13 @@ const Dashboard = () => {
                               -
                             </div>
                           );
-
                         const prevUsers = monthlyGrowthData[idx - 1].Users;
                         const currentUsers = data.Users;
-
-                        // Calculate % change velocity
                         let percentChange = 0;
-                        if (prevUsers > 0) {
+                        if (prevUsers > 0)
                           percentChange =
                             ((currentUsers - prevUsers) / prevUsers) * 100;
-                        } else if (currentUsers > 0) {
-                          percentChange = 100;
-                        }
-
+                        else if (currentUsers > 0) percentChange = 100;
                         return (
                           <div
                             key={idx}
@@ -1658,7 +1637,6 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* VERTICAL SCORECARDS (Takes 1 Column) */}
               <div className="flex flex-col gap-4 justify-between">
                 <div
                   onClick={() => setUserFilter("all")}
@@ -1732,7 +1710,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Interactive Tab Listing Filter Controls */}
             <div className="bg-white border border-gray-200 rounded-3xl p-6">
               <div className="flex border-b border-gray-200 mb-6 gap-6">
                 <button
@@ -1824,7 +1801,6 @@ const Dashboard = () => {
 
         {activeTab === "CommunityHub" && (
           <div className="space-y-6">
-            {/* Sub Tab Selection Controls Row Header element panel */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-3xl border border-gray-200 gap-4">
               <div className="flex flex-wrap gap-3">
                 <button
@@ -1840,7 +1816,6 @@ const Dashboard = () => {
                   Pre-defined Tags Pipeline
                 </button>
               </div>
-
               {communitySubView === "posts" && (
                 <button
                   onClick={() => setIsTestimonialModalOpen(true)}
@@ -1851,7 +1826,6 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* SUB VIEW 1: RENDER POSTS PIPELINE */}
             {communitySubView === "posts" && (
               <div className="bg-white border border-gray-200 rounded-3xl p-6">
                 <div className="flex border-b border-gray-200 mb-6 gap-6">
@@ -1980,10 +1954,8 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* SUB VIEW 2: RENDER SYSTEM TAG MANAGEMENT PANEL PIPELINE INTERFACE */}
             {communitySubView === "tags" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                {/* Left Column: Create New Tag Form Widget Box Layout view */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-200 space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -2012,12 +1984,10 @@ const Dashboard = () => {
                   </form>
                 </div>
 
-                {/* Right Column: Manage & Delete Active Lookup Key Tags inventory grid views */}
                 <div className="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     Active System Dropdown Options Collection
                   </h3>
-
                   {tagsLoading ? (
                     <p className="text-gray-400 italic text-sm">
                       Synchronizing schemas inventory models variables...
@@ -2074,8 +2044,8 @@ const Dashboard = () => {
             )}
           </div>
         )}
-        {/* PRACTITIONERS MANAGEMENT TAB RENDER */}
 
+        {/* PRACTITIONERS MANAGEMENT TAB RENDER */}
         {activeTab === "practitioners" && (
           <div className="bg-white border border-gray-200 rounded-3xl p-6">
             <div className="flex border-b border-gray-200 mb-6 gap-6">
@@ -2127,7 +2097,6 @@ const Dashboard = () => {
                           {p.name}
                         </td>
                         <td className="py-4 px-6 text-gray-600">{p.email}</td>
-
                         {practitionerSubTab === "pending" && (
                           <td className="py-4 px-6 text-center">
                             <div className="flex justify-center items-center gap-3">
@@ -2308,7 +2277,6 @@ const Dashboard = () => {
         {/* CONDITION MANAGEMENT TAB CONTAINER VIEW */}
         {activeTab === "ConditionManagement" && (
           <div className="space-y-6">
-            {/* Inline creation widget form mapping code configuration box */}
             <div className="bg-white p-6 rounded-3xl border border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 tracking-tight">
                 Add New Clinical Condition
@@ -2335,7 +2303,6 @@ const Dashboard = () => {
               </form>
             </div>
 
-            {/* Condition Data Inventory Layout View Listing Grid Section */}
             <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -2414,7 +2381,8 @@ const Dashboard = () => {
             </div>
           </div>
         )}
-        {/* MEDICAL RESEARCH DIGEST & PODCAST REPOSITORY ARCHIVE */}
+
+        {/* MEDICAL RESEARCH DIGEST */}
         {activeTab === "ResearchDigest" && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-gray-200">
@@ -2471,7 +2439,6 @@ const Dashboard = () => {
                     <tbody className="divide-y divide-gray-100 text-sm">
                       {blogsList.map((blog) => {
                         const data = blog.fieldData || {};
-                        // Dynamically map tag display names inside layout rows
                         const matchedTag = blogTagsOptions.find(
                           (t) => t.id === data["tag-title"],
                         );
@@ -2573,9 +2540,7 @@ const Dashboard = () => {
                           (u) => u.id === rm.user_id,
                         );
                         const rawClassification =
-                          rm.result?.classification_raw ||
-                          rm.classification ||
-                          "Neurotypical";
+                          rm.classification || "Neurotypical";
                         return (
                           <tr
                             key={rm.user_id}
@@ -2589,9 +2554,11 @@ const Dashboard = () => {
                             </td>
                             <td className="py-4 px-6 text-center">
                               <span
-                                className={`inline-block font-semibold px-3 py-1 rounded-full text-xs uppercase ${rawClassification === "Neurodivergent" ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-blue-50 text-blue-700 border border-blue-200"}`}
+                                className={`inline-block font-semibold px-3 py-1 rounded-full text-xs uppercase ${rawClassification === "ND" ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-blue-50 text-blue-700 border border-blue-200"}`}
                               >
-                                {rawClassification}
+                                {rawClassification === "ND"
+                                  ? "Neurodivergent"
+                                  : "Neurotypical"}
                               </span>
                             </td>
                             <td className="py-4 px-6 text-center">
@@ -2604,8 +2571,7 @@ const Dashboard = () => {
                                 }
                                 className="bg-indigo-50 border border-indigo-100 text-[#5932EA] py-1.5 px-4 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 hover:bg-indigo-100 transition"
                               >
-                                <FaClipboardList size={12} />
-                                Recommendation
+                                <FaClipboardList size={12} /> Recommendation
                               </button>
                             </td>
                           </tr>
@@ -2617,10 +2583,10 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* OVERLAY DRILLDOWN MODAL DIALOG DISPLAYING THE FIGMA STYLE METRIC TABLE */}
+            {/* OVERLAY DRILLDOWN MODAL DIALOG DISPLAYING THE REFACTORED INLINE THERAPIES TABLE BREAKDOWN */}
             {roadmapModalUser && (
               <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
-                <div className="bg-white w-full max-w-2xl rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[88vh]">
+                <div className="bg-white w-full max-w-4xl rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[88vh]">
                   <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                     <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
                       Recommendation Overview Panel
@@ -2634,7 +2600,6 @@ const Dashboard = () => {
                   </div>
 
                   <div className="p-6 overflow-y-auto space-y-6 text-sm">
-                    {/* Header Profiler Elements */}
                     <div className="bg-slate-50 border border-gray-100 rounded-2xl p-4 space-y-2">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                         <div>
@@ -2652,19 +2617,20 @@ const Dashboard = () => {
                             Classification Profile
                           </span>
                           <span className="font-extrabold text-[#5932EA] text-sm">
-                            {roadmapModalUser.mapData?.result
-                              ?.classification_raw || "Neurotypical"}
+                            {roadmapModalUser.mapData?.classification === "ND"
+                              ? "Neurodivergent"
+                              : "Neurotypical"}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Figma-Inspired Metrics Table Block */}
+                    {/* Integrated Domain Core Analytics & Therapy Table View */}
                     <div className="space-y-2">
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block pl-1">
-                        Metrics Domains Assessment Breakdown
+                        Metrics Domains & Mapped Therapy Pipeline
                       </span>
-                      <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                      <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="bg-[#E0F2FE]/40 border-b border-gray-200 text-gray-500 text-xs font-bold uppercase tracking-wider">
@@ -2677,43 +2643,77 @@ const Dashboard = () => {
                               <th className="py-3 px-5 text-center font-semibold">
                                 Severity
                               </th>
+                              <th className="py-3 px-5 font-semibold">
+                                Recommended Therapies
+                              </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100 text-xs font-medium text-gray-700">
+                          <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
                             {(
-                              roadmapModalUser.mapData?.result?.scores || []
-                            ).map((item, idx) => {
-                              const scoreVal = item.score ?? item.Score ?? 0;
-                              const severityText =
-                                item.severity || item.Severity || "Low";
-                              return (
-                                <tr
-                                  key={idx}
-                                  className="hover:bg-slate-50/50 transition"
-                                >
-                                  <td className="py-3.5 px-5 font-semibold text-gray-800 bg-white">
-                                    {item.domain}
-                                  </td>
-                                  <td className="py-3.5 px-5 text-center text-gray-600 bg-slate-50/30 font-semibold">
-                                    {scoreVal}%
-                                  </td>
-                                  <td className="py-3.5 px-5 text-center bg-white">
-                                    <span
-                                      className={`inline-block font-bold px-3 py-1 rounded-lg text-[10px] uppercase tracking-wide ${
-                                        severityText === "Extreme" ||
-                                        severityText === "High"
-                                          ? "bg-purple-100 text-purple-700 border border-purple-200"
-                                          : severityText === "Moderate"
-                                            ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                            : "bg-green-50 text-green-700 border border-green-100"
-                                      }`}
-                                    >
-                                      {severityText}
+                              roadmapModalUser.mapData?.mapped_domains || []
+                            ).map((item, idx) => (
+                              <tr
+                                key={idx}
+                                className="hover:bg-slate-50/50 transition"
+                              >
+                                <td className="py-4 px-5 font-semibold text-gray-800">
+                                  <div>{item.domain}</div>
+                                  {item.domain_type && (
+                                    <span className="inline-block text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded mt-0.5">
+                                      {item.domain_type}
                                     </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
+                                  )}
+                                </td>
+                                <td className="py-4 px-5 text-center text-gray-600 font-semibold bg-slate-50/20">
+                                  {item.score}%
+                                </td>
+                                <td className="py-4 px-5 text-center">
+                                  <span
+                                    className={`inline-block font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wide ${
+                                      item.severity === "High"
+                                        ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                        : item.severity === "Moderate"
+                                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                          : "bg-green-50 text-green-700 border border-green-100"
+                                    }`}
+                                  >
+                                    {item.severity || "Low"}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-5 max-w-sm">
+                                  {item.therapies &&
+                                  item.therapies.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {item.therapies.map((t, tIdx) => (
+                                        <div
+                                          key={tIdx}
+                                          className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-lg p-1.5 shadow-sm"
+                                        >
+                                          <span
+                                            className={`px-1.5 py-0.5 rounded font-bold text-[8px] uppercase tracking-wide ${
+                                              t.relevance === "Primary"
+                                                ? "bg-indigo-100 text-[#5932EA]"
+                                                : t.relevance === "Secondary"
+                                                  ? "bg-blue-100 text-blue-600"
+                                                  : "bg-purple-100 text-purple-600"
+                                            }`}
+                                          >
+                                            {t.relevance || "Tx"}
+                                          </span>
+                                          <span className="font-medium text-gray-800">
+                                            {t.therapy}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 italic">
+                                      No therapies mapped / Low priority entry
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
@@ -2727,7 +2727,6 @@ const Dashboard = () => {
                     >
                       Dismiss View
                     </button>
-
                     <button
                       onClick={() =>
                         generateRoadmapPdf(
@@ -2739,8 +2738,6 @@ const Dashboard = () => {
                     >
                       <FaFilePdf size={12} /> Download PDF
                     </button>
-
-                    {/* NEW SEND EMAIL BUTTON */}
                     <button
                       disabled={
                         isSendingEmail || !roadmapModalUser.profile?.email
@@ -2753,7 +2750,7 @@ const Dashboard = () => {
                       }
                       className="bg-[#5932EA] hover:bg-[#4826c9] disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-xl transition text-xs flex items-center gap-1.5 shadow-sm"
                     >
-                      <FaRegNewspaper size={12} />
+                      <FaRegNewspaper size={12} />{" "}
                       {isSendingEmail
                         ? "Sending Email..."
                         : "Send to User Email"}
@@ -2766,6 +2763,7 @@ const Dashboard = () => {
         )}
       </section>
 
+      {/* REMAINDER SYSTEM MODALS */}
       {editingPost && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
           <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden flex flex-col">
@@ -2867,7 +2865,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* --- MODAL FOR CREATING OWN CUSTOM TESTIMONIAL --- */}
       {isTestimonialModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
           <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden flex flex-col">
@@ -2999,7 +2996,6 @@ const Dashboard = () => {
                 <FaTimes size={20} />
               </button>
             </div>
-
             <div className="p-6 space-y-5 text-sm">
               <div className="flex items-center gap-4 border-b pb-4 border-gray-100">
                 <div
@@ -3016,7 +3012,6 @@ const Dashboard = () => {
                   <p className="text-gray-500">{selectedUser.email}</p>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
@@ -3040,12 +3035,10 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
-
               <div className="border-t pt-4 border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   Subscription Status Overview Details
                 </h3>
-
                 {selectedUser.subscription ? (
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-2.5">
                     <div className="flex justify-between">
@@ -3110,7 +3103,6 @@ const Dashboard = () => {
                 <FaTimes size={20} />
               </button>
             </div>
-
             <div className="p-6 overflow-y-auto space-y-6 flex-1 text-sm">
               <div className="flex gap-6 items-center border-b pb-6 border-gray-100">
                 {selectedPractitioner.image?.url ? (
@@ -3136,7 +3128,6 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
@@ -3179,7 +3170,6 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
-
               <div>
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                   Certificates
@@ -3217,7 +3207,6 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-
             {practitionerSubTab === "pending" && (
               <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                 <button
@@ -3274,7 +3263,6 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 border border-gray-100 rounded-xl">
                 <div>
                   <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
@@ -3317,7 +3305,6 @@ const Dashboard = () => {
                   </span>
                 </div>
               </div>
-
               <div>
                 <span className="text-xs font-bold text-gray-400 uppercase block mb-1">
                   Summary Abstract Description
@@ -3350,7 +3337,7 @@ const Dashboard = () => {
       )}
 
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px] ">
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
           <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh] rounded-3xl">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
@@ -3423,7 +3410,6 @@ const Dashboard = () => {
                   />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 border border-gray-200 rounded-2xl">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -3448,7 +3434,6 @@ const Dashboard = () => {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     Clinical Condition Link *
@@ -3472,7 +3457,6 @@ const Dashboard = () => {
                     ))}
                   </select>
                 </div>
-
                 <div className="mt-1">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     Delivery Channel Link *
@@ -3496,7 +3480,6 @@ const Dashboard = () => {
                     ))}
                   </select>
                 </div>
-
                 <div className="mt-1">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     Format Type Link *
@@ -3521,9 +3504,7 @@ const Dashboard = () => {
                   </select>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
-                {/* HERO IMAGE FILE INPUT */}
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
                     Main Hero Image Asset *
@@ -3561,8 +3542,6 @@ const Dashboard = () => {
                     </p>
                   )}
                 </div>
-
-                {/* THUMBNAIL IMAGE FILE INPUT */}
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
                     Thumbnail Preview Image *
@@ -3601,7 +3580,6 @@ const Dashboard = () => {
                   )}
                 </div>
               </div>
-
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
                   Brief Abstract Summary Text
@@ -3619,7 +3597,6 @@ const Dashboard = () => {
                   className="w-full border border-gray-200 p-4 rounded-xl focus:outline-none focus:border-[#5932EA]"
                 />
               </div>
-
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
                   Structured Body Guidelines (HTML supported)
@@ -3637,7 +3614,6 @@ const Dashboard = () => {
                   className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-[#5932EA]"
                 />
               </div>
-
               <div className="pt-4 border-t border-gray-100 flex justify-end gap-3 bg-white sticky bottom-0">
                 <button
                   type="button"
@@ -3658,7 +3634,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* CREATION FORM DIALOG MODAL WIDGET */}
       {isCreateBlogModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
           <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh] rounded-3xl shadow-xl">
@@ -3692,7 +3667,6 @@ const Dashboard = () => {
                   className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -3735,8 +3709,6 @@ const Dashboard = () => {
                   />
                 </div>
               </div>
-
-              {/* AUTOMATIC UPLOAD TRANSITION CONTROLLER */}
               {newBlogForm.tagTitle === "6a4a2abf088ffb1e447f6680" ? (
                 <div className="bg-amber-50/50 p-4 border border-amber-200 border-dashed rounded-2xl">
                   <label className="block text-xs font-bold text-amber-700 uppercase tracking-wider mb-1.5">
@@ -3768,6 +3740,7 @@ const Dashboard = () => {
                         : `✓ Ready: ${newBlogForm.podcastVideoUrl}`}
                     </p>
                   )}
+                  \
                 </div>
               ) : (
                 <div className="bg-gray-50 p-4 border border-gray-200 rounded-2xl">
@@ -3802,7 +3775,6 @@ const Dashboard = () => {
                   )}
                 </div>
               )}
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -3839,7 +3811,6 @@ const Dashboard = () => {
                   />
                 </div>
               </div>
-
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
                   Article Body Structure (Rich HTML content supported)
@@ -3857,7 +3828,6 @@ const Dashboard = () => {
                   className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-[#5932EA]"
                 />
               </div>
-
               <div className="pt-4 border-t flex justify-end gap-3 bg-white sticky bottom-0">
                 <button
                   type="button"
@@ -3882,7 +3852,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* INSPECTION HOVER DIALOG BOX MODAL */}
       {selectedBlogDetail && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
           <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[85vh] rounded-3xl">
@@ -3904,7 +3873,6 @@ const Dashboard = () => {
               <p className="text-xs text-gray-400 font-mono">
                 CMS Object Hash Key: {selectedBlogDetail.id}
               </p>
-
               <div className="bg-gray-50 p-4 rounded-xl border space-y-2">
                 <p>
                   <strong>Subtitle:</strong>{" "}
@@ -3921,7 +3889,6 @@ const Dashboard = () => {
                   {selectedBlogDetail.fieldData?.["time-to-read"] || "N/A"}
                 </p>
               </div>
-
               {selectedBlogDetail.fieldData?.["podcast-cta-main"]?.url && (
                 <div className="mt-2">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">
@@ -3934,7 +3901,6 @@ const Dashboard = () => {
                   />
                 </div>
               )}
-
               <div>
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">
                   Body Text Content Block Markup
