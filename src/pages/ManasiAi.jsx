@@ -287,156 +287,154 @@ const ManasiAi = () => {
   };
 
   const handleRatingSelect = (rating) => {
-    setScoringState((prev) => ({ ...prev, selectedRating: rating }));
+  setScoringState((prev) => ({ ...prev, selectedRating: rating }));
 
-    const { dataset, currentDomainIdx, currentQuestionIdx, answers } =
-      scoringState;
-    const currentDomain = dataset[currentDomainIdx];
-    const domainName = currentDomain.domain;
-    const currentQuestionText = currentDomain.questions[currentQuestionIdx];
+  const { dataset, currentDomainIdx, currentQuestionIdx, answers } =
+    scoringState;
+  const currentDomain = dataset[currentDomainIdx];
+  const domainName = currentDomain.domain;
+  const currentQuestionText = currentDomain.questions[currentQuestionIdx];
 
-    const currentDomainScores = answers[domainName] || [];
-    const currentType = currentDomain.type || "None";
-    const updatedDomainScores = [...currentDomainScores, rating];
+  const currentDomainScores = answers[domainName] || [];
+  const currentType = currentDomain.type || "None";
+  const updatedDomainScores = [...currentDomainScores, rating];
 
-    const updatedAnswers = { ...answers, [domainName]: updatedDomainScores };
+  const updatedAnswers = { ...answers, [domainName]: updatedDomainScores };
 
-    saveQuizTurnToHistory(
-      `[${domainName}] ${currentQuestionText}`,
-      `Severity Rating: ${rating}/5`,
-    );
+  saveQuizTurnToHistory(
+    `[${domainName}] ${currentQuestionText}`,
+    `Severity Rating: ${rating}/5`,
+  );
 
-    setTimeout(() => {
-      if (currentQuestionIdx + 1 < currentDomain.questions.length) {
-        setScoringState((prev) => ({
-          ...prev,
-          currentQuestionIdx: prev.currentQuestionIdx + 1,
-          answers: updatedAnswers,
-          selectedRating: null,
-        }));
-      } else if (currentDomainIdx + 1 < dataset.length) {
-        setScoringState((prev) => ({
-          ...prev,
-          currentDomainIdx: prev.currentDomainIdx + 1,
-          currentQuestionIdx: 0,
-          answers: updatedAnswers,
-          selectedRating: null,
-        }));
-      } else {
-        // Map classification values precisely to match the API guide criteria ('ND' or 'NT')
-        const targetClassification =
-          scoringState.dataset === NEURODIVERGENT_SET ? "ND" : "NT";
+  setTimeout(() => {
+    if (currentQuestionIdx + 1 < currentDomain.questions.length) {
+      setScoringState((prev) => ({
+        ...prev,
+        currentQuestionIdx: prev.currentQuestionIdx + 1,
+        answers: updatedAnswers,
+        selectedRating: null,
+      }));
+    } else if (currentDomainIdx + 1 < dataset.length) {
+      setScoringState((prev) => ({
+        ...prev,
+        currentDomainIdx: prev.currentDomainIdx + 1,
+        currentQuestionIdx: 0,
+        answers: updatedAnswers,
+        selectedRating: null,
+      }));
+    } else {
+      const targetClassification =
+        scoringState.dataset === NEURODIVERGENT_SET ? "ND" : "NT";
 
-        // 1. Build the exact scorePayloadArray matching the backend request contract casing
-        const scorePayloadArray = Object.keys(updatedAnswers).map((dName) => {
-          const scoresArray = updatedAnswers[dName];
-          const rawScore = scoresArray.reduce((sum, val) => sum + val, 0);
-          const maxPossible = scoresArray.length * 5;
-          const percentage = Math.round((rawScore / maxPossible) * 100);
+      const scorePayloadArray = Object.keys(updatedAnswers).map((dName) => {
+        const scoresArray = updatedAnswers[dName];
+        const rawScore = scoresArray.reduce((sum, val) => sum + val, 0);
+        const maxPossible = scoresArray.length * 5;
+        const percentage = Math.round((rawScore / maxPossible) * 100);
 
-          let calculatedSeverity = "Low";
-          if (percentage >= 40 && percentage <= 69)
-            calculatedSeverity = "Moderate";
-          if (percentage >= 70) calculatedSeverity = "High";
+        let calculatedSeverity = "Low";
+        if (percentage >= 40 && percentage <= 69)
+          calculatedSeverity = "Moderate";
+        if (percentage >= 70) calculatedSeverity = "High";
 
-          const originalDomainObj = scoringState.dataset.find(
-            (item) => item.domain === dName,
-          );
-          const currentEntryType = originalDomainObj?.type || null;
+        const originalDomainObj = scoringState.dataset.find(
+          (item) => item.domain === dName,
+        );
+        const currentEntryType = originalDomainObj?.type || null;
 
-          return {
-            domain: dName,
-            domain_type: currentEntryType,
-            Score: percentage, // ⚠️ Exact Contract Casing: Capital S
-            Severity: calculatedSeverity, // ⚠️ Exact Contract Casing: Capital S
-          };
-        });
-
-        setScoringState((prev) => ({ ...prev, isActive: false }));
-        setIsLoading(true);
-
-        const wireFormatBody = {
-          user_id: currentUserId || sessionId,
-          Classification: targetClassification, // ⚠️ Exact Contract Casing: Capital C
-          score: scorePayloadArray, // ⚠️ Exact Contract Casing: Lowercase array
+        return {
+          domain: dName,
+          domain_type: currentEntryType,
+          Score: percentage,
+          Severity: calculatedSeverity,
         };
+      });
 
-        // PIPELINE STEP 1: Submit base questionnaire configurations to the original backend database
-        fetch("https://manasi-production.up.railway.app/roadmap/submit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(wireFormatBody),
+      const wireFormatBody = {
+        user_id: currentUserId || sessionId,
+        Classification: targetClassification,
+        score: scorePayloadArray,
+      };
+
+      setScoringState((prev) => ({ ...prev, isActive: false }));
+      setIsLoading(true);
+
+      // PIPELINE STEP 1: Submit base questionnaire configurations
+      fetch("https://manasi-production.up.railway.app/roadmap/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(wireFormatBody),
+      })
+        .then((res) => {
+          if (!res.ok)
+            throw new Error("Base database roadmap submission failed.");
+          return res.json();
         })
-          .then((res) => {
-            if (!res.ok)
-              throw new Error("Base database roadmap submission failed.");
-            return res.json();
-          })
-          .then((submitDbData) => {
-            // PIPELINE STEP 2: Fetch mapped therapies configuration instantly matching the payload
-            return fetch(
-              "https://manasi-production.up.railway.app/roadmap/mapped-therapies",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Accept: "application/json",
-                },
-                body: JSON.stringify(wireFormatBody),
+        .then((submitDbData) => {
+          // PIPELINE STEP 2: Fetch mapped therapies
+          return fetch(
+            "https://manasi-production.up.railway.app/roadmap/mapped-therapies",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
               },
+              body: JSON.stringify(wireFormatBody),
+            },
+          );
+        })
+        .then((res) => {
+          if (!res.ok)
+            throw new Error(
+              `Therapy API rejected request with status: ${res.status}`,
             );
-          })
-          .then((res) => {
-            if (!res.ok)
-              throw new Error(
-                `Therapy API rejected request with status: ${res.status}`,
-              );
-            return res.json();
-          })
-          .then((therapyData) => {
-            // 🌟 TARGET VIEWING STAGE: Data has successfully arrived
-            console.log(
-              "Step 2 Success — Mapped Therapies payload received:",
-              therapyData,
-            );
+          return res.json();
+        })
+        .then((therapyData) => {
+          console.log(
+            "Step 2 Success — Mapped Therapies payload received:",
+            therapyData,
+          );
 
-            // Save the complete object structure cleanly to your Supabase table
-            return supabase.from("user_roadmap_mapped").upsert({
-              user_id: currentUserId || sessionId,
-              classification: therapyData.classification,
-              mapped_domains: therapyData.mapped_domains, // Saves your mapped_domains array
-              updated_at: new Date().toISOString(),
-            });
-          })
-          .then(({ error: supabaseError }) => {
-            if (supabaseError) throw supabaseError;
-
-            setIsLoading(false);
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                content:
-                  "Thank you for completing your assessment! Your cognitive profile roadmap has been securely logged and processed.",
-              },
-            ]);
-            if (currentUserId) fetchHistoryRecords(currentUserId);
-          })
-          .catch((err) => {
-            console.error("Pipeline trace error:", err);
-            setIsLoading(false);
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                content:
-                  "Your assessment completed, but we encountered an issue saving or processing your profile data records.",
-              },
-            ]);
+          // Save both mapped_domains and aggregated_therapies to Supabase
+          return supabase.from("user_roadmap_mapped").upsert({
+            user_id: currentUserId || sessionId,
+            classification: therapyData.classification,
+            mapped_domains: therapyData.mapped_domains,
+            aggregated_therapies: therapyData.aggregated_therapies || [],
+            updated_at: new Date().toISOString(),
           });
-      }
-    }, 400);
-  };
+        })
+        .then(({ error: supabaseError }) => {
+          if (supabaseError) throw supabaseError;
+
+          setIsLoading(false);
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content:
+                "Thank you for completing your assessment! Your cognitive profile roadmap has been securely logged and processed.",
+            },
+          ]);
+          if (currentUserId) fetchHistoryRecords(currentUserId);
+        })
+        .catch((err) => {
+          console.error("Pipeline trace error:", err);
+          setIsLoading(false);
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content:
+                "Your assessment completed, but we encountered an issue saving or processing your profile data records.",
+            },
+          ]);
+        });
+    }
+  }, 400);
+};
 
   const sendMessage = async (textOverride) => {
     const text = (textOverride ?? userInput).trim();
@@ -515,10 +513,10 @@ const ManasiAi = () => {
       <div
         className={`fixed top-0 left-0 h-full w-64 
           bg-black border-r border-white/10 z-50 transform transition-transform duration-300 ease-in-out flex flex-col p-4 ${
-          isSidebarOpen
-            ? "translate-x-0 opacity-100 visible"
-            : "-translate-x-full opacity-0 invisible"
-        }`}
+            isSidebarOpen
+              ? "translate-x-0 opacity-100 visible"
+              : "-translate-x-full opacity-0 invisible"
+          }`}
         style={{
           // Inline style safety layer to force override Webflow container defaults if needed
           transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",

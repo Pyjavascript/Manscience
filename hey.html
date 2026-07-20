@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    .blog-item {
+      border: solid 2px #000;
+      padding: 10px;
+    }
+  </style>
+  <body>
+    <section>
+      <div class="blog-item">
+        <h1 class="is-poadcast">Podcast</h1>
+        <p class="blogs-name">Author</p>
+        <p class="blogs-date">Date</p>
+      </div>
+      <div class="blog-item">
+        <h1 class="is-poadcast">Podcast</h1>
+        <p class="blogs-name">Author</p>
+        <p class="blogs-date">Date</p>
+      </div>
+      <div class="blog-item">
+        <h1 class="is-poadcast">Blog</h1>
+        <p class="blogs-name">Author</p>
+        <p class="blogs-date">Date</p>
+      </div>
+      <div class="blog-item">
+        <h1 class="is-poadcast">Blog</h1>
+        <p class="blogs-name">Author</p>
+        <p class="blogs-date">Date</p>
+      </div>
+      <div class="blog-item">
+        <h1 class="is-poadcast">Podcast</h1>
+        <p class="blogs-name">Author</p>
+        <p class="blogs-date">Date</p>
+      </div>
+    </section>
+
+    <script>
+        
+      const Blogs = document.querySelectorAll(".blog-item");
+      Blogs.forEach((blog) => {
+        const isPodcast = blog.querySelector(".is-poadcast");
+        const Name = blog.querySelector(".blogs-name");
+        const Date = blog.querySelector(".blogs-date");
+
+        blog.addEventListener("mouseenter", () => {1
+          console.log("entered");
+          if (isPodcast && isPodcast.innerText == "Podcast") {
+            Date.style.color = "#68270B";
+            Name.style.color = "#68270B";
+          }
+        });
+
+        blog.addEventListener("mouseleave", () => {
+          console.log("entered");
+          if (isPodcast && isPodcast.innerText == "Podcast") {
+            Date.style.color = "white";
+            Name.style.color = "white";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

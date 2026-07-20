@@ -14,6 +14,8 @@ import SmoothExpertSlider from './pages/SmoothExpertSlider'
 import ManasiAi from "./pages/ManasiAi"; 
 import FAQSection from "./pages/FAQSection";
 import SubscriptionInput from "./components/SubscriptionInput";
+import TermsAndConditions from "./components/TermsAndConditions";
+import PractitionerDashboard from "./pages/PractitionerDashboard";
 
 export default function App() {
   return (
@@ -37,6 +39,8 @@ export default function App() {
         <Route path="/slider" element={<SmoothExpertSlider/>}/>
         <Route path="/ai" element={<ManasiAi/>}/>
         <Route path="/post/mnri" element={<FAQSection/>}/>
+        <Route path="/tc" element={<TermsAndConditions/>}/>
+        <Route path="/practitioner-dashboard" element={<PractitionerDashboard/>}/>
 
       </Routes>
     </BrowserRouter>

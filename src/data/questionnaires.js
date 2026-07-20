@@ -1,7 +1,7 @@
 export const NEUROTYPICAL_SET = [
   {
     domain: "Attention & Concentration",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "I find it hard to concentrate or stay focused on a task",
       "My mind feels foggy or unclear ('brain fog')",
@@ -12,7 +12,7 @@ export const NEUROTYPICAL_SET = [
   },
   {
     domain: "Memory & Processing",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "I forget recent events, names, or where I put things",
       "I take longer to process or understand information",
@@ -23,7 +23,7 @@ export const NEUROTYPICAL_SET = [
   },
   {
     domain: "Executive Function",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "I find it hard to plan, organise, or prioritise tasks",
       "I struggle to start tasks even when I want to",
@@ -34,7 +34,7 @@ export const NEUROTYPICAL_SET = [
   },
   {
     domain: "Motor Function & Coordination",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "I have weakness, stiffness, or reduced control on one/both sides",
       "My balance or steadiness is affected",
@@ -44,8 +44,8 @@ export const NEUROTYPICAL_SET = [
     ],
   },
   {
-    domain:  "Mood & Emotional Wellbeing",
-    type:'Complementary',
+    domain: "Mood & Emotional Wellbeing",
+    type: "Complementary",
     questions: [
       "I feel low, sad, or down most of the day",
       "I've lost interest or pleasure in things I used to enjoy",
@@ -56,7 +56,7 @@ export const NEUROTYPICAL_SET = [
   },
   {
     domain: " Anxiety & Stress",
-    type:'Complementary',
+    type: "Complementary",
     questions: [
       "I feel anxious, worried, or on edge",
       "I find it hard to relax or switch off",
@@ -67,7 +67,7 @@ export const NEUROTYPICAL_SET = [
   },
   {
     domain: " Trauma Responses",
-    type:'Complementary',
+    type: "Complementary",
     questions: [
       "I have unwanted, intrusive memories of a distressing event",
       "I have flashbacks or nightmares about it",
@@ -78,7 +78,7 @@ export const NEUROTYPICAL_SET = [
   },
   {
     domain: " Sleep",
-    type:'Complementary',
+    type: "Complementary",
     questions: [
       "I have trouble falling asleep",
       "I wake frequently or can't stay asleep",
@@ -89,7 +89,7 @@ export const NEUROTYPICAL_SET = [
   },
   {
     domain: " Pain & Physical Regulation",
-    type:'Complementary',
+    type: "Complementary",
     questions: [
       " I experience ongoing or recurring physical pain",
       "Pain interferes with my daily activities",
@@ -100,7 +100,7 @@ export const NEUROTYPICAL_SET = [
   },
   {
     domain: " Energy, Fatigue & Daily Function",
-    type:'Complementary',
+    type: "Complementary",
     questions: [
       "I feel persistently fatigued or low on energy",
       "I need to rest much more than before",
@@ -114,7 +114,7 @@ export const NEUROTYPICAL_SET = [
 export const NEURODIVERGENT_SET = [
   {
     domain: " Sensory Processing",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "Covers ears or gets overwhelmed by everyday sounds (vacuum, crowds, hand dryers)",
       "Bothered by clothing textures, tags, seams, or certain food textures",
@@ -126,7 +126,7 @@ export const NEURODIVERGENT_SET = [
   },
   {
     domain: " Auditory & Language Processing",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "Needs instructions repeated or seems to 'not hear' in noisy settings",
       "Struggles to follow multi-step spoken directions",
@@ -138,7 +138,7 @@ export const NEURODIVERGENT_SET = [
   },
   {
     domain: " Cognitive Function & Processing",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "Difficulty paying attention or stays focused only briefly",
       "Easily distracted; mind 'going on simultaneously' affects following through",
@@ -149,7 +149,7 @@ export const NEURODIVERGENT_SET = [
   },
   {
     domain: " Academic & Learning",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "Trouble learning to read (slow, effortful, below age level)",
       "Difficulty with spelling or recognising familiar words",
@@ -160,7 +160,7 @@ export const NEURODIVERGENT_SET = [
   },
   {
     domain: " Motor Planning & Coordination",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "Clumsy - bumps into things, trips, drops items often",
       "Difficulty with fine-motor tasks (buttons, laces, cutlery, scissors)",
@@ -171,7 +171,7 @@ export const NEURODIVERGENT_SET = [
   },
   {
     domain: " Body Awareness & Skills",
-    type:'Spine',
+    type: "Spine",
     questions: [
       "Poor interoception - doesn't sense hunger, thirst, temperature, or toile needs",
       "Poor proprioception - can't judge body position without looking",
@@ -182,19 +182,21 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   {
-    domain: " Behaviour & Self-Regulation", // Social Interaction & Communication 
-    type:'Complementary',
+    domain:
+      " Behaviour & Self-Regulation", //  Behaviour & Self-Regulation , Social Interaction & Communication 
+    type: "Complementary",
     questions: [
       "Repetitive movements or sounds (flapping, rocking, tics, throat-clearing)",
       "Strong need for sameness; intense reaction when routines change",
       "Impulsive - acts without thinking, interrupts, struggles to wait",
       "Intense, narrow interests that are hard to redirect",
       "Difficulty with transitions or stopping a preferred activity",
+     
     ],
   },
   {
     domain: " Emotional Regulation",
-    type:'Complementary',
+    type: "Complementary",
     questions: [
       "Big emotional reactions that are hard to calm (meltdowns for age)",
       "Highly reactive - small triggers cause large responses",
@@ -205,7 +207,7 @@ export const NEURODIVERGENT_SET = [
     ],
   },
   // {
-  //   domain: " Social Interaction & Communication", 
+  //   domain: " Social Interaction & Communication",
   //   type:'Complementary',
   //   questions: [
   //     "Difficulty making or keeping friends with same-age peers",
@@ -216,8 +218,8 @@ export const NEURODIVERGENT_SET = [
   //   ],
   // },
   {
-    domain: " General Health & Foundations", // + gut health
-    type:'Complementary',
+    domain: "General Health & Foundations", // General Health & Foundations ,  gut health
+    type: "Complementary",
     questions: [
       "Gut issues - constipation, bloating, pain, or food sensitivities",
       "Eczema, asthma, or allergies",
