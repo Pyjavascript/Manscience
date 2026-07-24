@@ -12,6 +12,9 @@ import {
   FaLock,
   FaDownload,
   FaFilePdf,
+  FaEdit,
+  FaTrash,
+  FaPlus,
 } from "react-icons/fa";
 import { supabase } from "../supabase";
 import { jsPDF } from "jspdf";
@@ -40,7 +43,7 @@ const PractitionerLogin = ({ onLoginSuccess }) => {
 
       if (authError) throw authError;
 
-      // 2. Look up by either user_id OR clean email string for robust verification
+      // 2. Look up by either user_id OR clean email string for verification
       const { data: practitioner, error: pError } = await supabase
         .from("practitioners")
         .select("*")
@@ -61,7 +64,7 @@ const PractitionerLogin = ({ onLoginSuccess }) => {
         );
       }
 
-      // 3. Pass profile structure upward to initialize the dashboard session view
+      // 3. Pass profile structure upward to initialize dashboard view
       onLoginSuccess(authData.user, practitioner);
     } catch (err) {
       setErrorMessage(err.message);
@@ -143,7 +146,7 @@ const PractitionerLogin = ({ onLoginSuccess }) => {
   );
 };
 
-// --- MAIN PRACTITIONER DASHBOARD COMPONENT MODULE ---
+// --- MAIN PRACTITIONER DASHBOARD COMPONENT ---
 const PractitionerDashboard = () => {
   const [sessionUser, setSessionUser] = useState(null);
   const [practitionerProfile, setPractitionerProfile] = useState(null);
@@ -153,6 +156,134 @@ const PractitionerDashboard = () => {
   const [activeSubTab, setActiveSubTab] = useState("cases");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
+  // Dynamic Multi-Question State
+  const [querySubject, setQuerySubject] = useState("");
+  const [questionsList, setQuestionsList] = useState([""]);
+  const [isSendingQuery, setIsSendingQuery] = useState(false);
+
+  // State for Patient Queries History
+  const [patientQueries, setPatientQueries] = useState([]);
+
+  // Fetch queries for active patient
+  const fetchQueriesForCase = async (userId) => {
+    if (!userId) return;
+    try {
+      const { data, error } = await supabase
+        .from("practitioner_queries")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPatientQueries(data || []);
+    } catch (err) {
+      console.error("Error fetching queries for patient:", err.message);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedCase?.user_id) {
+      fetchQueriesForCase(selectedCase.user_id);
+    } else {
+      setPatientQueries([]);
+    }
+  }, [selectedCase]);
+
+  // Form input control handlers
+  const handleAddQuestionField = () => {
+    setQuestionsList([...questionsList, ""]);
+  };
+
+  const handleRemoveQuestionField = (index) => {
+    setQuestionsList(questionsList.filter((_, idx) => idx !== index));
+  };
+
+  const handleQuestionInputChange = (index, value) => {
+    const updated = [...questionsList];
+    updated[index] = value;
+    setQuestionsList(updated);
+  };
+
+  // Submit questions & send email notification safely
+  const handleSendQuery = async (e) => {
+    e.preventDefault();
+
+    const validQuestions = questionsList.filter((q) => q.trim() !== "");
+    if (!querySubject.trim() || validQuestions.length === 0) {
+      alert("Please provide a subject and at least one question.");
+      return;
+    }
+
+    const targetUserId = selectedCase?.user_id;
+    const patientEmail = selectedCase?.userProfile?.email;
+
+    if (!targetUserId) {
+      alert("Missing patient account user ID.");
+      return;
+    }
+
+    try {
+      setIsSendingQuery(true);
+
+      // 1. Insert into database
+      const { error } = await supabase
+        .from("practitioner_queries")
+        .insert([
+          {
+            practitioner_id: practitionerProfile.id,
+            user_id: targetUserId,
+            subject: querySubject.trim(),
+            question: validQuestions.join(" | "),
+            questions: validQuestions,
+            status: "pending",
+          },
+        ]);
+
+      if (error) throw error;
+
+      // 2. Dispatch Email (wrapped so email API failure will not break query state)
+      if (patientEmail && patientEmail !== "N/A") {
+        try {
+          await supabase.functions.invoke("send-notification-email", {
+            method: "POST",
+            body: {
+              recipientEmail: patientEmail,
+              subject: `New Request from Dr. ${practitionerProfile.name}: ${querySubject.trim()}`,
+              message: `Hello,\n\nYour practitioner Dr. ${practitionerProfile.name} has sent you a new questionnaire regarding: "${querySubject.trim()}".\n\nPlease log in to review and submit your answers.`,
+              actionLink: `${window.location.origin}/profile`,
+              buttonText: "Answer Questions in Profile",
+            },
+          });
+        } catch (emailErr) {
+          console.warn("Email alert could not be sent:", emailErr.message);
+        }
+      }
+
+      alert("Questionnaire sent to patient!");
+      setQuerySubject("");
+      setQuestionsList([""]);
+      fetchQueriesForCase(targetUserId);
+    } catch (err) {
+      alert(`Failed to send query: ${err.message}`);
+    } finally {
+      setIsSendingQuery(false);
+    }
+  };
+
+  // Edit Recommendations State
+  const [isEditingRecommendations, setIsEditingRecommendations] = useState(false);
+  const [editableTherapies, setEditableTherapies] = useState([]);
+  const [isSavingTherapies, setIsSavingTherapies] = useState(false);
+
+  useEffect(() => {
+    if (selectedCase?.roadmap?.aggregated_therapies) {
+      setEditableTherapies(selectedCase.roadmap.aggregated_therapies);
+    } else {
+      setEditableTherapies([]);
+    }
+    setIsEditingRecommendations(false);
+  }, [selectedCase]);
+
   const fetchPractitionerWorkspaceContext = async (profileId) => {
     const targetId = profileId || practitionerProfile?.id;
     if (!targetId) return;
@@ -160,34 +291,23 @@ const PractitionerDashboard = () => {
     try {
       setLoading(true);
 
-      // 1. Pull relational cases assigned to this practitioner
       const { data: cases, error: caseErr } = await supabase
         .from("practitioner_roadmap_assignments")
-        .select(
-          `
-          id,
-          assigned_at,
-          user_id,
-          roadmap_id
-        `,
-        )
+        .select("id, assigned_at, user_id, roadmap_id")
         .eq("practitioner_id", targetId)
         .order("assigned_at", { ascending: false });
 
       if (caseErr) throw caseErr;
 
-      // 2. Fetch roadmap data AND matching user profile properties data inside one lookup
       if (cases && cases.length > 0) {
         const compiledCases = await Promise.all(
           cases.map(async (c) => {
-            // Fetch roadmap details from user_roadmap_mapped using the user_id column
             const { data: roadmapDetails } = await supabase
               .from("user_roadmap_mapped")
               .select("*")
               .eq("user_id", c.user_id)
               .maybeSingle();
 
-            // Fetch name and email records details from public.users table
             const { data: userDetails } = await supabase
               .from("users")
               .select("name, email")
@@ -210,10 +330,7 @@ const PractitionerDashboard = () => {
         setAssignedCases([]);
       }
     } catch (err) {
-      console.error(
-        "Error building practitioner state synchronization pipeline:",
-        err.message,
-      );
+      console.error("Error building practitioner workspace context:", err.message);
     } finally {
       setLoading(false);
     }
@@ -231,6 +348,14 @@ const PractitionerDashboard = () => {
     setPractitionerProfile(null);
     setAssignedCases([]);
     setSelectedCase(null);
+  };
+
+  const handleRefreshWorkspace = async () => {
+    if (!practitionerProfile?.id) return;
+    await fetchPractitionerWorkspaceContext(practitionerProfile.id);
+    if (selectedCase?.user_id) {
+      await fetchQueriesForCase(selectedCase.user_id);
+    }
   };
 
   useEffect(() => {
@@ -256,61 +381,120 @@ const PractitionerDashboard = () => {
     checkActiveSession();
   }, []);
 
-  // Translates shortcode identifiers to clear descriptive strings
+  const handleTherapyChange = (index, field, value) => {
+    const updated = [...editableTherapies];
+    if (field === "domains" || field === "relevance") {
+      updated[index][field] = value.split(",").map((item) => item.trim());
+    } else {
+      updated[index][field] = value;
+    }
+    setEditableTherapies(updated);
+  };
+
+  const handleAddTherapyRow = () => {
+    setEditableTherapies([
+      ...editableTherapies,
+      { therapy: "", domains: [], relevance: ["Primary"] },
+    ]);
+  };
+
+  const handleDeleteTherapyRow = (index) => {
+    setEditableTherapies(editableTherapies.filter((_, idx) => idx !== index));
+  };
+
+  const handleSaveRecommendations = async () => {
+    if (!selectedCase?.roadmap?.user_id) return;
+
+    try {
+      setIsSavingTherapies(true);
+
+      const { error } = await supabase
+        .from("user_roadmap_mapped")
+        .update({ aggregated_therapies: editableTherapies })
+        .eq("user_id", selectedCase.roadmap.user_id);
+
+      if (error) throw error;
+
+      setSelectedCase((prev) => ({
+        ...prev,
+        roadmap: {
+          ...prev.roadmap,
+          aggregated_therapies: editableTherapies,
+        },
+      }));
+
+      setAssignedCases((prevCases) =>
+        prevCases.map((c) =>
+          c.id === selectedCase.id
+            ? {
+                ...c,
+                roadmap: {
+                  ...c.roadmap,
+                  aggregated_therapies: editableTherapies,
+                },
+              }
+            : c,
+        ),
+      );
+
+      setIsEditingRecommendations(false);
+      alert("Recommendations updated successfully!");
+    } catch (err) {
+      console.error("Error saving recommendations:", err);
+      alert(`Failed to save: ${err.message}`);
+    } finally {
+      setIsSavingTherapies(false);
+    }
+  };
+
   const getFullClassification = (code) => {
     if (!code) return "Unclassified";
     const clean = code.toUpperCase().trim();
-    if (clean === "NT" || clean === "NEUROTYPICAL")
-      return "Neurotypical";
-    if (clean === "ND" || clean === "NEURODIVERGENT")
-      return "Neurodivergent";
+    if (clean === "ND" || clean === "NEURODIVERGENT") return "Neurodivergent";
+    if (clean === "NT" || clean === "NEUROTYPICAL") return "Neurotypical";
     return code;
   };
 
-  // Helper method for generating the PDF instance
   const buildPdfDoc = (userProfile, roadmapData) => {
     const doc = new jsPDF();
 
-    // Top Header Banner
-    doc.setFillColor(5, 150, 105); // Emerald accent #059669
+    doc.setFillColor(5, 150, 105);
     doc.rect(0, 0, 210, 40, "F");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
+    doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
-    doc.text("PATIENT COGNITIVE ROADMAP", 15, 26);
+    doc.text("COGNITIVE PROFILE ROADMAP", 15, 26);
 
-    // Patient Information Section
-    doc.setFontSize(11);
+    doc.setFontSize(12);
     doc.setTextColor(34, 34, 34);
-    doc.text("PATIENT DEMOGRAPHICS SUMMARY", 15, 54);
+    doc.text("USER DETAILS", 15, 52);
 
     doc.setFont("helvetica", "normal");
-    doc.text(`Patient Name : ${userProfile?.name || "ManaScience Patient"}`, 15, 64);
-    doc.text(`Patient Email: ${userProfile?.email || "N/A"}`, 15, 72);
+    doc.setFontSize(10);
+    doc.text(`Full Account Name :  ${userProfile?.name || "Anonymous Guest"}`, 15, 62);
+    doc.text(`Registered Email   :  ${userProfile?.email || "N/A"}`, 15, 70);
 
     const classificationLabel = getFullClassification(roadmapData?.classification);
     doc.setFont("helvetica", "bold");
-    doc.text(`Classification: ${classificationLabel}`, 15, 84);
+    doc.text(`Classification    :  ${classificationLabel}`, 15, 78);
 
     doc.setDrawColor(226, 232, 240);
-    doc.line(15, 92, 195, 92);
+    doc.line(15, 84, 195, 84);
 
-    // Domain Breakdown Table
     doc.setFont("helvetica", "bold");
-    doc.text("Domain Breakdown Results", 15, 104);
+    doc.setFontSize(12);
+    doc.text("Profile Summary", 15, 94);
 
     const mappedDomainsArray = roadmapData?.mapped_domains || [];
     const tableRows = mappedDomainsArray.map((item) => [
       item.domain || "General Domain",
-      item.domain_type || "N/A",
-      `${item.score ?? 0}%`,
       item.severity || "Low",
     ]);
 
     autoTable(doc, {
-      startY: 110,
-      head: [["Assessment Domain", "Domain Type", "Score", "Severity"]],
+      startY: 100,
+      head: [["Assessment Domain", "Severity"]],
       body: tableRows,
       headStyles: { fillColor: [5, 150, 105], fontStyle: "bold" },
       bodyStyles: { font: "helvetica", fontSize: 10 },
@@ -319,43 +503,45 @@ const PractitionerDashboard = () => {
       theme: "striped",
     });
 
-    // Aggregated Therapies Summary
-    const finalY = doc.lastAutoTable.finalY || 180;
+    let currentY = doc.lastAutoTable.finalY || 160;
+    currentY += 14;
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text("Aggregated Interventions Summary:", 15, finalY + 12);
+    doc.setTextColor(34, 34, 34);
+    doc.text("Recommendations:", 15, currentY);
+    currentY += 8;
 
     const aggregatedTherapies = roadmapData?.aggregated_therapies || [];
-    const aggRows = aggregatedTherapies.map((item) => [
-      item.therapy || "N/A",
-      Array.isArray(item.domains) ? item.domains.join(", ") : "N/A",
-      Array.isArray(item.relevance) ? item.relevance.join(", ") : "N/A",
-    ]);
 
-    autoTable(doc, {
-      startY: finalY + 16,
-      head: [["Therapy Intervention", "Target Domains", "Relevance"]],
-      body:
-        aggRows.length > 0
-          ? aggRows
-          : [["No aggregated therapies listed", "-", "-"]],
-      headStyles: { fillColor: [5, 150, 105], fontStyle: "bold" },
-      bodyStyles: { font: "helvetica", fontSize: 9 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-      margin: { left: 15, right: 15 },
-      theme: "striped",
-    });
+    if (aggregatedTherapies.length === 0) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(120, 120, 120);
+      doc.text("• No recommendations listed", 18, currentY);
+    } else {
+      aggregatedTherapies.forEach((item) => {
+        if (currentY > 270) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(34, 34, 34);
+        doc.text(`• ${item.therapy || "N/A"}`, 18, currentY);
+        currentY += 6;
+      });
+    }
 
     return doc;
   };
 
-  // Local PDF Download
   const generateRoadmapPdf = (userProfile, roadmapData) => {
     const doc = buildPdfDoc(userProfile, roadmapData);
-    doc.save(`Patient_Roadmap_${userProfile?.name || "Report"}.pdf`);
+    doc.save(`Roadmap_Report_${userProfile?.name || "User"}.pdf`);
   };
 
-  // Email PDF to Patient
   const emailRoadmapPdf = async (userProfile, roadmapData) => {
     if (!userProfile?.email || userProfile.email === "N/A") {
       alert("This patient record lacks a valid destination email address.");
@@ -375,9 +561,9 @@ const PractitionerDashboard = () => {
           method: "POST",
           body: {
             recipientEmail: userProfile.email,
-            recipientName: userProfile.name || "Valued Patient",
+            recipientName: userProfile.name || "Valued Member",
             pdfAttachment: base64Content,
-            fileName: `Patient_Roadmap_${userProfile.name || "Report"}.pdf`,
+            fileName: `Roadmap_Report_${userProfile.name || "User"}.pdf`,
           },
         },
       );
@@ -397,13 +583,38 @@ const PractitionerDashboard = () => {
     }
   };
 
+  // Real-time listener for query answers
+  useEffect(() => {
+    const userId = selectedCase?.user_id;
+    if (!userId) return;
+
+    const channel = supabase
+      .channel("patient-queries-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "practitioner_queries",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          fetchQueriesForCase(userId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedCase?.user_id]);
+
   if (!sessionUser || !practitionerProfile) {
     return <PractitionerLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
     <main className="h-screen bg-slate-50 flex manrope text-gray-800 overflow-hidden">
-      {/* SIDEBAR AREA LAYOUT */}
       <aside className="w-72 bg-white border-r border-slate-200/80 flex flex-col p-3 shrink-0 h-full">
         <div className="p-4 flex items-center gap-3 border-b border-slate-100 pb-5">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100/40">
@@ -442,7 +653,6 @@ const PractitionerDashboard = () => {
         </button>
       </aside>
 
-      {/* VIEWPORT CONTROLLER */}
       <section className="flex-1 h-full p-8 overflow-y-auto min-w-0 relative">
         <header className="flex justify-between items-center mb-8 border-b border-slate-200/50 pb-5">
           <div>
@@ -459,9 +669,7 @@ const PractitionerDashboard = () => {
             </p>
           </div>
           <button
-            onClick={() =>
-              fetchPractitionerWorkspaceContext(practitionerProfile.id)
-            }
+            onClick={handleRefreshWorkspace}
             className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-white rounded-xl border border-transparent hover:border-slate-200 transition cursor-pointer"
           >
             <FaSync
@@ -473,20 +681,19 @@ const PractitionerDashboard = () => {
 
         {loading ? (
           <div className="text-center py-20 italic text-slate-400 text-sm">
-            Syncing continuous database records variables context models...
+            Syncing continuous database records...
           </div>
         ) : (
           <>
             {activeSubTab === "cases" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                {/* LEFT ASSIGNED LIST SIDEBAR COLUMN */}
                 <div className="bg-white border border-slate-200 rounded-3xl p-4 space-y-2.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-2 mb-1">
                     Assigned Screening Profiles
                   </span>
                   {assignedCases.length === 0 ? (
                     <p className="text-xs text-slate-400 italic p-4 text-center">
-                      No assigned patient case evaluation histories available.
+                      No assigned patient cases available.
                     </p>
                   ) : (
                     assignedCases.map((caseItem) => {
@@ -527,11 +734,9 @@ const PractitionerDashboard = () => {
                   )}
                 </div>
 
-                {/* RIGHT DETAILED GRID TAB VIEW SCREEN */}
                 <div className="lg:col-span-2">
                   {selectedCase ? (
                     <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-6">
-                      {/* Header with Download & Email PDF Buttons */}
                       <div className="border-b pb-4 border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                         <div>
                           <h3 className="text-lg font-bold text-slate-900 tracking-tight">
@@ -560,7 +765,6 @@ const PractitionerDashboard = () => {
                             )}
                           </span>
 
-                          {/* DOWNLOAD PDF BUTTON */}
                           <button
                             onClick={() =>
                               generateRoadmapPdf(
@@ -569,13 +773,11 @@ const PractitionerDashboard = () => {
                               )
                             }
                             className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-semibold text-xs py-1.5 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-                            title="Download PDF Report"
                           >
                             <FaDownload size={11} />
                             <span>Download PDF</span>
                           </button>
 
-                          {/* 🌟 EMAIL PDF BUTTON */}
                           <button
                             disabled={isSendingEmail}
                             onClick={() =>
@@ -585,7 +787,6 @@ const PractitionerDashboard = () => {
                               )
                             }
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-1.5 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
-                            title="Email PDF Report to Patient"
                           >
                             <FaFilePdf size={11} />
                             <span>{isSendingEmail ? "Sending..." : "Email PDF"}</span>
@@ -598,29 +799,17 @@ const PractitionerDashboard = () => {
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                              <th className="py-3 px-5">
-                                Assessment Target Domain
-                              </th>
-                              <th className="py-3 px-5 text-center">
-                                Score Result
-                              </th>
-                              <th className="py-3 px-5 text-center">
-                                Severity Factor
-                              </th>
+                              <th className="py-3 px-5">Assessment Target Domain</th>
+                              <th className="py-3 px-5 text-center">Score Result</th>
+                              <th className="py-3 px-5 text-center">Severity Factor</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                             {(selectedCase.roadmap?.mapped_domains || []).map(
                               (domainItem, index) => (
-                                <tr
-                                  key={index}
-                                  className="hover:bg-slate-50/50 transition"
-                                >
+                                <tr key={index} className="hover:bg-slate-50/50 transition">
                                   <td className="py-4 px-5 font-semibold text-slate-900">
-                                    <div>
-                                      {domainItem.domain ||
-                                        "General Assessment Focus"}
-                                    </div>
+                                    <div>{domainItem.domain || "General Assessment Focus"}</div>
                                     {domainItem.domain_type && (
                                       <span className="inline-block text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded mt-0.5">
                                         {domainItem.domain_type}
@@ -650,27 +839,114 @@ const PractitionerDashboard = () => {
                         </table>
                       </div>
 
-                      {/* 2. AGGREGATED THERAPIES OVERVIEW SECTION */}
+                      {/* 2. EDITABLE AGGREGATED THERAPIES SECTION */}
                       <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
                           <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                             <FaBrain className="text-emerald-600" size={14} />
-                            Aggregated Interventions Summary
+                            Aggregated Interventions & Recommendations
                           </h4>
-                          <span className="text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 px-2.5 py-1 rounded-md">
-                            {
-                              (selectedCase.roadmap?.aggregated_therapies || [])
-                                .length
-                            }{" "}
-                            Total Therapies
-                          </span>
+
+                          <div className="flex items-center gap-2">
+                            {!isEditingRecommendations ? (
+                              <button
+                                onClick={() => setIsEditingRecommendations(true)}
+                                className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1 px-3 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                              >
+                                <FaEdit size={12} />
+                                Edit Recommendations
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditableTherapies(selectedCase.roadmap?.aggregated_therapies || []);
+                                    setIsEditingRecommendations(false);
+                                  }}
+                                  className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-1 px-3 rounded-lg transition cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  disabled={isSavingTherapies}
+                                  onClick={handleSaveRecommendations}
+                                  className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1 px-3 rounded-lg transition disabled:opacity-50 cursor-pointer"
+                                >
+                                  {isSavingTherapies ? "Saving..." : "Save Changes"}
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
 
-                        {selectedCase.roadmap?.aggregated_therapies &&
-                        selectedCase.roadmap.aggregated_therapies.length > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {selectedCase.roadmap.aggregated_therapies.map(
-                              (item, aggIdx) => (
+                        {/* EDIT MODE FORM VIEW */}
+                        {isEditingRecommendations ? (
+                          <div className="space-y-4">
+                            {editableTherapies.map((item, idx) => (
+                              <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 relative shadow-xs">
+                                <button
+                                  onClick={() => handleDeleteTherapyRow(idx)}
+                                  className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1"
+                                >
+                                  <FaTrash size={10} /> Remove
+                                </button>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-16">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                      Therapy Title
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={item.therapy || ""}
+                                      onChange={(e) => handleTherapyChange(idx, "therapy", e.target.value)}
+                                      placeholder="e.g. Cognitive Behavioral Therapy"
+                                      className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                      Relevance (comma-separated)
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={Array.isArray(item.relevance) ? item.relevance.join(", ") : item.relevance || ""}
+                                      onChange={(e) => handleTherapyChange(idx, "relevance", e.target.value)}
+                                      placeholder="Primary, Secondary"
+                                      className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                    Mapped Domains (comma-separated)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={Array.isArray(item.domains) ? item.domains.join(", ") : item.domains || ""}
+                                    onChange={(e) => handleTherapyChange(idx, "domains", e.target.value)}
+                                    placeholder="Executive Function, Sensory Processing"
+                                    className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+
+                            <button
+                              onClick={handleAddTherapyRow}
+                              className="w-full border border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-700 text-xs font-semibold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <FaPlus size={10} /> Add New Recommendation
+                            </button>
+                          </div>
+                        ) : (
+                          /* READ-ONLY DISPLAY VIEW */
+                          selectedCase.roadmap?.aggregated_therapies &&
+                          selectedCase.roadmap.aggregated_therapies.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {selectedCase.roadmap.aggregated_therapies.map((item, aggIdx) => (
                                 <div
                                   key={aggIdx}
                                   className="bg-white border border-slate-200/80 rounded-xl p-3.5 space-y-2 shadow-xs hover:border-emerald-200 transition"
@@ -679,25 +955,24 @@ const PractitionerDashboard = () => {
                                     <span className="font-bold text-sm text-slate-900">
                                       {item.therapy}
                                     </span>
-                                    {item.relevance &&
-                                      item.relevance.length > 0 && (
-                                        <div className="flex gap-1">
-                                          {item.relevance.map((rel, rIdx) => (
-                                            <span
-                                              key={rIdx}
-                                              className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider ${
-                                                rel === "Primary"
-                                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                                                  : rel === "Secondary"
-                                                    ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                                    : "bg-purple-50 text-purple-700 border border-purple-200"
-                                              }`}
-                                            >
-                                              {rel}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
+                                    {item.relevance && item.relevance.length > 0 && (
+                                      <div className="flex gap-1">
+                                        {item.relevance.map((rel, rIdx) => (
+                                          <span
+                                            key={rIdx}
+                                            className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider ${
+                                              rel === "Primary"
+                                                ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                                : rel === "Secondary"
+                                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                                  : "bg-purple-50 text-purple-700 border border-purple-200"
+                                            }`}
+                                          >
+                                            {rel}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
 
                                   {item.domains && item.domains.length > 0 && (
@@ -716,22 +991,131 @@ const PractitionerDashboard = () => {
                                     </div>
                                   )}
                                 </div>
-                              ),
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-400 italic text-center py-2">
-                            No aggregated therapies recorded for this roadmap
-                            profile.
-                          </p>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400 italic text-center py-2">
+                              No aggregated therapies recorded for this roadmap profile.
+                            </p>
+                          )
                         )}
                       </div>
+
+                      {/* 3. MULTI-QUESTION REQUEST FORM & HISTORY */}
+                      <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-5">
+                        <form onSubmit={handleSendQuery} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-xs">
+                          <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Request Information / Send Questionnaire
+                          </div>
+                          
+                          <input
+                            type="text"
+                            placeholder="Subject / Questionnaire Title (e.g., Weekly Symptom & Food Log)"
+                            value={querySubject}
+                            onChange={(e) => setQuerySubject(e.target.value)}
+                            className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-slate-50/50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
+                            required
+                          />
+
+                          {/* Dynamic Question Inputs List */}
+                          <div className="space-y-2">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                              Questions List
+                            </label>
+                            {questionsList.map((qText, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}.</span>
+                                <input
+                                  type="text"
+                                  placeholder={`Question #${idx + 1}`}
+                                  value={qText}
+                                  onChange={(e) => handleQuestionInputChange(idx, e.target.value)}
+                                  className="flex-1 border border-slate-200 rounded-lg p-2 text-xs bg-slate-50/50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
+                                  required
+                                />
+                                {questionsList.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveQuestionField(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs px-2 font-bold cursor-pointer"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex justify-between items-center pt-2">
+                            <button
+                              type="button"
+                              onClick={handleAddQuestionField}
+                              className="text-xs text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer"
+                            >
+                              + Add Another Question
+                            </button>
+
+                            <button
+                              type="submit"
+                              disabled={isSendingQuery}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-4 rounded-lg transition cursor-pointer disabled:opacity-50"
+                            >
+                              {isSendingQuery ? "Sending..." : "Send Request to Patient"}
+                            </button>
+                          </div>
+                        </form>
+
+                        {/* Query Threads History List */}
+                        <div className="space-y-3 pt-2">
+                          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Sent Questionnaires & Patient Answers
+                          </div>
+                          {patientQueries.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic bg-white p-4 rounded-xl border border-slate-200 text-center">
+                              No inquiries sent to this patient yet.
+                            </p>
+                          ) : (
+                            patientQueries.map((q) => {
+                              const qList = Array.isArray(q.questions) && q.questions.length > 0 ? q.questions : [q.question];
+                              const aList = Array.isArray(q.responses) ? q.responses : [];
+
+                              return (
+                                <div key={q.id} className="border border-slate-200 rounded-xl p-4 space-y-3 text-xs bg-white shadow-xs">
+                                  <div className="flex justify-between items-center border-b pb-2 border-slate-100">
+                                    <span className="font-bold text-slate-900 text-sm">{q.subject}</span>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${q.status === 'answered' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                      {q.status}
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-2.5">
+                                    {qList.map((qItem, idx) => (
+                                      <div key={idx} className="space-y-1">
+                                        <p className="text-slate-700 font-semibold">
+                                          {qList.length > 1 ? `${idx + 1}. ` : ""}
+                                          {qItem}
+                                        </p>
+                                        {q.status === "answered" ? (
+                                          <div className="bg-emerald-50 border border-emerald-100 text-emerald-900 p-2 rounded-lg text-xs font-sans">
+                                            <strong>Patient Response:</strong> {aList[idx] || q.response}
+                                          </div>
+                                        ) : (
+                                          <p className="text-[11px] text-amber-600 italic">Awaiting patient response...</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+
                     </div>
                   ) : (
                     <div className="bg-white/60 border border-dashed rounded-3xl p-16 text-center text-slate-400 text-sm italic font-medium">
-                      Select an evaluation row tracking item from the left
-                      registry dashboard menu options to drill down into active
-                      clinical domains metrics.
+                      Select an evaluation row tracking item from the left registry dashboard menu options to drill down into active clinical domains metrics.
                     </div>
                   )}
                 </div>

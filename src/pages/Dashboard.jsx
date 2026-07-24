@@ -20,7 +20,7 @@ import {
   FaComments,
   FaPlus,
   FaEdit,
-  FaDownload
+  FaDownload,
 } from "react-icons/fa";
 import {
   BarChart,
@@ -77,6 +77,7 @@ const Dashboard = () => {
   const [roadmapsList, setRoadmapsList] = useState([]);
   const [roadmapModalUser, setRoadmapModalUser] = useState(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [roadmapLoading, setRoadmapLoading] = useState(false);
 
   const [allLivePractitioners, setAllLivePractitioners] = useState([]);
   const [isAssigningId, setIsAssigningId] = useState(null);
@@ -134,8 +135,8 @@ const Dashboard = () => {
   };
 
   const getClassificationText = (code) => {
-    if (code === "NT") return "Neurodivergent";
-    if (code === "ND") return "Neurotypical";
+    if (code === "ND") return "Neurodivergent";
+    if (code === "NT") return "Neurotypical";
     return code || "Neurotypical";
   };
 
@@ -143,48 +144,47 @@ const Dashboard = () => {
     const doc = new jsPDF();
 
     // Header Accent Banner Configuration
-    doc.setFillColor(89, 50, 234); // #5932EA Main Purple
+    doc.setFillColor(89, 50, 234); // #5932EA Purple
     doc.rect(0, 0, 210, 40, "F");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
+    doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.text("COGNITIVE PROFILE ROADMAP", 15, 26);
 
-    // User Profiling Demographic block area
-    doc.setFontSize(11);
+    // User Details Block Area
+    doc.setFontSize(12);
     doc.setTextColor(34, 34, 34);
-    doc.text("PATIENT / USER METRICS DIRECTORY", 15, 54);
+    doc.text("USER DETAILS", 15, 52);
 
     doc.setFont("helvetica", "normal");
-    doc.text(`Full Account Name :  ${user?.name || "Anonymous Guest"}`, 15, 64);
-    doc.text(`Registered Email   :  ${user?.email || "N/A"}`, 15, 72);
+    doc.setFontSize(10);
+    doc.text(`Full Account Name :  ${user?.name || "Anonymous Guest"}`, 15, 62);
+    doc.text(`Registered Email   :  ${user?.email || "N/A"}`, 15, 70);
 
-    // Updated Classification Label Placement (NT -> Neurodivergent, ND -> Neurotypical)
     const classificationLabel = getClassificationText(
       roadmapData?.classification,
     );
     doc.setFont("helvetica", "bold");
-    doc.text(`Classification    :  ${classificationLabel}`, 15, 88);
+    doc.text(`Classification    :  ${classificationLabel}`, 15, 78);
 
     doc.setDrawColor(226, 232, 240);
-    doc.line(15, 96, 195, 96);
+    doc.line(15, 84, 195, 84);
 
+    // Profile Summary Table (Domain & Severity only)
     doc.setFont("helvetica", "bold");
-    doc.text("Profile Summary", 15, 108);
+    doc.setFontSize(12);
+    doc.text("Profile Summary", 15, 94);
 
-    // Table without 'Recommended Therapies' column
     const mappedDomainsArray = roadmapData?.mapped_domains || [];
     const tableRows = mappedDomainsArray.map((item) => [
       item.domain || "General Domain",
-      item.domain_type || "N/A",
-      `${item.score ?? 0}%`,
       item.severity || "Low",
     ]);
 
     autoTable(doc, {
-      startY: 114,
-      head: [["Assessment Domain", "Domain Type", "Score", "Severity"]],
+      startY: 100,
+      head: [["Assessment Domain", "Severity"]],
       body: tableRows,
       headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
       bodyStyles: { font: "helvetica", fontSize: 10 },
@@ -193,32 +193,53 @@ const Dashboard = () => {
       theme: "striped",
     });
 
-    // Aggregated Recommendations Section
-    const finalY = doc.lastAutoTable.finalY || 180;
+    // Recommendations Section (Clean List Format)
+    let currentY = doc.lastAutoTable.finalY || 160;
+    currentY += 14;
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text("Recommendations:", 15, finalY + 12);
+    doc.setTextColor(34, 34, 34);
+    doc.text("Recommendations:", 15, currentY);
+    currentY += 8;
 
     const aggregatedTherapies = roadmapData?.aggregated_therapies || [];
-    const aggRows = aggregatedTherapies.map((item) => [
-      item.therapy || "N/A",
-      Array.isArray(item.domains) ? item.domains.join(", ") : "N/A",
-      Array.isArray(item.relevance) ? item.relevance.join(", ") : "N/A",
-    ]);
 
-    autoTable(doc, {
-      startY: finalY + 16,
-      head: [["Therapy", "Target Domains", "Relevance"]],
-      body:
-        aggRows.length > 0
-          ? aggRows
-          : [["No recommendations listed", "-", "-"]],
-      headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
-      bodyStyles: { font: "helvetica", fontSize: 9 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-      margin: { left: 15, right: 15 },
-      theme: "striped",
-    });
+    if (aggregatedTherapies.length === 0) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(120, 120, 120);
+      doc.text("• No recommendations listed", 18, currentY);
+    } else {
+      aggregatedTherapies.forEach((item) => {
+        // Check for page overflow
+        if (currentY > 270) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(34, 34, 34);
+        doc.text(`• ${item.therapy || "N/A"}`, 18, currentY);
+        currentY += 6;
+
+        const domainsStr = Array.isArray(item.domains)
+          ? item.domains.join(", ")
+          : "N/A";
+        const relevanceStr = Array.isArray(item.relevance)
+          ? item.relevance.join(", ")
+          : "N/A";
+
+        // doc.setFont("helvetica", "normal");
+        // doc.setFontSize(9);
+        // doc.setTextColor(80, 80, 80);
+        // doc.text(`   Target Domains: ${domainsStr}`, 22, currentY);
+        // currentY += 5;
+        // doc.text(`   Relevance: ${relevanceStr}`, 22, currentY);
+        // currentY += 8;
+      });
+    }
 
     doc.save(`Roadmap_Report_${user?.name || "User"}.pdf`);
   };
@@ -237,75 +258,98 @@ const Dashboard = () => {
       doc.setFillColor(89, 50, 234);
       doc.rect(0, 0, 210, 40, "F");
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
+      doc.setFontSize(20);
       doc.setTextColor(255, 255, 255);
       doc.text("COGNITIVE PROFILE ROADMAP", 15, 26);
 
-      doc.setFontSize(11);
+      doc.setFontSize(12);
       doc.setTextColor(34, 34, 34);
-      doc.text("PATIENT / USER METRICS DIRECTORY", 15, 54);
+      doc.text("USER DETAILS", 15, 52);
+
       doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
       doc.text(
         `Full Account Name :  ${user?.name || "Anonymous Guest"}`,
         15,
-        64,
+        62,
       );
-      doc.text(`Registered Email   :  ${user?.email || "N/A"}`, 15, 72);
+      doc.text(`Registered Email   :  ${user?.email || "N/A"}`, 15, 70);
 
       const classificationLabel = getClassificationText(
         roadmapData?.classification,
       );
       doc.setFont("helvetica", "bold");
-      doc.text(`Classification    :  ${classificationLabel}`, 15, 88);
+      doc.text(`Classification    :  ${classificationLabel}`, 15, 78);
+
       doc.setDrawColor(226, 232, 240);
-      doc.line(15, 96, 195, 96);
+      doc.line(15, 84, 195, 84);
+
       doc.setFont("helvetica", "bold");
-      doc.text("Profile Summary", 15, 108);
+      doc.setFontSize(12);
+      doc.text("Profile Summary", 15, 94);
 
       const mappedDomainsArray = roadmapData?.mapped_domains || [];
       const tableRows = mappedDomainsArray.map((item) => [
         item.domain || "General Domain",
-        item.domain_type || "N/A",
-        `${item.score ?? 0}%`,
         item.severity || "Low",
       ]);
 
       autoTable(doc, {
-        startY: 114,
-        head: [["Assessment Domain", "Domain Type", "Score", "Severity"]],
-        headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
+        startY: 100,
+        head: [["Assessment Domain", "Severity"]],
         body: tableRows,
+        headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
         bodyStyles: { font: "helvetica", fontSize: 10 },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         margin: { left: 15, right: 15 },
         theme: "striped",
       });
 
-      const finalY = doc.lastAutoTable.finalY || 180;
+      let currentY = doc.lastAutoTable.finalY || 160;
+      currentY += 14;
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.text("Recommendations:", 15, finalY + 12);
+      doc.setTextColor(34, 34, 34);
+      doc.text("Recommendations:", 15, currentY);
+      currentY += 8;
 
       const aggregatedTherapies = roadmapData?.aggregated_therapies || [];
-      const aggRows = aggregatedTherapies.map((item) => [
-        item.therapy || "N/A",
-        Array.isArray(item.domains) ? item.domains.join(", ") : "N/A",
-        Array.isArray(item.relevance) ? item.relevance.join(", ") : "N/A",
-      ]);
 
-      autoTable(doc, {
-        startY: finalY + 16,
-        head: [["Therapy", "Target Domains", "Relevance"]],
-        body:
-          aggRows.length > 0
-            ? aggRows
-            : [["No recommendations listed", "-", "-"]],
-        headStyles: { fillColor: [89, 50, 234], fontStyle: "bold" },
-        bodyStyles: { font: "helvetica", fontSize: 9 },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        margin: { left: 15, right: 15 },
-        theme: "striped",
-      });
+      if (aggregatedTherapies.length === 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(120, 120, 120);
+        doc.text("• No recommendations listed", 18, currentY);
+      } else {
+        aggregatedTherapies.forEach((item) => {
+          if (currentY > 270) {
+            doc.addPage();
+            currentY = 20;
+          }
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.setTextColor(34, 34, 34);
+          doc.text(`• ${item.therapy || "N/A"}`, 18, currentY);
+          currentY += 6;
+
+          const domainsStr = Array.isArray(item.domains)
+            ? item.domains.join(", ")
+            : "N/A";
+          const relevanceStr = Array.isArray(item.relevance)
+            ? item.relevance.join(", ")
+            : "N/A";
+
+          // doc.setFont("helvetica", "normal");
+          // doc.setFontSize(9);
+          // doc.setTextColor(80, 80, 80);
+          // doc.text(`   Target Domains: ${domainsStr}`, 22, currentY);
+          // currentY += 5;
+          // doc.text(`   Relevance: ${relevanceStr}`, 22, currentY);
+          // currentY += 8;
+        });
+      }
 
       const pdfBase64Raw = doc.output("datauristring");
       const base64Content = pdfBase64Raw.split(",")[1];
@@ -339,19 +383,23 @@ const Dashboard = () => {
       setIsSendingEmail(false);
     }
   };
-  const fetchRoadmapsFromDb = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("user_roadmap_mapped") // 🌟 Pointed exactly to your new table configuration
-        .select("*")
-        .order("updated_at", { ascending: false });
 
-      if (error) throw error;
-      setRoadmapsList(data || []);
-    } catch (err) {
-      console.error("Error gathering system roadmap parameters:", err.message);
-    }
-  };
+  const fetchRoadmapsFromDb = async () => {
+  try {
+    setRoadmapLoading(true);
+    const { data, error } = await supabase
+      .from("user_roadmap_mapped")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (error) throw error;
+    setRoadmapsList(data || []);
+  } catch (err) {
+    console.error("Error gathering system roadmap parameters:", err.message);
+  } finally {
+    setRoadmapLoading(false);
+  }
+};
 
   const [tagsList, setTagsList] = useState([]);
   const [tagsLoading, setTagsLoading] = useState(false);
@@ -1331,6 +1379,9 @@ const Dashboard = () => {
     if (activeTab === "practitioners") return practitionersLoading;
     if (activeTab === "TherapiesManagement") return therapiesLoading;
     if (activeTab === "CommunityHub") return communityLoading || tagsLoading;
+    if (activeTab === "ConditionManagement") return conditionsLoading;
+    if (activeTab === "ResearchDigest") return blogsLoading;
+    if (activeTab === "AiRoadmap") return roadmapLoading || userManagementLoading;
     return false;
   }, [
     activeTab,
@@ -1340,6 +1391,9 @@ const Dashboard = () => {
     therapiesLoading,
     communityLoading,
     tagsLoading,
+    conditionsLoading,
+    blogsLoading,
+    roadmapLoading
   ]);
 
   useEffect(() => {
@@ -1475,6 +1529,16 @@ const Dashboard = () => {
                 if (activeTab === "CommunityHub") {
                   fetchCommunityPosts();
                   fetchCommunityTags();
+                }
+                if (activeTab === "ConditionManagement")
+                  fetchConditionsTabCms();
+                if (activeTab === "ResearchDigest") {
+                  fetchBlogsFromCms();
+                  fetchBlogTagsFromCms();
+                }
+                if (activeTab === "AiRoadmap") {
+                  fetchRoadmapsFromDb();
+                  fetchUserManagementData();
                 }
               }}
               className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
@@ -2661,10 +2725,7 @@ const Dashboard = () => {
                                     : "bg-blue-50 text-blue-700 border border-blue-200"
                                 }`}
                               >
-                                {/* NT -> Neurodivergent, ND -> Neurotypical */}
-                                {rawClassification === "NT"
-                                  ? "Neurodivergent"
-                                  : "Neurotypical"}
+                                {getClassificationText(rawClassification)}
                               </span>
                             </td>
                             <td className="py-4 px-6 text-center">
@@ -2690,270 +2751,287 @@ const Dashboard = () => {
             </div>
 
             {/* OVERLAY DRILLDOWN MODAL DIALOG */}
-{roadmapModalUser && (
-  <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
-    <div className="bg-white w-full max-w-4xl rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[88vh]">
-      
-      {/* MODAL HEADER WITH ACTION BUTTONS */}
-      <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
-            Recommendation Overview Panel
-          </h3>
-          <p className="text-xs text-gray-400">
-            Cognitive profile assessment report and interventions breakdown
-          </p>
-        </div>
-
-        {/* 🌟 ACTION BUTTONS TOOLBAR */}
-        <div className="flex items-center gap-2">
-          {/* Download PDF Button */}
-          <button
-            onClick={() =>
-              generateRoadmapPdf(
-                roadmapModalUser.profile,
-                roadmapModalUser.mapData
-              )
-            }
-            className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-[#5932EA] font-semibold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-            title="Export Report to Local PDF File"
-          >
-            <FaDownload size={12} />
-            <span>Download PDF</span>
-          </button>
-
-          {/* Email PDF Button */}
-          <button
-            disabled={isSendingEmail}
-            onClick={() =>
-              emailRoadmapPdf(
-                roadmapModalUser.profile,
-                roadmapModalUser.mapData
-              )
-            }
-            className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-semibold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
-            title="Send PDF Report directly to user via email"
-          >
-            <FaFilePdf size={12} />
-            <span>{isSendingEmail ? "Dispatching..." : "Email PDF"}</span>
-          </button>
-
-          {/* Close Modal Button */}
-          <button
-            onClick={() => setRoadmapModalUser(null)}
-            className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition ml-1"
-          >
-            <FaTimes size={18} />
-          </button>
-        </div>
-      </div>
-
-      <div className="p-6 overflow-y-auto space-y-6 text-sm">
-        <div className="bg-slate-50 border border-gray-100 rounded-2xl p-4 space-y-2">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-            <div>
-              <h4 className="text-base font-bold text-gray-900">
-                {roadmapModalUser.profile?.name || "Anonymous Guest"}
-              </h4>
-              <p className="text-xs text-gray-500 font-medium font-sans mt-0.5">
-                {roadmapModalUser.profile?.email || "Unregistered Context Link"}
-              </p>
-            </div>
-            <div className="text-left sm:text-right">
-              <span className="text-xs font-bold text-gray-400 uppercase block tracking-wider">
-                Classification Profile
-              </span>
-              <span className="font-extrabold text-[#5932EA] text-sm">
-                {roadmapModalUser.mapData?.classification === "NT"
-                  ? "Neurotypical"
-                  : "Neurodivergent"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Assessment Domain Table */}
-        <div className="space-y-2">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block pl-1">
-            Metrics Domains Breakdown
-          </span>
-          <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#E0F2FE]/40 border-b border-gray-200 text-gray-500 text-xs font-bold uppercase tracking-wider">
-                  <th className="py-3 px-5 font-semibold">Domain</th>
-                  <th className="py-3 px-5 text-center font-semibold">
-                    Domain Type
-                  </th>
-                  <th className="py-3 px-5 text-center font-semibold">
-                    Score
-                  </th>
-                  <th className="py-3 px-5 text-center font-semibold">
-                    Severity
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
-                {(
-                  roadmapModalUser.mapData?.mapped_domains || []
-                ).map((item, idx) => (
-                  <tr
-                    key={idx}
-                    className="hover:bg-slate-50/50 transition"
-                  >
-                    <td className="py-4 px-5 font-semibold text-gray-800">
-                      {item.domain}
-                    </td>
-                    <td className="py-4 px-5 text-center">
-                      <span className="inline-block text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">
-                        {item.domain_type || "Spine"}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 text-center text-gray-600 font-semibold bg-slate-50/20">
-                      {item.score}%
-                    </td>
-                    <td className="py-4 px-5 text-center">
-                      <span
-                        className={`inline-block font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wide ${
-                          item.severity === "High"
-                            ? "bg-purple-100 text-purple-700 border border-purple-200"
-                            : item.severity === "Moderate"
-                            ? "bg-amber-50 text-amber-700 border border-amber-200"
-                            : "bg-green-50 text-green-700 border border-green-100"
-                        }`}
-                      >
-                        {item.severity || "Low"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Recommendations Section for aggregated_therapies */}
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-            <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-              <FaBrain className="text-emerald-600" size={14} />
-              RECOMMENDATIONS
-            </h4>
-            <span className="text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 px-2.5 py-1 rounded-md">
-              {(roadmapModalUser.mapData?.aggregated_therapies || []).length}{" "}
-              Total Therapies
-            </span>
-          </div>
-
-          {roadmapModalUser.mapData?.aggregated_therapies &&
-          roadmapModalUser.mapData.aggregated_therapies.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {roadmapModalUser.mapData.aggregated_therapies.map(
-                (item, index) => (
-                  <div
-                    key={index}
-                    className="bg-white border border-slate-200/80 rounded-xl p-3.5 space-y-2 shadow-xs hover:border-emerald-200 transition flex flex-col justify-between"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-sm text-slate-900">
-                        {item.therapy}
-                      </span>
-                      {item.relevance && item.relevance.length > 0 && (
-                        <div className="flex gap-1 flex-wrap justify-end">
-                          {item.relevance.map((rel, rIdx) => (
-                            <span
-                              key={rIdx}
-                              className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider ${
-                                rel === "Primary"
-                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                                  : rel === "Secondary"
-                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                  : "bg-purple-50 text-purple-700 border border-purple-200"
-                              }`}
-                            >
-                              {rel}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+            {roadmapModalUser && (
+              <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+                <div className="bg-white w-full max-w-4xl rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[88vh]">
+                  {/* MODAL HEADER WITH ACTION BUTTONS */}
+                  <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
+                        Recommendation Overview Panel
+                      </h3>
+                      <p className="text-xs text-gray-400">
+                        Cognitive profile assessment report and interventions
+                        breakdown
+                      </p>
                     </div>
 
-                    <div className="pt-1 border-t border-slate-100">
-                      <span className="text-[10px] text-slate-400 font-medium block mb-1">
-                        Mapped Domains:
-                      </span>
-                      {Array.isArray(item.domains) &&
-                      item.domains.length > 0 ? (
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {item.domains.map((dom, dIdx) => (
-                            <span
-                              key={dIdx}
-                              className="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-0.5 rounded-md"
-                            >
-                              {dom}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 italic text-[10px]">
-                          N/A
+                    {/* 🌟 ACTION BUTTONS TOOLBAR */}
+                    <div className="flex items-center gap-2">
+                      {/* Download PDF Button */}
+                      <button
+                        onClick={() =>
+                          generateRoadmapPdf(
+                            roadmapModalUser.profile,
+                            roadmapModalUser.mapData,
+                          )
+                        }
+                        className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-[#5932EA] font-semibold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        title="Export Report to Local PDF File"
+                      >
+                        <FaDownload size={12} />
+                        <span>Download PDF</span>
+                      </button>
+
+                      {/* Email PDF Button */}
+                      <button
+                        disabled={isSendingEmail}
+                        onClick={() =>
+                          emailRoadmapPdf(
+                            roadmapModalUser.profile,
+                            roadmapModalUser.mapData,
+                          )
+                        }
+                        className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-semibold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+                        title="Send PDF Report directly to user via email"
+                      >
+                        <FaFilePdf size={12} />
+                        <span>
+                          {isSendingEmail ? "Dispatching..." : "Email PDF"}
                         </span>
-                      )}
+                      </button>
+
+                      {/* Close Modal Button */}
+                      <button
+                        onClick={() => setRoadmapModalUser(null)}
+                        className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition ml-1"
+                      >
+                        <FaTimes size={18} />
+                      </button>
                     </div>
                   </div>
-                )
-              )}
-            </div>
-          ) : (
-            <p className="text-xs text-slate-400 italic text-center py-3 bg-slate-50 border border-slate-200/60 rounded-xl">
-              No aggregated therapies provided for this profile.
-            </p>
-          )}
-        </div>
 
-        {/* Practitioner Assignment controls */}
-        <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 mt-2 text-left space-y-2 w-full">
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
-            Assign & Route Profile to Expert Practitioner Node Ledger
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <select
-              onFocus={fetchLivePractitionersList}
-              onChange={(e) =>
-                (roadmapModalUser.targetCtxPractitionerId = e.target.value)
-              }
-              className="flex-1 bg-white border border-gray-200 px-3 py-2 rounded-xl text-xs focus:outline-none focus:border-[#5932EA] text-gray-700 font-medium h-10"
-            >
-              <option value="">
-                -- Select Active Practitioner Target to Share Data --
-              </option>
-              {allLivePractitioners.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} — {p.specialization || "General Care Specialist"}
-                </option>
-              ))}
-            </select>
-            <button
-              disabled={isAssigningId !== null}
-              onClick={() =>
-                handleSendToPractitioner(
-                  roadmapModalUser.mapData.user_id,
-                  roadmapModalUser.mapData.user_id,
-                  roadmapModalUser.targetCtxPractitionerId
-                )
-              }
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-4 rounded-xl transition duration-150 h-10 flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              {isAssigningId === roadmapModalUser.mapData.user_id
-                ? "Syncing..."
-                : "Send to Practitioner"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+                  <div className="p-6 overflow-y-auto space-y-6 text-sm">
+                    <div className="bg-slate-50 border border-gray-100 rounded-2xl p-4 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                        <div>
+                          <h4 className="text-base font-bold text-gray-900">
+                            {roadmapModalUser.profile?.name ||
+                              "Anonymous Guest"}
+                          </h4>
+                          <p className="text-xs text-gray-500 font-medium font-sans mt-0.5">
+                            {roadmapModalUser.profile?.email ||
+                              "Unregistered Context Link"}
+                          </p>
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <span className="text-xs font-bold text-gray-400 uppercase block tracking-wider">
+                            Classification Profile
+                          </span>
+                          <span className="font-extrabold text-[#5932EA] text-sm">
+                            {getClassificationText(
+                              roadmapModalUser.mapData?.classification,
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Assessment Domain Table */}
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block pl-1">
+                        Metrics Domains Breakdown
+                      </span>
+                      <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-[#E0F2FE]/40 border-b border-gray-200 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                              <th className="py-3 px-5 font-semibold">
+                                Domain
+                              </th>
+                              <th className="py-3 px-5 text-center font-semibold">
+                                Domain Type
+                              </th>
+                              <th className="py-3 px-5 text-center font-semibold">
+                                Score
+                              </th>
+                              <th className="py-3 px-5 text-center font-semibold">
+                                Severity
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
+                            {(
+                              roadmapModalUser.mapData?.mapped_domains || []
+                            ).map((item, idx) => (
+                              <tr
+                                key={idx}
+                                className="hover:bg-slate-50/50 transition"
+                              >
+                                <td className="py-4 px-5 font-semibold text-gray-800">
+                                  {item.domain}
+                                </td>
+                                <td className="py-4 px-5 text-center">
+                                  <span className="inline-block text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">
+                                    {item.domain_type || "Spine"}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-5 text-center text-gray-600 font-semibold bg-slate-50/20">
+                                  {item.score}%
+                                </td>
+                                <td className="py-4 px-5 text-center">
+                                  <span
+                                    className={`inline-block font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wide ${
+                                      item.severity === "High"
+                                        ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                        : item.severity === "Moderate"
+                                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                          : "bg-green-50 text-green-700 border border-green-100"
+                                    }`}
+                                  >
+                                    {item.severity || "Low"}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Recommendations Section for aggregated_therapies */}
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                        <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                          <FaBrain className="text-emerald-600" size={14} />
+                          RECOMMENDATIONS
+                        </h4>
+                        <span className="text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 px-2.5 py-1 rounded-md">
+                          {
+                            (
+                              roadmapModalUser.mapData?.aggregated_therapies ||
+                              []
+                            ).length
+                          }{" "}
+                          Total Therapies
+                        </span>
+                      </div>
+
+                      {roadmapModalUser.mapData?.aggregated_therapies &&
+                      roadmapModalUser.mapData.aggregated_therapies.length >
+                        0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {roadmapModalUser.mapData.aggregated_therapies.map(
+                            (item, index) => (
+                              <div
+                                key={index}
+                                className="bg-white border border-slate-200/80 rounded-xl p-3.5 space-y-2 shadow-xs hover:border-emerald-200 transition flex flex-col justify-between"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-bold text-sm text-slate-900">
+                                    {item.therapy}
+                                  </span>
+                                  {item.relevance &&
+                                    item.relevance.length > 0 && (
+                                      <div className="flex gap-1 flex-wrap justify-end">
+                                        {item.relevance.map((rel, rIdx) => (
+                                          <span
+                                            key={rIdx}
+                                            className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider ${
+                                              rel === "Primary"
+                                                ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                                : rel === "Secondary"
+                                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                                  : "bg-purple-50 text-purple-700 border border-purple-200"
+                                            }`}
+                                          >
+                                            {rel}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                </div>
+
+                                <div className="pt-1 border-t border-slate-100">
+                                  <span className="text-[10px] text-slate-400 font-medium block mb-1">
+                                    Mapped Domains:
+                                  </span>
+                                  {Array.isArray(item.domains) &&
+                                  item.domains.length > 0 ? (
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {item.domains.map((dom, dIdx) => (
+                                        <span
+                                          key={dIdx}
+                                          className="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-0.5 rounded-md"
+                                        >
+                                          {dom}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 italic text-[10px]">
+                                      N/A
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic text-center py-3 bg-slate-50 border border-slate-200/60 rounded-xl">
+                          No aggregated therapies provided for this profile.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Practitioner Assignment controls */}
+                    <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 mt-2 text-left space-y-2 w-full">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Assign & Route Profile to Expert Practitioner Node
+                        Ledger
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          onFocus={fetchLivePractitionersList}
+                          onChange={(e) =>
+                            (roadmapModalUser.targetCtxPractitionerId =
+                              e.target.value)
+                          }
+                          className="flex-1 bg-white border border-gray-200 px-3 py-2 rounded-xl text-xs focus:outline-none focus:border-[#5932EA] text-gray-700 font-medium h-10"
+                        >
+                          <option value="">
+                            -- Select Active Practitioner Target to Share Data
+                            --
+                          </option>
+                          {allLivePractitioners.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} —{" "}
+                              {p.specialization || "General Care Specialist"}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          disabled={isAssigningId !== null}
+                          onClick={() =>
+                            handleSendToPractitioner(
+                              roadmapModalUser.mapData.user_id,
+                              roadmapModalUser.mapData.user_id,
+                              roadmapModalUser.targetCtxPractitionerId,
+                            )
+                          }
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-4 rounded-xl transition duration-150 h-10 flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          {isAssigningId === roadmapModalUser.mapData.user_id
+                            ? "Syncing..."
+                            : "Send to Practitioner"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -4119,3 +4197,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+

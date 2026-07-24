@@ -25,8 +25,8 @@ const Community = () => {
       author: "Sarah M.",
       time: "2 mo. ago",
       bgClass: "bg-[#fff] text-[#4a3e3d]",
-      tagClass: "border-[#b05a36] text-[#b05a36] text-white",
-      titleClass: "text-[#b05a36]",
+      tagClass: "border-[#BA5023] text-[#BA5023] text-white",
+      titleClass: "text-[#BA5023]",
       descClass: "text-[#5c5251]",
       authorClass: "text-[#5c5251]",
     },
@@ -38,8 +38,8 @@ const Community = () => {
       author: "David K.",
       time: "1 mo. ago",
       bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
-      tagClass: "border-[#b05a36] text-[#b05a36] text-white",
-      titleClass: "text-[#b05a36]",
+      tagClass: "border-[#BA5023] text-[#BA5023] text-white",
+      titleClass: "text-[#BA5023]",
       descClass: "text-[#5c5251]",
     },
     {
@@ -49,8 +49,8 @@ const Community = () => {
       desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
       author: "Elena R.",
       time: "3 wk. ago",
-      bgClass: "bg-[#b05a36] text-white",
-      tagClass: "border-none bg-[#fff] text-[#B05A36]",
+      bgClass: "bg-[#BA5023] text-white",
+      tagClass: "border-none bg-[#fff] text-[#BA5023]",
       authorClass: "text-[#5c5251]",
       titleClass: "text-white",
       descClass: "text-[#f7f3f0]",
@@ -63,8 +63,8 @@ const Community = () => {
       author: "Sarah M.",
       time: "2 mo. ago",
       bgClass: "bg-[#f0eae1] text-[#4a3e3d]",
-      tagClass: "border-[#b05a36] text-[#b05a36] text-white",
-      titleClass: "text-[#b05a36]",
+      tagClass: "border-[#BA5023] text-[#BA5023] text-white",
+      titleClass: "text-[#BA5023]",
       descClass: "text-[#5c5251]",
     },
     {
@@ -75,8 +75,8 @@ const Community = () => {
       author: "David K.",
       time: "1 mo. ago",
       bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
-      tagClass: "border-[#b05a36] text-white",
-      titleClass: "text-[#b05a36]",
+      tagClass: "border-[#BA5023] text-white",
+      titleClass: "text-[#BA5023]",
       descClass: "text-[#5c5251]",
     },
     {
@@ -86,9 +86,9 @@ const Community = () => {
       desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
       author: "Elena R.",
       time: "3 wk. ago",
-      bgClass: "bg-[#b05a36] text-white",
-      tagClass: "border-none bg-[#fff] text-[#B05A36]",
-      aurthorClass:'text-[#5c5251]',
+      bgClass: "bg-[#BA5023] text-white",
+      tagClass: "border-none bg-[#fff] text-[#BA5023]",
+      aurthorClass: "text-[#5c5251]",
 
       titleClass: "text-white",
       descClass: "text-[#f7f3f0]",
@@ -100,8 +100,8 @@ const Community = () => {
       desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
       author: "Elena R.",
       time: "3 wk. ago",
-      bgClass: "bg-[#b05a36] text-white",
-      tagClass: "border-none bg-[#fff] text-[#B05A36]",
+      bgClass: "bg-[#BA5023] text-white",
+      tagClass: "border-none bg-[#fff] text-[#BA5023]",
       authorClass: "text-[#5c5251]",
       titleClass: "text-white",
       descClass: "text-[#f7f3f0]",
@@ -113,8 +113,8 @@ const Community = () => {
       desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
       author: "Elena R.",
       time: "3 wk. ago",
-      bgClass: "bg-[#b05a36] text-white",
-      tagClass: "border-none bg-[#fff] text-[#B05A36]",
+      bgClass: "bg-[#BA5023] text-white",
+      tagClass: "border-none bg-[#fff] text-[#BA5023]",
       authorClass: "text-[#5c5251]",
       titleClass: "text-white",
       descClass: "text-[#f7f3f0]",
@@ -204,77 +204,61 @@ const Community = () => {
     <main className="lg:p-10 py-7.5 manrope">
       {/* <Nav /> */}
       <section
-        className={`text-center text-[#B05A36] lg:pt-17.5 pt-12.5 px-5 ${isModalOpen ? "hidden md:hidden lg:hidden" : "block md:block lg:block"}`}
+        className={`text-center text-[#BA5023] pt-8 md:pt-14 px-4 ${
+          isModalOpen ? "hidden" : "block"
+        }`}
       >
-        <div className="lg:px-80">
-          <h1 className="font-normal lg:text-[60px] text-[32px]">
+        {/* Title Block */}
+        <div className="max-w-[255px] md:max-w-[430px] mx-auto">
+          <h1 className="font-normal text-[34px] md:text-[54px] leading-[120%] md:leading-[110%] tracking-[-0.05em]">
             Stories from our community
           </h1>
         </div>
 
-        <div className="lg:px-107.5">
-          <p className="text-[16px] lg:text-[24px] font-normal">
+        {/* Subtitle Block */}
+        <div className="max-w-[300px] md:max-w-[310px] mx-auto mt-2 md:mt-3">
+          <p className="text-[14px] md:text-[15px] font-normal md:font-medium leading-[140%] tracking-normal md:tracking-[-0.02em]">
             Real experiences from families, practitioners, and individuals
             across 20+ countries.
           </p>
         </div>
       </section>
 
-      <section className="flex justify-between items-center mt-11.25 px-3.75 relative">
-        {/* Left Side: Filter Toggler Button */}
-        <div
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex gap-5 cursor-pointer select-none group active:scale-95 transition-transform shrink-0"
-        >
-          {/* Circle Icon - Stays exactly your style, just changes icon when open */}
-          <div className="bg-[#B05A36] text-white text-[24px] h-12.5 w-12.5 flex justify-center items-center rounded-full">
-            <ion-icon
-              name={showFilters ? "close-outline" : "add-outline"}
-            ></ion-icon>
-          </div>
-
-          {/* Text and Arrow/Plus - Stays exactly your style, updates icon when open */}
-          <div className="hidden lg:flex justify-center items-center text-[#B05A36] text-[24px] font-no gap-1">
-            <p>Filter</p>
-            <div className="h-full flex justify-center items-center">
+      <section className="flex flex-col mt-11.25 px-3.75 gap-6">
+        {/* Top Controls Row */}
+        <div className="flex justify-between items-center w-full">
+          {/* Left Side: Filter / Close Button Toggle */}
+          {showFilters ? (
+            /* OPEN STATE: Light Pill Close Button (Matches Figma) */
+            <button
+              onClick={() => setShowFilters(false)}
+              className="flex items-center gap-3 px-6 py-3 rounded-full bg-[#FAF4E8] text-[#BA5023] text-[20px] font-normal hover:bg-[#f3ebd9] transition duration-150 cursor-pointer select-none active:scale-95"
+            >
               <ion-icon
-                name={showFilters ? "chevron-up-outline" : "add-outline"}
+                name="close-outline"
+                style={{ fontSize: "20px" }}
               ></ion-icon>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side: Dynamic Supabase Filters & Your Toggle Switch */}
-        <div className="flex items-center justify-end gap-5 flex-1 min-w-0">
-          {showFilters && (
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 pl-4 pr-1">
-              <button
-                onClick={() => setSelectedTagId(null)}
-                className={`px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition duration-150 ${
-                  !selectedTagId
-                    ? "bg-[#B05A36] text-white shadow-sm"
-                    : "border border-[#B05A36] text-[#B05A36] hover:bg-[#FAF4E8]"
-                }`}
-              >
-                All
-              </button>
-              {tagsList.map((tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => setSelectedTagId(tag.id)}
-                  className={`px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition duration-150 ${
-                    selectedTagId === tag.id
-                      ? "bg-[#B05A36] text-white shadow-sm"
-                      : "border border-[#B05A36] text-[#B05A36] hover:bg-[#FAF4E8]"
-                  }`}
-                >
-                  {tag.name}
-                </button>
-              ))}
+              <span>Close</span>
+            </button>
+          ) : (
+            /* CLOSED STATE: Circle + Icon + Filter Text */
+            <div
+              onClick={() => {
+                setShowFilters(true);
+                setEnabled(true);
+              }}
+              className="flex gap-4 items-center cursor-pointer select-none group active:scale-95 transition-transform shrink-0"
+            >
+              <div className="bg-[#BA5023] text-white text-[24px] h-12.5 w-12.5 flex justify-center items-center rounded-full">
+                <ion-icon name="add-outline"></ion-icon>
+              </div>
+              <span className="text-[#BA5023] text-[24px] font-normal">
+                Filter
+              </span>
             </div>
           )}
 
-          {/* Layout Toggle Switch - Kept exactly your style */}
+          {/* Right Side: Layout Toggle Switch */}
           <div className="shrink-0">
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <input
@@ -284,7 +268,7 @@ const Community = () => {
                 className="sr-only peer"
               />
 
-              <div className="relative w-21.25 h-12.5 bg-[#B05A36] rounded-full transition-colors duration-200 ease-in-out">
+              <div className="relative w-21.25 h-12.5 bg-[#BA5023] rounded-full transition-colors duration-200 ease-in-out">
                 <span
                   className={`absolute top-[6.5px] w-9.25 h-9.25 bg-[#FAF4E8] rounded-full flex justify-center items-center transition-transform duration-200 ease-in-out ${
                     enabled ? "translate-x-10.5" : "translate-x-1.75"
@@ -302,12 +286,51 @@ const Community = () => {
             </label>
           </div>
         </div>
+
+        {/* Bottom Row: Filter Items List (Rendered below the top controls) */}
+        {showFilters && (
+          <div className="flex justify-start w-full animate-fadeIn">
+            <div className="flex items-center gap-3 overflow-x-auto scrollbar-none py-1 px-2 max-w-full justify-start md:justify-center">
+              {/* 'All' Tag */}
+              <button
+                onClick={() => setSelectedTagId(null)}
+                className={`px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
+                  !selectedTagId
+                    ? "bg-[#C85527] text-white shadow-sm"
+                    : "bg-[#FAF4E8] text-[#C85527] hover:bg-[#f2e7d3]"
+                }`}
+              >
+                All
+              </button>
+
+              {/* Dynamic Tag Items with Color Dots */}
+              {tagsList.map((tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => setSelectedTagId(tag.id)}
+                  className={`px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-2 ${
+                    selectedTagId === tag.id
+                      ? "bg-[#C85527] text-white shadow-sm"
+                      : "bg-[#FAF4E8] text-[#C85527] hover:bg-[#f2e7d3]"
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      selectedTagId === tag.id ? "bg-white" : "bg-[#C85527]"
+                    }`}
+                  ></span>
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Conditional Layout Injection Section */}
       {enabled ? (
         /* Grid Layout View Mode (Configured to 4 cards in a row on laptop/desktop viewports) */
-        <section className="w-full mt-15 lg:mt-24 px-3.75 flex flex-col items-center">
+        <section className="w-full mt-25 lg:mt-24 px-3.75 flex flex-col items-center">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 w-full max-w-350">
             {communityPosts
               .filter(
@@ -322,11 +345,11 @@ const Community = () => {
                 >
                   <div className="flex flex-col gap-4 md:gap-15">
                     <div
-                      className={`px-1.5 py-0.5 md:h-10 md:w-43.75 border rounded-[20px] text-[12px] font-normal md:text-[16px] flex justify-center items-center text-center text-[#B05A36] w-[90%]`}
+                      className={`px-1.5 py-0.5 md:h-10 md:w-43.75 border rounded-[20px] text-[12px] font-normal md:text-[16px] flex justify-center items-center text-center text-[#BA5023] w-[90%]`}
                     >
                       <p>{post.community_tags?.name || "General"}</p>
                     </div>
-                    <div className="text-[13px] md:text-[20px] text-[#B05A36] leading-[120%] ">
+                    <div className="text-[13px] md:text-[20px] text-[#BA5023] leading-[120%] ">
                       <p>{post.content}</p>
                     </div>
                   </div>
@@ -343,7 +366,7 @@ const Community = () => {
                         })}
                       </p>
                     </div>
-                    <div className="bg-[#B05A36] text-white text-[20px] md:text-[24px] h-7.5 w-7.5 md:h-12.5 md:w-12.5 flex justify-center items-center rounded-full">
+                    <div className="bg-[#BA5023] text-white text-[20px] md:text-[24px] h-7.5 w-7.5 md:h-12.5 md:w-12.5 flex justify-center items-center rounded-full">
                       <ion-icon name="add-outline"></ion-icon>
                     </div>
                   </div>
@@ -351,14 +374,17 @@ const Community = () => {
               ))}
           </div>
 
-          <button className="mt-12 bg-[#B05A36] text-white font-medium py-3 px-8 rounded-full text-[14px] sm:text-[16px]">
+          <button
+            className="mt-12 cursor-pointer bg-[#BA5023] text-white font-medium py-3 px-8 rounded-full text-[14px] sm:text-[16px]"
+            onClick={() => setSelectedTagId(null)}
+          >
             View All
           </button>
         </section>
       ) : (
         /* Default Spinning Wheel Carousel View Mode */
-        <section className="w-full min-h-125  lg:h-175 mt-15 lg:mt-32 flex justify-center items-center relative overflow-hidden lg:overflow-visible">
-          <div className="absolute top-10 lg:top-1/2 -translate-y-1/2 z-10 text-[#B05A36] text-center pointer-events-none">
+        <section className="w-full min-h-125 mt-25 lg:h-175 lg:mt-32 flex justify-center items-center relative overflow-hidden lg:overflow-visible">
+          <div className="absolute top-10 lg:top-1/2 -translate-y-1/2 z-10 text-[#BA5023] text-center pointer-events-none">
             <h1 className="text-[32px] lg:text-[45px]">MANASCIENCE</h1>
             <div className="max-w-70 sm:max-w-md lg:max-w-md">
               <p className="text-[12px]  lg:text-[18px] w-auto">
@@ -383,7 +409,9 @@ const Community = () => {
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261178/02_m9nzpu.png)` }}
+                  style={{
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261178/02_m9nzpu.png)`,
+                  }}
                 ></div>
               </div>
 
@@ -392,12 +420,16 @@ const Community = () => {
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/04_nygx31.jpg)` }}
+                  style={{
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/04_nygx31.jpg)`,
+                  }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/03_ybwukf.png)` }}
+                  style={{
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/03_ybwukf.png)`,
+                  }}
                 ></div>
               </div>
 
@@ -406,7 +438,9 @@ const Community = () => {
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261274/09_jkepdg.png)` }}
+                  style={{
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261274/09_jkepdg.png)`,
+                  }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
@@ -423,12 +457,16 @@ const Community = () => {
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/08_v1as17.png)` }}
+                  style={{
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/08_v1as17.png)`,
+                  }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/10_vcg7uz.png)` }}
+                  style={{
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/10_vcg7uz.png)`,
+                  }}
                 ></div>
               </div>
 
@@ -445,7 +483,9 @@ const Community = () => {
                 <div
                   onClick={() => setIsModalOpen(true)}
                   className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{ backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261279/06_igpmof.png)` }}
+                  style={{
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261279/06_igpmof.png)`,
+                  }}
                 ></div>
               </div>
             </div>
@@ -478,7 +518,7 @@ const Community = () => {
                       >
                         <div className="overflow-y-auto max-h-[90%] pr-1 scrollbar-none">
                           <div
-                            className={`h-[40px] w-40 border rounded-full text-[13px] font-normal lg:text-[13px] mb-3 lg:mb-5 ${card.tagClass} flex justify-center items-center text-center  bg-[#B05A36]`}
+                            className={`h-[40px] w-40 border rounded-full text-[13px] font-normal lg:text-[13px] mb-3 lg:mb-5 ${card.tagClass} flex justify-center items-center text-center  bg-[#BA5023]`}
                           >
                             <p>{card.tag}</p>
                           </div>
@@ -487,17 +527,16 @@ const Community = () => {
                           >
                             {card.title}
                           </h2>
-                           <div className="mt-auto mb-[30px] pt-2 flex justify-between items-center text-xs lg:text-[0.85rem] font-medium text-[#68270B]">
-                          <span>{card.author}</span>
-                          <span>{card.time}</span>
-                        </div>
+                          <div className="mt-auto mb-[30px] pt-2 flex justify-between items-center text-xs lg:text-[0.85rem] font-medium text-[#68270B]">
+                            <span>{card.author}</span>
+                            <span>{card.time}</span>
+                          </div>
                           <p
                             className={`text-[13px] lg:text-[0.9rem] leading-relaxed lg:leading-[1.6] text-[#68270B] font-normal ${card.descClass}`}
                           >
                             {card.desc}
                           </p>
                         </div>
-                       
                       </div>
                     );
                   })}
@@ -507,13 +546,13 @@ const Community = () => {
                 <div className="flex items-center justify-center gap-2 order-2 md:absolute md:w-full md:justify-between md:px-0 pointer-events-none">
                   <button
                     onClick={handlePrev}
-                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#B05A36] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:-translate-x-5"
+                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:-translate-x-5"
                   >
                     &#8249;
                   </button>
                   <button
                     onClick={handleNext}
-                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#b05a36] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:translate-x-5"
+                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:translate-x-5"
                   >
                     &#8250;
                   </button>

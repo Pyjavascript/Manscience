@@ -12,9 +12,105 @@ export default function Profile() {
   const [anonName, setAnonName] = useState("");
   const [submittingPost, setSubmittingPost] = useState(false);
 
-  // 🔥 New state variables to handle the chat history preview
+  // State variables to handle the chat history preview
   const [historyData, setHistoryData] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Practitioner Queries States
+  const [pendingQueries, setPendingQueries] = useState([]);
+  const [multiQueryResponses, setMultiQueryResponses] = useState({});
+  const [submittingQueryId, setSubmittingQueryId] = useState(null);
+
+  // Fetch pending queries from Supabase
+  async function fetchPendingQueries(userId) {
+    try {
+      const { data, error } = await supabase
+        .from("practitioner_queries")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      if (data) setPendingQueries(data);
+    } catch (err) {
+      console.error("Error fetching practitioner queries:", err.message);
+    }
+  }
+
+  const handleAnswerInputChange = (queryId, questionIndex, answerText) => {
+    setMultiQueryResponses((prev) => ({
+      ...prev,
+      [queryId]: {
+        ...(prev[queryId] || {}),
+        [questionIndex]: answerText,
+      },
+    }));
+  };
+
+  async function handleMultiQueryResponseSubmit(queryItem) {
+    const answersObj = multiQueryResponses[queryItem.id] || {};
+    const questionsArr =
+      Array.isArray(queryItem.questions) && queryItem.questions.length > 0
+        ? queryItem.questions
+        : [queryItem.question];
+
+    const formattedResponses = questionsArr.map(
+      (_, idx) => answersObj[idx] || ""
+    );
+
+    if (formattedResponses.some((ans) => !ans.trim())) {
+      alert("Please answer all questions before submitting.");
+      return;
+    }
+
+    try {
+      setSubmittingQueryId(queryItem.id);
+
+      // 1. Update response in Supabase
+      const { error } = await supabase
+        .from("practitioner_queries")
+        .update({
+          responses: formattedResponses,
+          response: formattedResponses.join(" | "),
+          status: "answered",
+          answered_at: new Date().toISOString(),
+        })
+        .eq("id", queryItem.id);
+
+      if (error) throw error;
+
+      // 2. Safely trigger email alert to practitioner (wrapped to avoid app crashing)
+      try {
+        const { data: pData } = await supabase
+          .from("practitioners")
+          .select("email, name")
+          .eq("id", queryItem.practitioner_id)
+          .maybeSingle();
+
+        if (pData?.email) {
+          await supabase.functions.invoke("send-notification-email", {
+            method: "POST",
+            body: {
+              recipientEmail: pData.email,
+              subject: `Patient Response Received: ${queryItem.subject}`,
+              message: `Hello Dr. ${pData.name},\n\nPatient ${user.user_metadata?.name || user.email} has completed the responses for: "${queryItem.subject}".`,
+              actionLink: `${window.location.origin}/practitioner-dashboard`,
+              buttonText: "View Responses in Dashboard",
+            },
+          });
+        }
+      } catch (emailErr) {
+        console.warn("Email alert could not be sent:", emailErr.message);
+      }
+
+      alert("All answers submitted to your practitioner!");
+      fetchPendingQueries(user.id);
+    } catch (err) {
+      alert(`Error submitting response: ${err.message}`);
+    } finally {
+      setSubmittingQueryId(null);
+    }
+  }
 
   useEffect(() => {
     loadProfile();
@@ -25,14 +121,12 @@ export default function Profile() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Do not redirect to /auth; let unauthenticated guests see the page to post reviews
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     setUser(user);
 
-    // 1. Fetch Subscription Data
+    fetchPendingQueries(user.id);
+
     const { data } = await supabase
       .from("subscriptions")
       .select("*")
@@ -41,11 +135,10 @@ export default function Profile() {
 
     setSubscription(data);
 
-    // 🔥 2. Fetch Structured Chat History from your FastAPI backend
     try {
       setLoadingHistory(true);
       const response = await fetch(
-        `https://manasi-production.up.railway.app/chat/user/${user.id}/history`,
+        `https://manasi-production.up.railway.app/chat/user/${user.id}/history`
       );
       if (response.ok) {
         const historyJson = await response.json();
@@ -62,7 +155,6 @@ export default function Profile() {
     e.preventDefault();
     if (!reviewContent.trim()) return;
 
-    // Guard rail: if anonymous guest, check that they provided a name
     if (!user && !anonName.trim()) {
       alert("Please provide your name before submitting.");
       return;
@@ -89,9 +181,9 @@ export default function Profile() {
           user_id: userIdField,
           username: displayName,
           content: reviewContent.trim(),
-          header: null, // initially null, admin populates later
-          tag_id: null, // initially null, admin maps later
-          status: "pending", // routes to admin dashboard stream
+          header: null,
+          tag_id: null,
+          status: "pending",
         },
       ]);
 
@@ -112,7 +204,7 @@ export default function Profile() {
     await supabase.auth.signOut();
     setUser(null);
     setSubscription(null);
-    setHistoryData(null); // Clear history on logout
+    setHistoryData(null);
     navigate("/auth");
   }
 
@@ -131,7 +223,7 @@ export default function Profile() {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-      },
+      }
     );
 
     const data = await response.json();
@@ -162,7 +254,7 @@ export default function Profile() {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-      },
+      }
     );
 
     await fetch(
@@ -172,7 +264,7 @@ export default function Profile() {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-      },
+      }
     );
 
     setSubscription(null);
@@ -181,7 +273,6 @@ export default function Profile() {
 
   return (
     <main className="min-h-screen bg-gray-100 flex flex-col items-center justify-center font-mono p-4 gap-6">
-      {/* Profile Details Card */}
       <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
         <h2 className="text-2xl font-bold mb-5">User Profile</h2>
 
@@ -204,7 +295,7 @@ export default function Profile() {
                 <strong>Next Billing Date:</strong>{" "}
                 {subscription.current_period_end
                   ? new Date(
-                      subscription.current_period_end,
+                      subscription.current_period_end
                     ).toLocaleDateString()
                   : "—"}
               </p>
@@ -260,68 +351,172 @@ export default function Profile() {
           </div>
         )}
       </div>
-      {/* Your Chat History Card Block */}
-{user && (
-  <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
-    <div className="flex justify-between items-center border-b pb-3 mb-4">
-      <div>
-        <h3 className="text-xl font-bold text-gray-800">Your Chat History</h3>
-        <p className="text-xs text-gray-500 mt-0.5">Stored conversation sessions with Manasi AI</p>
-      </div>
-      {historyData && historyData.history_records && (
-        <span className="bg-amber-100 text-amber-800 font-bold text-xs px-3 py-1 rounded-full">
-          Sessions: {historyData.history_records.length}
-        </span>
-      )}
-    </div>
 
-    {loadingHistory ? (
-      <p className="text-sm text-gray-500 font-sans py-4">Loading your conversations...</p>
-    ) : historyData && historyData.history_records && historyData.history_records.length > 0 ? (
-      <div className="flex flex-col gap-4 max-h-96 overflow-y-auto pr-1">
-        {/* 1. Map through the separate conversation logs/sessions */}
-        {historyData.history_records.map((session, sIndex) => (
-          <div key={sIndex} className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="text-xs font-bold text-amber-700 uppercase tracking-tight truncate max-w-[70%]">
-                {session.title || "Roadmap Assessment / Chat"}
-              </span>
-              <span className="text-[10px] text-gray-400 font-mono">
-                {session.updated_at ? new Date(session.updated_at).toLocaleDateString() : "—"}
-              </span>
+      {user && (
+        <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
+          <div className="flex justify-between items-center border-b pb-3 mb-4">
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">
+                Your Chat History
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Stored conversation sessions with Manasi AI
+              </p>
             </div>
-            
-            {/* 2. Map through a small preview snippet (first 2 turns) of this specific conversation window */}
-            <div className="space-y-2 pl-1">
-              {session.history && session.history.slice(0, 2).map((turn, tIndex) => (
-                <div key={tIndex} className="text-xs space-y-1">
-                  <div className="truncate text-gray-700">
-                    <strong className="text-amber-800">Q:</strong> {turn.question}
+            {historyData && historyData.history_records && (
+              <span className="bg-amber-100 text-amber-800 font-bold text-xs px-3 py-1 rounded-full">
+                Sessions: {historyData.history_records.length}
+              </span>
+            )}
+          </div>
+
+          {loadingHistory ? (
+            <p className="text-sm text-gray-500 font-sans py-4">
+              Loading your conversations...
+            </p>
+          ) : historyData &&
+            historyData.history_records &&
+            historyData.history_records.length > 0 ? (
+            <div className="flex flex-col gap-4 max-h-96 overflow-y-auto pr-1">
+              {historyData.history_records.map((session, sIndex) => (
+                <div
+                  key={sIndex}
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3"
+                >
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <span className="text-xs font-bold text-amber-700 uppercase tracking-tight truncate max-w-[70%]">
+                      {session.title || "Roadmap Assessment / Chat"}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {session.updated_at
+                        ? new Date(session.updated_at).toLocaleDateString()
+                        : "—"}
+                    </span>
                   </div>
-                  <div className="text-gray-600 pl-2 border-l-2 border-amber-600/40 truncate">
-                    <strong className="text-gray-400">A:</strong> {turn.answer}
+
+                  <div className="space-y-2 pl-1">
+                    {session.history &&
+                      session.history.slice(0, 2).map((turn, tIndex) => (
+                        <div key={tIndex} className="text-xs space-y-1">
+                          <div className="truncate text-gray-700">
+                            <strong className="text-amber-800">Q:</strong>{" "}
+                            {turn.question}
+                          </div>
+                          <div className="text-gray-600 pl-2 border-l-2 border-amber-600/40 truncate">
+                            <strong className="text-gray-400">A:</strong>{" "}
+                            {turn.answer}
+                          </div>
+                        </div>
+                      ))}
+
+                    {session.history && session.history.length > 2 && (
+                      <p className="text-[10px] text-amber-700/70 font-medium italic pt-1">
+                        + {session.history.length - 2} more turns in this
+                        window...
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
-              
-              {session.history && session.history.length > 2 && (
-                <p className="text-[10px] text-amber-700/70 font-medium italic pt-1">
-                  + {session.history.length - 2} more turns in this window...
-                </p>
-              )}
             </div>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <p className="text-sm text-gray-500 font-sans py-2">
-        No chat logs found. Start a conversation with Manasi AI to back up your interaction logs!
-      </p>
-    )}
-  </div>
-)}
+          ) : (
+            <p className="text-sm text-gray-500 font-sans py-2">
+              No chat logs found. Start a conversation with Manasi AI to back up
+              your interaction logs!
+            </p>
+          )}
+        </div>
+      )}
 
-      {/* Community Hub Submission Box */}
+      {user && (
+        <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
+          <h3 className="text-xl font-bold mb-1 text-gray-800">
+            Practitioner Requests
+          </h3>
+          <p className="text-xs text-gray-500 mb-4 font-sans">
+            Inquiries or questionnaires sent by your practitioner
+          </p>
+
+          {pendingQueries.length === 0 ? (
+            <p className="text-sm text-gray-400 font-sans italic">
+              No pending requests from your practitioner.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {pendingQueries.map((q) => {
+                const qList =
+                  Array.isArray(q.questions) && q.questions.length > 0
+                    ? q.questions
+                    : [q.question];
+                const aList = Array.isArray(q.responses) ? q.responses : [];
+
+                return (
+                  <div
+                    key={q.id}
+                    className="border border-gray-200 rounded-lg p-4 space-y-4 bg-gray-50/50"
+                  >
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <span className="font-bold text-sm text-gray-900">
+                        {q.subject}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${q.status === "answered" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}
+                      >
+                        {q.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {qList.map((qText, qIdx) => (
+                        <div key={qIdx} className="space-y-1">
+                          <p className="text-xs font-semibold text-gray-700">
+                            {qList.length > 1 ? `${qIdx + 1}. ` : ""}
+                            {qText}
+                          </p>
+
+                          {q.status === "answered" ? (
+                            <div className="text-xs bg-emerald-50 border border-emerald-100 p-2 rounded-lg text-emerald-900 font-sans">
+                              <strong>Answer:</strong>{" "}
+                              {aList[qIdx] || q.response}
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              placeholder={`Your answer for question #${qIdx + 1}...`}
+                              value={multiQueryResponses[q.id]?.[qIdx] || ""}
+                              onChange={(e) =>
+                                handleAnswerInputChange(
+                                  q.id,
+                                  qIdx,
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border border-gray-300 p-2 rounded-lg text-xs font-sans focus:outline-none focus:border-black"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {q.status !== "answered" && (
+                      <button
+                        onClick={() => handleMultiQueryResponseSubmit(q)}
+                        disabled={submittingQueryId === q.id}
+                        className="bg-black text-white px-4 py-2 rounded-lg text-xs font-sans disabled:opacity-50 transition w-full mt-2"
+                      >
+                        {submittingQueryId === q.id
+                          ? "Submitting Answers..."
+                          : "Submit All Responses"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
         <h3 className="text-xl font-bold mb-3">Share to Community Hub</h3>
         <p className="text-sm text-gray-500 mb-4 font-sans">
