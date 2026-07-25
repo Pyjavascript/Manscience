@@ -201,7 +201,8 @@ const Community = () => {
     return isApproved && isTestimonial && matchesSelectedTag;
   });
   return (
-    <main className="lg:p-10 py-7.5 manrope">
+    // <main className="lg:p-10 py-7.5 manrope">
+    <main className="lg:p-10 py-7.5 manrope w-full max-w-full overflow-x-hidden">
       {/* <Nav /> */}
       <section
         className={`text-center text-[#BA5023] pt-8 md:pt-14 px-4 ${
@@ -209,19 +210,6 @@ const Community = () => {
         }`}
       >
         {/* Title Block */}
-        <div className="max-w-[255px] md:max-w-[430px] mx-auto">
-          <h1 className="font-normal text-[34px] md:text-[54px] leading-[120%] md:leading-[110%] tracking-[-0.05em]">
-            Stories from our community
-          </h1>
-        </div>
-
-        {/* Subtitle Block */}
-        <div className="max-w-[300px] md:max-w-[310px] mx-auto mt-2 md:mt-3">
-          <p className="text-[14px] md:text-[15px] font-normal md:font-medium leading-[140%] tracking-normal md:tracking-[-0.02em]">
-            Real experiences from families, practitioners, and individuals
-            across 20+ countries.
-          </p>
-        </div>
       </section>
 
       <section className="flex flex-col mt-11.25 px-3.75 gap-6">
@@ -234,10 +222,11 @@ const Community = () => {
               onClick={() => setShowFilters(false)}
               className="flex items-center gap-3 px-6 py-3 rounded-full bg-[#FAF4E8] text-[#BA5023] text-[20px] font-normal hover:bg-[#f3ebd9] transition duration-150 cursor-pointer select-none active:scale-95"
             >
-              <ion-icon
+              {/* <ion-icon
                 name="close-outline"
                 style={{ fontSize: "20px" }}
-              ></ion-icon>
+              ></ion-icon> */}
+              <p className="rotate-45 text-2xl">+</p>
               <span>Close</span>
             </button>
           ) : (
@@ -250,7 +239,8 @@ const Community = () => {
               className="flex gap-4 items-center cursor-pointer select-none group active:scale-95 transition-transform shrink-0"
             >
               <div className="bg-[#BA5023] text-white text-[24px] h-12.5 w-12.5 flex justify-center items-center rounded-full">
-                <ion-icon name="add-outline"></ion-icon>
+                {/* <ion-icon name="add-outline"></ion-icon> */}
+                +
               </div>
               <span className="text-[#BA5023] text-[24px] font-normal">
                 Filter
@@ -268,19 +258,17 @@ const Community = () => {
                 className="sr-only peer"
               />
 
-              <div className="relative w-21.25 h-12.5 bg-[#BA5023] rounded-full transition-colors duration-200 ease-in-out">
+              <div className="relative w-20 h-11 bg-[#BA5023] rounded-full transition-colors duration-200 ease-in-out">
                 <span
-                  className={`absolute top-[6.5px] w-9.25 h-9.25 bg-[#FAF4E8] rounded-full flex justify-center items-center transition-transform duration-200 ease-in-out ${
-                    enabled ? "translate-x-10.5" : "translate-x-1.75"
+                  className={`absolute top-[4px] w-9 h-9 bg-[#FAF4E8] rounded-full flex justify-center items-center transition-all transition-left duration-200 ease-in-out ${
+                    enabled ? "left-[40px]" : "left-[4px]"
                   }`}
                 >
-                  <div className="h-full w-full flex justify-center items-center rounded-full">
-                    <img
-                      src={enabled ? grid : toggle}
-                      alt="toggle"
-                      className="ml-px"
-                    />
-                  </div>
+                  <img
+                    src={enabled ? grid : toggle}
+                    alt="toggle view"
+                    className="w-5 h-5 object-contain"
+                  />
                 </span>
               </div>
             </label>
@@ -382,25 +370,26 @@ const Community = () => {
           </button>
         </section>
       ) : (
-        /* Default Spinning Wheel Carousel View Mode */
-        <section className="w-full min-h-125 mt-25 lg:h-175 lg:mt-32 flex justify-center items-center relative overflow-hidden lg:overflow-visible">
-          <div className="absolute top-10 lg:top-1/2 -translate-y-1/2 z-10 text-[#BA5023] text-center pointer-events-none">
+        <section className="w-full min-h-[500px] lg:h-[900px] flex justify-center items-center relative overflow-hidden">
+          {/* Center Text Header */}
+          <div className="absolute top-6 md:top-10 lg:top-1/2 left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-10 text-[#BA5023] text-center pointer-events-none px-4 w-full">
             <h1 className="text-[32px] lg:text-[45px]">MANASCIENCE</h1>
-            <div className="max-w-70 sm:max-w-md lg:max-w-md">
-              <p className="text-[12px]  lg:text-[18px] w-auto">
+            <div className="max-w-[280px] sm:max-w-md md:max-w-xs lg:max-w-md mx-auto">
+              <p className="text-[12px] lg:text-[18px] w-auto">
                 Real experiences that reflect meaningful progress, support, &
                 positive outcomes real experiences.
               </p>
             </div>
           </div>
 
-          <div className="w-206.25 h-full flex justify-center items-center relative ">
-            <div className="h-50 lg:h-140 w-50 lg:w-140 rounded-full relative animate-spin-smooth flex justify-center items-center  mt-10 md:mt-20">
+          {/* Spinning Container Wrapper - Prevents Scrolling & Center Aligned */}
+          <div className="absolute inset-0 flex justify-center items-center pointer-events-none mt-20 md:mt-40 lg:mt-0">
+            <div className="h-[200px] lg:h-[560px] w-[200px] lg:w-[560px] rounded-full relative animate-spin-smooth flex justify-center items-center pointer-events-auto">
               {/* Card 1 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
+              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25  rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/f_auto,q_auto/01_ljve7j)`,
                     backgroundPosition: "center 0px",
@@ -408,7 +397,7 @@ const Community = () => {
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261178/02_m9nzpu.png)`,
                   }}
@@ -416,35 +405,35 @@ const Community = () => {
               </div>
 
               {/* Card 2 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
+              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/04_nygx31.jpg)`,
                   }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/03_ybwukf.png)`,
+                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261178/02_m9nzpu.png)`,
                   }}
                 ></div>
               </div>
 
               {/* Card 3 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
+              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261274/09_jkepdg.png)`,
                   }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/05_iizylf.png)`,
                     backgroundPosition: "center 0px",
@@ -453,17 +442,17 @@ const Community = () => {
               </div>
 
               {/* Card 4 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
+              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/08_v1as17.png)`,
                   }}
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/10_vcg7uz.png)`,
                   }}
@@ -471,10 +460,10 @@ const Community = () => {
               </div>
 
               {/* Card 5 */}
-              <div className="h-70 w-12.5 lg:h-210 lg:w-35 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
+              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261277/07_shd07t.png)`,
                     backgroundPosition: "center 0px",
@@ -482,7 +471,7 @@ const Community = () => {
                 ></div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-15 lg:h-41.25 bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
                   style={{
                     backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261279/06_igpmof.png)`,
                   }}
@@ -495,10 +484,11 @@ const Community = () => {
           {isModalOpen && (
             <div
               onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 -mx-5 w-[calc(100%+2.5rem)] lg:mx-0 lg:w-full h-full flex justify-center items-center z-50 overflow-visible transition-opacity duration-300"
+              className="fixed inset-0 w-full h-full flex justify-center items-center z-50 bg-black/10 transition-opacity duration-300"
             >
-              <div className="relative w-full max-w-150 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-0 ">
-                <div className="relative w-[320px] h-105 lg:w-122.5 lg:h-150 order-1">
+              <div className="relative w-full max-w-[600px] flex flex-col items-center justify-center gap-6 px-4">
+                {/* Card Stack Container */}
+                <div className="relative w-[320px] h-[420px] lg:w-[490px] lg:h-[600px] order-1">
                   {deckData.map((card, idx) => {
                     const isActive = idx === currentIndex;
                     return (
@@ -514,11 +504,11 @@ const Community = () => {
                           opacity: isSwiping && isActive ? 0.3 : undefined,
                           fontFamily: '"Manrope", sans-serif',
                         }}
-                        className={`absolute w-full h-full rounded-[30px] lg:rounded-4xl p-6 lg:p-8.75 flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${card.bgClass} ${getCardPlacementClass(idx)}`}
+                        className={`absolute w-full h-full rounded-[30px] lg:rounded-4xl p-6 lg:p-[35px] flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${card.bgClass} ${getCardPlacementClass(idx)}`}
                       >
                         <div className="overflow-y-auto max-h-[90%] pr-1 scrollbar-none">
                           <div
-                            className={`h-[40px] w-40 border rounded-full text-[13px] font-normal lg:text-[13px] mb-3 lg:mb-5 ${card.tagClass} flex justify-center items-center text-center  bg-[#BA5023]`}
+                            className={`h-[40px] w-40 border rounded-full text-[13px] font-normal lg:text-[13px] mb-3 lg:mb-5 ${card.tagClass} flex justify-center items-center text-center bg-[#BA5023]`}
                           >
                             <p>{card.tag}</p>
                           </div>
@@ -546,13 +536,13 @@ const Community = () => {
                 <div className="flex items-center justify-center gap-2 order-2 md:absolute md:w-full md:justify-between md:px-0 pointer-events-none">
                   <button
                     onClick={handlePrev}
-                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:-translate-x-5"
+                    className="w-12 h-12 lg:w-[50px] lg:h-[50px] rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:-translate-x-5"
                   >
                     &#8249;
                   </button>
                   <button
                     onClick={handleNext}
-                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:translate-x-5"
+                    className="w-12 h-12 lg:w-[50px] lg:h-[50px] rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:translate-x-5"
                   >
                     &#8250;
                   </button>

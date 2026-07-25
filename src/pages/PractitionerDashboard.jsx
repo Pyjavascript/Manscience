@@ -226,18 +226,16 @@ const PractitionerDashboard = () => {
       setIsSendingQuery(true);
 
       // 1. Insert into database
-      const { error } = await supabase
-        .from("practitioner_queries")
-        .insert([
-          {
-            practitioner_id: practitionerProfile.id,
-            user_id: targetUserId,
-            subject: querySubject.trim(),
-            question: validQuestions.join(" | "),
-            questions: validQuestions,
-            status: "pending",
-          },
-        ]);
+      const { error } = await supabase.from("practitioner_queries").insert([
+        {
+          practitioner_id: practitionerProfile.id,
+          user_id: targetUserId,
+          subject: querySubject.trim(),
+          question: validQuestions.join(" | "),
+          questions: validQuestions,
+          status: "pending",
+        },
+      ]);
 
       if (error) throw error;
 
@@ -271,8 +269,10 @@ const PractitionerDashboard = () => {
   };
 
   // Edit Recommendations State
-  const [isEditingRecommendations, setIsEditingRecommendations] = useState(false);
+  const [isEditingRecommendations, setIsEditingRecommendations] =
+    useState(false);
   const [editableTherapies, setEditableTherapies] = useState([]);
+  const [practitionerSummary, setPractitionerSummary] = useState("");
   const [isSavingTherapies, setIsSavingTherapies] = useState(false);
 
   useEffect(() => {
@@ -281,6 +281,7 @@ const PractitionerDashboard = () => {
     } else {
       setEditableTherapies([]);
     }
+    setPractitionerSummary(selectedCase?.roadmap?.practitioner_summary || "");
     setIsEditingRecommendations(false);
   }, [selectedCase]);
 
@@ -330,7 +331,10 @@ const PractitionerDashboard = () => {
         setAssignedCases([]);
       }
     } catch (err) {
-      console.error("Error building practitioner workspace context:", err.message);
+      console.error(
+        "Error building practitioner workspace context:",
+        err.message,
+      );
     } finally {
       setLoading(false);
     }
@@ -408,21 +412,28 @@ const PractitionerDashboard = () => {
     try {
       setIsSavingTherapies(true);
 
+      // Save both therapies and summary note to Supabase
       const { error } = await supabase
         .from("user_roadmap_mapped")
-        .update({ aggregated_therapies: editableTherapies })
+        .update({
+          aggregated_therapies: editableTherapies,
+          practitioner_summary: practitionerSummary,
+        })
         .eq("user_id", selectedCase.roadmap.user_id);
 
       if (error) throw error;
 
+      // Update active selected case
       setSelectedCase((prev) => ({
         ...prev,
         roadmap: {
           ...prev.roadmap,
           aggregated_therapies: editableTherapies,
+          practitioner_summary: practitionerSummary,
         },
       }));
 
+      // Update list view context
       setAssignedCases((prevCases) =>
         prevCases.map((c) =>
           c.id === selectedCase.id
@@ -431,6 +442,7 @@ const PractitionerDashboard = () => {
                 roadmap: {
                   ...c.roadmap,
                   aggregated_therapies: editableTherapies,
+                  practitioner_summary: practitionerSummary,
                 },
               }
             : c,
@@ -438,7 +450,7 @@ const PractitionerDashboard = () => {
       );
 
       setIsEditingRecommendations(false);
-      alert("Recommendations updated successfully!");
+      alert("Recommendations and summary updated successfully!");
     } catch (err) {
       console.error("Error saving recommendations:", err);
       alert(`Failed to save: ${err.message}`);
@@ -472,10 +484,16 @@ const PractitionerDashboard = () => {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Full Account Name :  ${userProfile?.name || "Anonymous Guest"}`, 15, 62);
+    doc.text(
+      `Full Account Name :  ${userProfile?.name || "Anonymous Guest"}`,
+      15,
+      62,
+    );
     doc.text(`Registered Email   :  ${userProfile?.email || "N/A"}`, 15, 70);
 
-    const classificationLabel = getFullClassification(roadmapData?.classification);
+    const classificationLabel = getFullClassification(
+      roadmapData?.classification,
+    );
     doc.setFont("helvetica", "bold");
     doc.text(`Classification    :  ${classificationLabel}`, 15, 78);
 
@@ -532,6 +550,29 @@ const PractitionerDashboard = () => {
         doc.text(`• ${item.therapy || "N/A"}`, 18, currentY);
         currentY += 6;
       });
+    }
+
+    const summaryText = roadmapData?.practitioner_summary || "";
+    if (summaryText.trim()) {
+      currentY += 10;
+      if (currentY > 250) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(34, 34, 34);
+      doc.text("Practitioner Summary & Clinical Notes:", 15, currentY);
+      currentY += 8;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+
+      // Wrap long text within page margins
+      const splitSummary = doc.splitTextToSize(summaryText, 180);
+      doc.text(splitSummary, 15, currentY);
     }
 
     return doc;
@@ -600,7 +641,7 @@ const PractitionerDashboard = () => {
         },
         () => {
           fetchQueriesForCase(userId);
-        }
+        },
       )
       .subscribe();
 
@@ -789,7 +830,9 @@ const PractitionerDashboard = () => {
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-1.5 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
                           >
                             <FaFilePdf size={11} />
-                            <span>{isSendingEmail ? "Sending..." : "Email PDF"}</span>
+                            <span>
+                              {isSendingEmail ? "Sending..." : "Email PDF"}
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -799,17 +842,29 @@ const PractitionerDashboard = () => {
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                              <th className="py-3 px-5">Assessment Target Domain</th>
-                              <th className="py-3 px-5 text-center">Score Result</th>
-                              <th className="py-3 px-5 text-center">Severity Factor</th>
+                              <th className="py-3 px-5">
+                                Assessment Target Domain
+                              </th>
+                              <th className="py-3 px-5 text-center">
+                                Score Result
+                              </th>
+                              <th className="py-3 px-5 text-center">
+                                Severity Factor
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                             {(selectedCase.roadmap?.mapped_domains || []).map(
                               (domainItem, index) => (
-                                <tr key={index} className="hover:bg-slate-50/50 transition">
+                                <tr
+                                  key={index}
+                                  className="hover:bg-slate-50/50 transition"
+                                >
                                   <td className="py-4 px-5 font-semibold text-slate-900">
-                                    <div>{domainItem.domain || "General Assessment Focus"}</div>
+                                    <div>
+                                      {domainItem.domain ||
+                                        "General Assessment Focus"}
+                                    </div>
                                     {domainItem.domain_type && (
                                       <span className="inline-block text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded mt-0.5">
                                         {domainItem.domain_type}
@@ -850,17 +905,22 @@ const PractitionerDashboard = () => {
                           <div className="flex items-center gap-2">
                             {!isEditingRecommendations ? (
                               <button
-                                onClick={() => setIsEditingRecommendations(true)}
+                                onClick={() =>
+                                  setIsEditingRecommendations(true)
+                                }
                                 className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1 px-3 rounded-lg transition cursor-pointer flex items-center gap-1.5"
                               >
                                 <FaEdit size={12} />
-                                Edit Recommendations
+                                Edit Recommendations & Summary
                               </button>
                             ) : (
                               <>
                                 <button
                                   onClick={() => {
-                                    setEditableTherapies(selectedCase.roadmap?.aggregated_therapies || []);
+                                    setEditableTherapies(
+                                      selectedCase.roadmap
+                                        ?.aggregated_therapies || [],
+                                    );
                                     setIsEditingRecommendations(false);
                                   }}
                                   className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-1 px-3 rounded-lg transition cursor-pointer"
@@ -872,7 +932,9 @@ const PractitionerDashboard = () => {
                                   onClick={handleSaveRecommendations}
                                   className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1 px-3 rounded-lg transition disabled:opacity-50 cursor-pointer"
                                 >
-                                  {isSavingTherapies ? "Saving..." : "Save Changes"}
+                                  {isSavingTherapies
+                                    ? "Saving..."
+                                    : "Save Changes"}
                                 </button>
                               </>
                             )}
@@ -883,7 +945,10 @@ const PractitionerDashboard = () => {
                         {isEditingRecommendations ? (
                           <div className="space-y-4">
                             {editableTherapies.map((item, idx) => (
-                              <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 relative shadow-xs">
+                              <div
+                                key={idx}
+                                className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 relative shadow-xs"
+                              >
                                 <button
                                   onClick={() => handleDeleteTherapyRow(idx)}
                                   className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1"
@@ -899,7 +964,13 @@ const PractitionerDashboard = () => {
                                     <input
                                       type="text"
                                       value={item.therapy || ""}
-                                      onChange={(e) => handleTherapyChange(idx, "therapy", e.target.value)}
+                                      onChange={(e) =>
+                                        handleTherapyChange(
+                                          idx,
+                                          "therapy",
+                                          e.target.value,
+                                        )
+                                      }
                                       placeholder="e.g. Cognitive Behavioral Therapy"
                                       className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500"
                                     />
@@ -911,8 +982,18 @@ const PractitionerDashboard = () => {
                                     </label>
                                     <input
                                       type="text"
-                                      value={Array.isArray(item.relevance) ? item.relevance.join(", ") : item.relevance || ""}
-                                      onChange={(e) => handleTherapyChange(idx, "relevance", e.target.value)}
+                                      value={
+                                        Array.isArray(item.relevance)
+                                          ? item.relevance.join(", ")
+                                          : item.relevance || ""
+                                      }
+                                      onChange={(e) =>
+                                        handleTherapyChange(
+                                          idx,
+                                          "relevance",
+                                          e.target.value,
+                                        )
+                                      }
                                       placeholder="Primary, Secondary"
                                       className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500"
                                     />
@@ -925,8 +1006,18 @@ const PractitionerDashboard = () => {
                                   </label>
                                   <input
                                     type="text"
-                                    value={Array.isArray(item.domains) ? item.domains.join(", ") : item.domains || ""}
-                                    onChange={(e) => handleTherapyChange(idx, "domains", e.target.value)}
+                                    value={
+                                      Array.isArray(item.domains)
+                                        ? item.domains.join(", ")
+                                        : item.domains || ""
+                                    }
+                                    onChange={(e) =>
+                                      handleTherapyChange(
+                                        idx,
+                                        "domains",
+                                        e.target.value,
+                                      )
+                                    }
                                     placeholder="Executive Function, Sensory Processing"
                                     className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-emerald-500"
                                   />
@@ -941,12 +1032,13 @@ const PractitionerDashboard = () => {
                               <FaPlus size={10} /> Add New Recommendation
                             </button>
                           </div>
-                        ) : (
-                          /* READ-ONLY DISPLAY VIEW */
-                          selectedCase.roadmap?.aggregated_therapies &&
-                          selectedCase.roadmap.aggregated_therapies.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {selectedCase.roadmap.aggregated_therapies.map((item, aggIdx) => (
+                        ) : /* READ-ONLY DISPLAY VIEW */
+                        selectedCase.roadmap?.aggregated_therapies &&
+                          selectedCase.roadmap.aggregated_therapies.length >
+                            0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {selectedCase.roadmap.aggregated_therapies.map(
+                              (item, aggIdx) => (
                                 <div
                                   key={aggIdx}
                                   className="bg-white border border-slate-200/80 rounded-xl p-3.5 space-y-2 shadow-xs hover:border-emerald-200 transition"
@@ -955,24 +1047,25 @@ const PractitionerDashboard = () => {
                                     <span className="font-bold text-sm text-slate-900">
                                       {item.therapy}
                                     </span>
-                                    {item.relevance && item.relevance.length > 0 && (
-                                      <div className="flex gap-1">
-                                        {item.relevance.map((rel, rIdx) => (
-                                          <span
-                                            key={rIdx}
-                                            className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider ${
-                                              rel === "Primary"
-                                                ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                                                : rel === "Secondary"
-                                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                                  : "bg-purple-50 text-purple-700 border border-purple-200"
-                                            }`}
-                                          >
-                                            {rel}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
+                                    {item.relevance &&
+                                      item.relevance.length > 0 && (
+                                        <div className="flex gap-1">
+                                          {item.relevance.map((rel, rIdx) => (
+                                            <span
+                                              key={rIdx}
+                                              className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider ${
+                                                rel === "Primary"
+                                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                                  : rel === "Secondary"
+                                                    ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                                    : "bg-purple-50 text-purple-700 border border-purple-200"
+                                              }`}
+                                            >
+                                              {rel}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
                                   </div>
 
                                   {item.domains && item.domains.length > 0 && (
@@ -991,23 +1084,57 @@ const PractitionerDashboard = () => {
                                     </div>
                                   )}
                                 </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-slate-400 italic text-center py-2">
-                              No aggregated therapies recorded for this roadmap profile.
-                            </p>
-                          )
+                              ),
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-400 italic text-center py-2">
+                            No aggregated therapies recorded for this roadmap
+                            profile.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* --- PRACTITIONER SUMMARY / CLINICAL NOTES TEXTBOX --- */}
+                      <div className="pt-4 border-t border-slate-200/80 space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                          Practitioner Summary & Clinical Notes
+                        </label>
+
+                        {isEditingRecommendations ? (
+                          <textarea
+                            rows={4}
+                            value={practitionerSummary}
+                            onChange={(e) =>
+                              setPractitionerSummary(e.target.value)
+                            }
+                            placeholder="Enter clinical summary notes, key observations, or follow-up directions for this patient..."
+                            className="w-full border border-slate-200 rounded-xl p-3 text-xs bg-white focus:outline-none focus:border-emerald-500 transition shadow-xs"
+                          />
+                        ) : (
+                          <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 text-xs text-slate-700 min-h-[60px] whitespace-pre-wrap leading-relaxed">
+                            {selectedCase.roadmap?.practitioner_summary ? (
+                              selectedCase.roadmap.practitioner_summary
+                            ) : (
+                              <span className="text-slate-400 italic">
+                                No summary or additional notes provided for this
+                                patient roadmap.
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
 
                       {/* 3. MULTI-QUESTION REQUEST FORM & HISTORY */}
                       <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-5">
-                        <form onSubmit={handleSendQuery} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-xs">
+                        <form
+                          onSubmit={handleSendQuery}
+                          className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-xs"
+                        >
                           <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                             Request Information / Send Questionnaire
                           </div>
-                          
+
                           <input
                             type="text"
                             placeholder="Subject / Questionnaire Title (e.g., Weekly Symptom & Food Log)"
@@ -1023,20 +1150,32 @@ const PractitionerDashboard = () => {
                               Questions List
                             </label>
                             {questionsList.map((qText, idx) => (
-                              <div key={idx} className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}.</span>
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2"
+                              >
+                                <span className="text-xs font-bold text-slate-400 w-4">
+                                  {idx + 1}.
+                                </span>
                                 <input
                                   type="text"
                                   placeholder={`Question #${idx + 1}`}
                                   value={qText}
-                                  onChange={(e) => handleQuestionInputChange(idx, e.target.value)}
+                                  onChange={(e) =>
+                                    handleQuestionInputChange(
+                                      idx,
+                                      e.target.value,
+                                    )
+                                  }
                                   className="flex-1 border border-slate-200 rounded-lg p-2 text-xs bg-slate-50/50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
                                   required
                                 />
                                 {questionsList.length > 1 && (
                                   <button
                                     type="button"
-                                    onClick={() => handleRemoveQuestionField(idx)}
+                                    onClick={() =>
+                                      handleRemoveQuestionField(idx)
+                                    }
                                     className="text-red-500 hover:text-red-700 text-xs px-2 font-bold cursor-pointer"
                                   >
                                     ✕
@@ -1060,7 +1199,9 @@ const PractitionerDashboard = () => {
                               disabled={isSendingQuery}
                               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-4 rounded-lg transition cursor-pointer disabled:opacity-50"
                             >
-                              {isSendingQuery ? "Sending..." : "Send Request to Patient"}
+                              {isSendingQuery
+                                ? "Sending..."
+                                : "Send Request to Patient"}
                             </button>
                           </div>
                         </form>
@@ -1076,14 +1217,27 @@ const PractitionerDashboard = () => {
                             </p>
                           ) : (
                             patientQueries.map((q) => {
-                              const qList = Array.isArray(q.questions) && q.questions.length > 0 ? q.questions : [q.question];
-                              const aList = Array.isArray(q.responses) ? q.responses : [];
+                              const qList =
+                                Array.isArray(q.questions) &&
+                                q.questions.length > 0
+                                  ? q.questions
+                                  : [q.question];
+                              const aList = Array.isArray(q.responses)
+                                ? q.responses
+                                : [];
 
                               return (
-                                <div key={q.id} className="border border-slate-200 rounded-xl p-4 space-y-3 text-xs bg-white shadow-xs">
+                                <div
+                                  key={q.id}
+                                  className="border border-slate-200 rounded-xl p-4 space-y-3 text-xs bg-white shadow-xs"
+                                >
                                   <div className="flex justify-between items-center border-b pb-2 border-slate-100">
-                                    <span className="font-bold text-slate-900 text-sm">{q.subject}</span>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${q.status === 'answered' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                    <span className="font-bold text-slate-900 text-sm">
+                                      {q.subject}
+                                    </span>
+                                    <span
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${q.status === "answered" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}
+                                    >
                                       {q.status}
                                     </span>
                                   </div>
@@ -1092,15 +1246,20 @@ const PractitionerDashboard = () => {
                                     {qList.map((qItem, idx) => (
                                       <div key={idx} className="space-y-1">
                                         <p className="text-slate-700 font-semibold">
-                                          {qList.length > 1 ? `${idx + 1}. ` : ""}
+                                          {qList.length > 1
+                                            ? `${idx + 1}. `
+                                            : ""}
                                           {qItem}
                                         </p>
                                         {q.status === "answered" ? (
                                           <div className="bg-emerald-50 border border-emerald-100 text-emerald-900 p-2 rounded-lg text-xs font-sans">
-                                            <strong>Patient Response:</strong> {aList[idx] || q.response}
+                                            <strong>Patient Response:</strong>{" "}
+                                            {aList[idx] || q.response}
                                           </div>
                                         ) : (
-                                          <p className="text-[11px] text-amber-600 italic">Awaiting patient response...</p>
+                                          <p className="text-[11px] text-amber-600 italic">
+                                            Awaiting patient response...
+                                          </p>
                                         )}
                                       </div>
                                     ))}
@@ -1111,11 +1270,12 @@ const PractitionerDashboard = () => {
                           )}
                         </div>
                       </div>
-
                     </div>
                   ) : (
                     <div className="bg-white/60 border border-dashed rounded-3xl p-16 text-center text-slate-400 text-sm italic font-medium">
-                      Select an evaluation row tracking item from the left registry dashboard menu options to drill down into active clinical domains metrics.
+                      Select an evaluation row tracking item from the left
+                      registry dashboard menu options to drill down into active
+                      clinical domains metrics.
                     </div>
                   )}
                 </div>

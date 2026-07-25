@@ -39,7 +39,7 @@ export default function App() {
         <Route path="/slider" element={<SmoothExpertSlider/>}/>
         <Route path="/ai" element={<ManasiAi/>}/>
         <Route path="/post/mnri" element={<FAQSection/>}/>
-        <Route path="/tc" element={<TermsAndConditions/>}/>
+        <Route path="/legals" element={<TermsAndConditions/>}/>
         <Route path="/practitioner-dashboard" element={<PractitionerDashboard/>}/>
 
       </Routes>
