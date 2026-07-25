@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import logo from "../assets/logo-white.png";
 import toggle from "../assets/toggle.svg";
 import grid from "../assets/grid.svg";
+import plus from "../assets/plus.svg";
+import plusBrown from "../assets/plusBrown.svg";
+
+
 import Nav from "../components/Nav";
 import { supabase } from "../supabase";
 const Community = () => {
@@ -131,12 +135,10 @@ const Community = () => {
     try {
       const { data, error } = await supabase
         .from("community_hub")
-        .select(
-          `
+        .select(`
           *,
-          community_tags ( name )
-        `,
-        )
+          community_tags ( name, color )
+        `)
         .eq("status", "approved")
         .order("created_at", { ascending: false });
 
@@ -226,11 +228,11 @@ const Community = () => {
                 name="close-outline"
                 style={{ fontSize: "20px" }}
               ></ion-icon> */}
-              <p className="rotate-45 text-2xl">+</p>
+                        <img src={plusBrown} className="rotate-45" alt="more"/>
+              
               <span>Close</span>
             </button>
           ) : (
-            /* CLOSED STATE: Circle + Icon + Filter Text */
             <div
               onClick={() => {
                 setShowFilters(true);
@@ -240,7 +242,8 @@ const Community = () => {
             >
               <div className="bg-[#BA5023] text-white text-[24px] h-12.5 w-12.5 flex justify-center items-center rounded-full">
                 {/* <ion-icon name="add-outline"></ion-icon> */}
-                +
+                        <img src={plus} alt="more"/>
+
               </div>
               <span className="text-[#BA5023] text-[24px] font-normal">
                 Filter
@@ -278,38 +281,45 @@ const Community = () => {
         {/* Bottom Row: Filter Items List (Rendered below the top controls) */}
         {showFilters && (
           <div className="flex justify-start w-full animate-fadeIn">
-            <div className="flex items-center gap-3 overflow-x-auto scrollbar-none py-1 px-2 max-w-full justify-start md:justify-center">
+            <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-1 px-2 max-w-full justify-start md:justify-center">
               {/* 'All' Tag */}
               <button
                 onClick={() => setSelectedTagId(null)}
-                className={`px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
+                className={`px-[70px] py-[20px] rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
                   !selectedTagId
-                    ? "bg-[#C85527] text-white shadow-sm"
-                    : "bg-[#FAF4E8] text-[#C85527] hover:bg-[#f2e7d3]"
+                    ? "bg-[#BA5023] text-white shadow-sm"
+                    : "bg-[#FFFBF3] text-[#BA5023] hover:bg-[#f2e7d3]"
                 }`}
               >
                 All
               </button>
 
-              {/* Dynamic Tag Items with Color Dots */}
-              {tagsList.map((tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => setSelectedTagId(tag.id)}
-                  className={`px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-2 ${
-                    selectedTagId === tag.id
-                      ? "bg-[#C85527] text-white shadow-sm"
-                      : "bg-[#FAF4E8] text-[#C85527] hover:bg-[#f2e7d3]"
-                  }`}
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      selectedTagId === tag.id ? "bg-white" : "bg-[#C85527]"
+           
+              {tagsList.map((tag) => {
+                const isSelected = selectedTagId === tag.id;
+                const tagColor = tag.color || "#C85527";
+
+                return (
+                  <button
+                    key={tag.id}
+                    onClick={() => setSelectedTagId(tag.id)}
+                    className={`px-4.25 py-5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-2.5 cursor-pointer ${
+                      isSelected
+                        ? "bg-[#C85527] text-white shadow-sm"
+                        : "bg-[#FAF4E8] text-[#C85527] hover:bg-[#f2e7d3]"
                     }`}
-                  ></span>
-                  {tag.name}
-                </button>
-              ))}
+                  >
+                    
+                    <span
+                      className="w-[8px] h-[8px] rounded-full inline-block transition-colors duration-150"
+                      style={{
+                        backgroundColor: isSelected ? "#FFFFFF" : tagColor,
+                      }}
+                    />
+                    {tag.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -317,53 +327,67 @@ const Community = () => {
 
       {/* Conditional Layout Injection Section */}
       {enabled ? (
-        /* Grid Layout View Mode (Configured to 4 cards in a row on laptop/desktop viewports) */
         <section className="w-full mt-25 lg:mt-24 px-3.75 flex flex-col items-center">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 w-full max-w-350">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2.5 w-full max-w-350">
             {communityPosts
               .filter(
                 (post) =>
                   post.status === "approved" &&
-                  (!selectedTagId || post.tag_id === selectedTagId),
+                  (!selectedTagId || post.tag_id === selectedTagId)
               )
-              .map((post) => (
-                <div
-                  key={post.id}
-                  className=" w-full max-w-83.75 h-52.5 sm:h-100 bg-[#FAF4E8] rounded-[20px] sm:rounded-4xl mx-auto transition-transform p-2.5 md:p-5 flex flex-col justify-between"
-                >
-                  <div className="flex flex-col gap-4 md:gap-15">
-                    <div
-                      className={`px-1.5 py-0.5 md:h-10 md:w-43.75 border rounded-[20px] text-[12px] font-normal md:text-[16px] flex justify-center items-center text-center text-[#BA5023] w-[90%]`}
-                    >
-                      <p>{post.community_tags?.name || "General"}</p>
+              .map((post) => {
+                const tagColor = post.community_tags?.color || "#BA5023";
+
+                return (
+                  <div
+                    key={post.id}
+                    className="w-full h-52.5 sm:h-100 bg-[#FFFBF3] rounded-[40px] sm:rounded-4xl mx-auto transition-transform p-5  md:p-2.5 md:p-5 flex flex-col justify-between"
+                  >
+                    <div className="flex flex-col gap-4 md:gap-7.5">
+                      {/* Tag Pill with Color Dot */}
+                      <div className="px-3 py-1.5 md:h-[60px] md:w-[160px] bg-white rounded-full text-[12px] font-medium md:text-[18px] flex justify-center items-center gap-2 text-center text-[#BA5023] w-fit max-w-[90%]">
+                        <span
+                          className="w-[8px] h-[8px] rounded-full inline-block shrink-0"
+                          style={{ backgroundColor: tagColor }}
+                        />
+                        <p className="truncate">
+                          {post.community_tags?.name || "General"}
+                        </p>
+                      </div>
+
+                      <div className="text-[15px] md:text-[20px] text-[#BA5023] leading-[-120%] font-medium pr-[28px]">
+                        <p>{post.content}</p>
+                      </div>
                     </div>
-                    <div className="text-[13px] md:text-[20px] text-[#BA5023] leading-[120%] ">
-                      <p>{post.content}</p>
+
+                    <div className="flex w-full justify-between items-center text-[#68270B]">
+                      <div>
+                        <h2 className="text-[15px] md:text-[18px] font-medium">
+                          {post.username}
+                        </h2>
+                        <p className="text-[14px] md:text-[12px] font-regular">
+                          {new Date(post.created_at).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            }
+                          )}
+                        </p>
+                      </div>
+                      <div className="bg-[#BA5023] h-[40px] w-[40px] md:h-12.5 md:w-12.5 flex justify-center items-center rounded-full">
+                        {/* <ion-icon name="add-outline"></ion-icon> */}
+                        <img src={plus} alt="more"/>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex w-full justify-between">
-                    <div>
-                      <h2 className="text-[12px] md:text-[15px]">
-                        {post.username}
-                      </h2>
-                      <p className="text-[10px]">
-                        {new Date(post.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    <div className="bg-[#BA5023] text-white text-[20px] md:text-[24px] h-7.5 w-7.5 md:h-12.5 md:w-12.5 flex justify-center items-center rounded-full">
-                      <ion-icon name="add-outline"></ion-icon>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
 
           <button
-            className="mt-12 cursor-pointer bg-[#BA5023] text-white font-medium py-3 px-8 rounded-full text-[14px] sm:text-[16px]"
+            className="mt-12 w-[160px] h-[80px] cursor-pointer bg-[#BA5023] text-white font-semibold rounded-full text-[14px] mdtext-[16px]"
             onClick={() => setSelectedTagId(null)}
           >
             View All

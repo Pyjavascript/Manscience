@@ -385,23 +385,24 @@ const Dashboard = () => {
   };
 
   const fetchRoadmapsFromDb = async () => {
-  try {
-    setRoadmapLoading(true);
-    const { data, error } = await supabase
-      .from("user_roadmap_mapped")
-      .select("*")
-      .order("updated_at", { ascending: false });
+    try {
+      setRoadmapLoading(true);
+      const { data, error } = await supabase
+        .from("user_roadmap_mapped")
+        .select("*")
+        .order("updated_at", { ascending: false });
 
-    if (error) throw error;
-    setRoadmapsList(data || []);
-  } catch (err) {
-    console.error("Error gathering system roadmap parameters:", err.message);
-  } finally {
-    setRoadmapLoading(false);
-  }
-};
+      if (error) throw error;
+      setRoadmapsList(data || []);
+    } catch (err) {
+      console.error("Error gathering system roadmap parameters:", err.message);
+    } finally {
+      setRoadmapLoading(false);
+    }
+  };
 
   const [tagsList, setTagsList] = useState([]);
+  const [newTagColor, setNewTagColor] = useState("#5932EA");
   const [tagsLoading, setTagsLoading] = useState(false);
   const [newTagName, setNewConditionTagName] = useState("");
   const [communitySubView, setCommunitySubTabFilter] = useState("posts"); // "posts" | "tags"
@@ -412,9 +413,9 @@ const Dashboard = () => {
         .from("community_hub")
         .select(
           `
-          *,
-          community_tags ( name )
-        `,
+        *,
+        community_tags ( name, color )
+      `,
         )
         .order("created_at", { ascending: false });
 
@@ -450,11 +451,12 @@ const Dashboard = () => {
     try {
       const { error } = await supabase
         .from("community_tags")
-        .insert([{ name: newTagName.trim() }]);
+        .insert([{ name: newTagName.trim(), color: newTagColor }]);
 
       if (error) throw error;
       alert("New tag added successfully!");
       setNewConditionTagName("");
+      setNewTagColor("#5932EA");
       fetchCommunityTags();
     } catch (err) {
       alert(`Tag generation failed: ${err.message}`);
@@ -1381,7 +1383,8 @@ const Dashboard = () => {
     if (activeTab === "CommunityHub") return communityLoading || tagsLoading;
     if (activeTab === "ConditionManagement") return conditionsLoading;
     if (activeTab === "ResearchDigest") return blogsLoading;
-    if (activeTab === "AiRoadmap") return roadmapLoading || userManagementLoading;
+    if (activeTab === "AiRoadmap")
+      return roadmapLoading || userManagementLoading;
     return false;
   }, [
     activeTab,
@@ -1393,7 +1396,7 @@ const Dashboard = () => {
     tagsLoading,
     conditionsLoading,
     blogsLoading,
-    roadmapLoading
+    roadmapLoading,
   ]);
 
   useEffect(() => {
@@ -2133,14 +2136,42 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <form onSubmit={handleCreateTag} className="space-y-3">
-                    <input
-                      type="text"
-                      required
-                      value={newTagName}
-                      onChange={(e) => setNewConditionTagName(e.target.value)}
-                      placeholder="e.g., Success Story, Feedback"
-                      className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-[#5932EA]"
-                    />
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        Tag Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newTagName}
+                        onChange={(e) => setNewConditionTagName(e.target.value)}
+                        placeholder="e.g., Success Story, Feedback"
+                        className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-[#5932EA]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        Tag Theme Color
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={newTagColor}
+                          onChange={(e) => setNewTagColor(e.target.value)}
+                          className="w-10 h-10 p-1 bg-white border border-gray-200 rounded-xl cursor-pointer"
+                          title="Choose tag color"
+                        />
+                        <input
+                          type="text"
+                          value={newTagColor}
+                          onChange={(e) => setNewTagColor(e.target.value)}
+                          placeholder="#5932EA"
+                          className="flex-1 bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm font-mono focus:outline-none focus:border-[#5932EA]"
+                        />
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
                       className="w-full bg-[#5932EA] text-white font-semibold py-2.5 rounded-xl transition text-sm hover:bg-[#4826c9]"
@@ -4197,5 +4228,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-
