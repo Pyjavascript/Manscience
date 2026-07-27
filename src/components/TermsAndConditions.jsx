@@ -153,13 +153,12 @@ export default function PrivacyPolicy() {
             <img src={logo} alt="logo" />
           </div>
 
-          {/* 4 Category Pill Buttons */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-3 sm:gap-[10px] w-full max-w-[750px]">
+          <div className="grid grid-cols-2 lg:flex lg:flex-row justify-center items-center gap-3 sm:gap-4 lg:gap-[10px] w-fit mx-auto">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className="px-4 h-[80px] w-[180px]  rounded-full text-[14px] md:text-[15px] font-semibold transition-all cursor-pointer bg-[#FAF4E8] text-[#B05A36] hover:bg-[#BA5023] hover:text-white active:scale-95"
+                className="px-5 h-[70px] sm:h-[80px] min-w-[160px] sm:min-w-[180px] whitespace-nowrap rounded-full text-[13px] sm:text-[15px] font-semibold transition-all cursor-pointer bg-[#FAF4E8] text-[#B05A36] hover:bg-[#BA5023] hover:text-white active:scale-95 flex items-center justify-center text-center"
               >
                 {tab}
               </button>
