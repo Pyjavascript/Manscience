@@ -6,10 +6,12 @@ import arrow from "../assets/Ai/arrow.svg";
 import inparrow from "../assets/Ai/inparrow.svg";
 import inparrowbrown from "../assets/Ai/inparrowbrown.svg";
 import journey from "../assets/Ai/journey.svg";
+import journeyWhite from "../assets/Ai/journeyWhite.svg";
+
 import sent from "../assets/Ai/sent.svg";
 import brainImg from "../assets/Ai/BrainImg.svg";
 
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "framer-motion";
 import { supabase } from "../supabase";
 import { NEUROTYPICAL_SET, NEURODIVERGENT_SET } from "../data/questionnaires";
 
@@ -62,8 +64,8 @@ const ManasiAi = () => {
   // Domain scoring State
   const [scoringState, setScoringState] = useState({
     isActive: false,
-    isCompleted: false, // NEW state to show completion card
-    pendingPayload: null, // Holds ready payload until Submit button is clicked
+    isCompleted: false,
+    pendingPayload: null,
     dataset: [],
     currentDomainIdx: 0,
     currentQuestionIdx: 0,
@@ -72,14 +74,20 @@ const ManasiAi = () => {
   });
 
   const scrollRef = useRef(null);
-  let CHAT_ENDPOINT = "https://manasi-production.up.railway.app/chat";
+  const CHAT_ENDPOINT = "https://manasi-production.up.railway.app/chat";
 
+  // Prevent auto-scroll on every minor state update
   useEffect(() => {
     const scrollTimer = requestAnimationFrame(() => {
       scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     });
     return () => cancelAnimationFrame(scrollTimer);
-  }, [messages, isLoading, scoringState.isActive, scoringState.isCompleted]);
+  }, [
+    messages.length,
+    quizState.currentStep,
+    scoringState.currentDomainIdx,
+    scoringState.isCompleted,
+  ]);
 
   // Handle setting fresh unique session or loaded elements
   useEffect(() => {
@@ -107,7 +115,8 @@ const ManasiAi = () => {
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
       freshSessionId = crypto.randomUUID();
     } else {
-      freshSessionId = "session_" + Math.random().toString(36).substring(2, 11);
+      freshSessionId =
+        "session_" + Math.random().toString(36).substring(2, 11);
     }
 
     setSessionId(freshSessionId);
@@ -158,7 +167,7 @@ const ManasiAi = () => {
     }
   };
 
-  const startRoadmapQuiz = () => {
+  const startRoadmapQuiz = (msgIndex = null, ctaText = "Get a Roadmap") => {
     setSelectedQuizOption(null);
     setScoringState((prev) => ({
       ...prev,
@@ -167,18 +176,36 @@ const ManasiAi = () => {
     }));
     setQuizState({ isActive: true, currentStep: 0, answers: [] });
 
+    const time = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
     const firstQuestion = QUESTIONNAIRE[0];
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content: firstQuestion.question,
-        isQuiz: true,
-        options: firstQuestion.options,
-        step: 0,
-        selectedAnswer: null,
-      },
-    ]);
+
+    // Mark active CTA on the target message and push user message + first quiz question
+    setMessages((prev) => {
+      const updated = prev.map((m, idx) =>
+        idx === msgIndex ? { ...m, activeCta: ctaText } : m,
+      );
+
+      return [
+        ...updated,
+        {
+          role: "user",
+          content: ctaText,
+          time: time,
+        },
+        {
+          role: "assistant",
+          content: firstQuestion.question,
+          isQuiz: true,
+          options: firstQuestion.options,
+          step: 0,
+          selectedAnswer: null,
+        },
+      ];
+    });
   };
 
   const handleQuizAnswerSubmit = (step, selectedOpt) => {
@@ -307,7 +334,6 @@ const ManasiAi = () => {
           selectedRating: null,
         }));
       } else {
-        // SCORING FINISHED -> CONSTRUCT PAYLOAD & SHOW COMPLETION CARD
         const targetClassification =
           scoringState.dataset === NEURODIVERGENT_SET ? "ND" : "NT";
 
@@ -341,7 +367,6 @@ const ManasiAi = () => {
           score: scorePayloadArray,
         };
 
-        // Transition from active scoring to the "Roadmap Completed" screen
         setScoringState((prev) => ({
           ...prev,
           isActive: false,
@@ -349,10 +374,9 @@ const ManasiAi = () => {
           pendingPayload: wireFormatBody,
         }));
       }
-    }, 300);
+    }, 250);
   };
 
-  // Submit trigger fired on "Submit" button click from the Figma card
   const submitFinalRoadmapPayload = () => {
     if (!scoringState.pendingPayload) return;
 
@@ -517,40 +541,42 @@ const ManasiAi = () => {
       return (
         <motion.div
           key={index}
-          layout
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className={`w-full flex ${
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className={` overflow-x-visible flex ${
             msg.role === "assistant" ? "justify-start" : "justify-end"
           }`}
         >
           {msg.role === "assistant" ? (
-            <div
-              className={`flex flex-col items-start gap-3 w-full transition-all duration-200 ${
-                msg.isQuiz && msg.options?.some((opt) => opt.length > 15)
-                  ? "max-w-[420px]"
-                  : "md:max-w-[78%]"
-              }`}
-            >
-              <img src={ai} alt="Manasi" className="w-6 h-6" />
+            (() => {
+              const hasLongOption =
+                msg.isQuiz && msg.options?.some((opt) => opt.length > 15);
 
-              <div className="text-white bg-[#68270B]/15 font-medium leading-[140%] tracking-[-2%] text-[15px] text-left px-[21px] py-5 rounded-3xl md:rounded-[34px] flex flex-col gap-3 w-full">
-                {msg.isQuiz && (
-                  <div className="bg-[#D19F8A] py-[13px] px-[15px] flex justify-center items-center gap-[12px] max-w-[105px] rounded-[34px] leading-[1.1] tracking-[-2%]">
-                    <div className="bg-white h-[6px] w-[6px] rounded-full"></div>
-                    <p className="font-semibold text-[13px]">Roadmap</p>
-                  </div>
-                )}
-                <p className="whitespace-pre-wrap">{msg.content?.trim()}</p>
+              return (
+                <div
+                  className={`flex flex-col items-start gap-3 w-full transition-all duration-200 ${
+                    hasLongOption ? "max-w-105" : "md:max-w-full"
+                  }`}
+                >
+                  <img src={ai} alt="Manasi" className="w-6 h-6" />
 
-                {msg.isQuiz &&
-                  (() => {
-                    const hasLongOption = msg.options.some(
-                      (opt) => opt.length > 15,
-                    );
+                  <div
+                    className={`text-white bg-[#68270B]/15 font-medium leading-[140%] tracking-[-2%] text-[15px] text-left px-5.25 py-5 rounded-3xl md:rounded-[34px] flex flex-col gap-3 w-full ${
+                      hasLongOption ? "max-w-105" : "w-150"
+                    }`}
+                  >
+                    {msg.isQuiz && (
+                      <div className="bg-[#D19F8A] py-3.25 px-3.75 flex justify-center items-center gap-3 max-w-26.25 rounded-[34px] leading-[1.1] tracking-[-2%]">
+                        <div className="bg-white h-1.5 w-1.5 rounded-full"></div>
+                        <p className="font-semibold text-[13px]">Roadmap</p>
+                      </div>
+                    )}
 
-                    return (
+                    <p className="whitespace-pre-wrap">{msg.content?.trim()}</p>
+
+                    {/* Quiz Options */}
+                    {msg.isQuiz && (
                       <div
                         className={`flex gap-2 w-full mt-2 ${
                           hasLongOption ? "flex-col" : "flex-row flex-wrap"
@@ -569,12 +595,14 @@ const ManasiAi = () => {
                                 setSelectedQuizOption(opt);
                                 handleQuizAnswerSubmit(msg.step, opt);
                               }}
-                              className={`font-medium text-[15px] md:text-[17px] px-6 py-3.5 rounded-full transition-all duration-200 flex items-center justify-center gap-2 ${
-                                hasLongOption ? "w-full text-center" : "w-[145px]"
+                              className={`font-medium text-[15px] md:text-[17px] py-3.5 rounded-full transition-all duration-200 flex items-center justify-center gap-2 ${
+                                hasLongOption
+                                  ? "w-full text-center"
+                                  : "w-25 md:w-36.25"
                               } ${
                                 isSelected
-                                  ? "bg-[#68270B] text-white scale-[1.01]"
-                                  : "bg-white text-[#68270B] hover:bg-opacity-90 active:scale-95"
+                                  ? "bg-[#68270B] text-white"
+                                  : "bg-[#FAF4E8] text-[#68270B] hover:bg-opacity-90 active:scale-95"
                               } ${
                                 !isLastMessage || msg.selectedAnswer
                                   ? "cursor-default opacity-80"
@@ -586,69 +614,150 @@ const ManasiAi = () => {
                           );
                         })}
                       </div>
-                    );
-                  })()}
-              </div>
+                    )}
+                  </div>
 
-              {msg.cta && msg.cta.cta_found && (
-                <div className="flex flex-wrap gap-2">
-                  {msg.cta.cta_url && (
-                    <a
-                      href={msg.cta.cta_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-[20px] md:gap-[30px] bg-[#68270B] text-white font-medium text-[15px] py-[17px] px-[21px] md:p-[22px] rounded-full transition w-auto cursor-pointer hover:opacity-90 active:scale-95"
-                    >
-                      <span className="manrope">
-                        {msg.cta.cta_trigger || "Learn More"}
-                      </span>
-                      <img src={inparrow} alt="link" />
-                    </a>
-                  )}
-                  {msg.cta.cta_category === "Condition" && (
-                    <button
-                      onClick={startRoadmapQuiz}
-                      className="flex items-center gap-[20px] md:gap-[30px] bg-[#FAF4E8] text-[#68270B] font-medium text-[15px] py-[17px] px-[21px] md:p-[22px] rounded-full transition w-auto cursor-pointer hover:bg-opacity-90 active:scale-95"
-                    >
-                      <span className="manrope">Get a Roadmap</span>
-                      <img src={inparrowbrown} alt="link" />
-                    </button>
+                  {/* CTA Section */}
+                  {msg.cta && msg.cta.cta_found && !msg.activeCta && (
+                    <div className="flex flex-wrap gap-2">
+                      {/* 1. External URL CTA */}
+                      {msg.cta.cta_url &&
+                        (() => {
+                          const ctaLabel = msg.cta.cta_trigger || "Learn More";
+
+                          return (
+                            <button
+                              onClick={() => {
+                                const time = new Date().toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                );
+
+                                setMessages((prev) => [
+                                  ...prev.map((m, i) =>
+                                    i === index
+                                      ? { ...m, activeCta: ctaLabel }
+                                      : m,
+                                  ),
+                                  {
+                                    role: "user",
+                                    content: ctaLabel,
+                                    time,
+                                  },
+                                ]);
+
+                                window.open(
+                                  msg.cta.cta_url,
+                                  "_blank",
+                                  "noopener,noreferrer",
+                                );
+                              }}
+                              className="group flex items-center h-15 gap-5 md:gap-7.5 font-medium text-[15px] py-4.25 px-5.25 md:p-5.5 rounded-full transition-all duration-200 w-auto cursor-pointer active:scale-95 bg-[#FAF4E8] text-[#68270B] hover:bg-[#68270B] hover:text-white"
+                            >
+                              <span className="manrope">{ctaLabel}</span>
+                              <img
+                                src={inparrow}
+                                alt="link"
+                                className="hidden group-hover:block"
+                              />
+                              <img
+                                src={inparrowbrown}
+                                alt="link"
+                                className="block group-hover:hidden"
+                              />
+                            </button>
+                          );
+                        })()}
+
+                      {/* 2. Get a Roadmap CTA */}
+                      {msg.cta.cta_category === "Condition" && (
+                        <button
+                          onClick={() =>
+                            startRoadmapQuiz(index, "Get a Roadmap")
+                          }
+                          className="group flex items-center h-15 gap-5 md:gap-7.5 font-medium text-[15px] py-4.25 px-5.25 md:p-5.5 rounded-full transition-all duration-200 w-auto cursor-pointer active:scale-95 bg-[#FAF4E8] text-[#68270B] hover:bg-[#68270B] hover:text-white"
+                        >
+                          <span className="manrope">Get a Roadmap</span>
+                          <img
+                            src={inparrow}
+                            alt="link"
+                            className="hidden group-hover:block"
+                          />
+                          <img
+                            src={inparrowbrown}
+                            alt="link"
+                            className="block group-hover:hidden"
+                          />
+                        </button>
+                      )}
+
+                      {/* 3. Begin My Journey Assessment CTA */}
+                      {msg.cta.cta_category === "StartAssessment" && (
+                        <button
+                          onClick={() => {
+                            const time = new Date().toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+
+                            setMessages((prev) => [
+                              ...prev.map((m, i) =>
+                                i === index
+                                  ? { ...m, activeCta: "Begin My Journey" }
+                                  : m,
+                              ),
+                              {
+                                role: "user",
+                                content: "Begin My Journey",
+                                time,
+                              },
+                            ]);
+
+                            setScoringState({
+                              isActive: true,
+                              isCompleted: false,
+                              pendingPayload: null,
+                              dataset: msg.cta.dataset,
+                              currentDomainIdx: 0,
+                              currentQuestionIdx: 0,
+                              answers: {},
+                              selectedRating: null,
+                            });
+                          }}
+                          className="group flex items-center gap-2.5 font-medium text-[15px] p-4.25 rounded-full transition-all duration-200 cursor-pointer active:scale-95 bg-[#FAF4E8] text-[#68270B] hover:bg-[#68270B] hover:text-white"
+                        >
+                          <img
+                            src={journey}
+                            alt="icon"
+                            className="group-hover:hidden"
+                          />
+                          <img
+                            src={journeyWhite}
+                            alt="icon"
+                            className="hidden group-hover:block"
+                          />
+                          <span className="manrope">Begin My Journey</span>
+                        </button>
+                      )}
+                    </div>
                   )}
 
-                  {msg.cta.cta_category === "StartAssessment" && (
-                    <button
-                      onClick={() => {
-                        setScoringState({
-                          isActive: true,
-                          isCompleted: false,
-                          pendingPayload: null,
-                          dataset: msg.cta.dataset,
-                          currentDomainIdx: 0,
-                          currentQuestionIdx: 0,
-                          answers: {},
-                          selectedRating: null,
-                        });
-                      }}
-                      className="flex items-center gap-[10px] bg-[#68270B] text-white font-medium text-[15px] p-[17px] rounded-full transition cursor-pointer hover:bg-opacity-90 active:scale-95"
-                    >
-                      <img src={journey} alt="icon" />
-                      <span className="manrope">Begin My Journey</span>
-                    </button>
-                  )}
+                  <div className="flex gap-2.5 justify-center items-center text-[10px] text-white">
+                    <p className="font-medium text-[12px]">{time}</p>
+                    <img src={sent} alt="sent" />
+                  </div>
                 </div>
-              )}
-
-              <div className="flex gap-[10px] justify-center items-center text-[10px] text-white">
-                <p className="font-medium text-[12px]">{time}</p>
-                <img src={sent} alt="sent" />
-              </div>
-            </div>
+              );
+            })()
           ) : (
             <div className="flex flex-col items-end gap-2 max-w-[85%]">
-              <div className="px-[20px] py-[15px] rounded-full font-medium text-[15px] leading-[105%] tracking-[-2%] bg-[#FAF4E8] text-[#68270B] text-left">
+              <div className="px-5 flex justify-center items-center h-15 rounded-full font-medium text-[15px] leading-[105%] tracking-[-2%] bg-[#FAF4E8] text-[#68270B] text-left">
                 {msg.content}
               </div>
-              <div className="flex gap-[10px] justify-center items-center text-[10px] text-white">
+              <div className="flex gap-2.5 justify-center items-center text-[10px] text-white">
                 <p className="font-medium text-[12px]">{time}</p>
                 <img src={sent} alt="sent" />
               </div>
@@ -661,14 +770,14 @@ const ManasiAi = () => {
 
   return (
     <div
-      className="flex flex-col h-dvh w-full text-white select-none manrope overflow-hidden relative bg-cover bg-center bg-no-repeat pt-6 md:pt-10"
+      className="flex flex-col h-dvh w-full text-white select-none manrope overflow-hidden overflow-x-visible relative bg-cover bg-center bg-no-repeat pt-6 md:pt-10"
       style={{ backgroundImage: `url("${bg}")` }}
     >
       <div className="flex-1 flex flex-col min-h-0 relative">
-        <div className="absolute pl-5 md:pl-11 pb-2 z-10">
+        <div className="md:absolute pl-5 md:pl-11 pb-2 z-10">
           <img
             src={Logo}
-            className="w-[115px] md:w-[204px]"
+            className="w-28.75 md:w-51"
             alt="Manascience"
           />
         </div>
@@ -694,13 +803,12 @@ const ManasiAi = () => {
         ) : scoringState.isCompleted ? (
           <main className="flex-1 min-h-0 flex flex-col justify-center items-center text-center max-w-md w-full mx-auto px-4 my-auto">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="w-full bg-[#68270B]/20 rounded-[40px] p-[10px] text-white flex flex-col items-center gap-[18px] overflow-hidden relative"
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="w-full bg-[#68270B]/20 rounded-[40px] p-2.5 text-white flex flex-col items-center gap-4.5 overflow-hidden relative"
             >
-              {/* Graphic Banner Area */}
-              <div className="w-full flex items-center justify-center relative min-h-[180px]">
+              <div className="w-full flex items-center justify-center relative min-h-45">
                 <img
                   src={brainImg}
                   alt="Brain Illustration"
@@ -708,50 +816,46 @@ const ManasiAi = () => {
                 />
               </div>
 
-              {/* Text Header Section */}
-              <div className="flex flex-col items-center gap-[28px] px-2">
-                <div className="flex flex-col items-center gap-[10px]">
+              <div className="flex flex-col items-center gap-7 px-2">
+                <div className="flex flex-col items-center gap-2.5">
                   <span className="text-[16px] font-regular text-white tracking-[2%]">
                     Thank You
                   </span>
-                  <h2 className="text-[28px] md:text-[36px] font-medium leading-tight leading-[1.2] text-white tracking-[-3%]">
+                  <h2 className="text-[28px] md:text-[36px] font-medium leading-[1.2] text-white tracking-[-3%]">
                     Roadmap Completed!
                   </h2>
                 </div>
-                <p className="text-[12px] md:text-[14px] text-white leading-[1.3] max-w-[280px] font-normal">
-                  Personalised information & Practioners will reach out within
+                <p className="text-[12px] md:text-[14px] text-white leading-[1.3] max-w-70 font-normal">
+                  Personalised information & Practitioners will reach out within
                   3-5days.
                 </p>
               </div>
 
-              {/* Submit Action Button */}
               <button
                 onClick={submitFinalRoadmapPayload}
                 disabled={isLoading}
                 className="w-full bg-[#68270B] hover:bg-[#521e08] text-white font-medium py-4 rounded-full text-[16px] md:text-[20px] transition duration-200 active:scale-98 cursor-pointer disabled:opacity-50"
               >
-                {isLoading ? "Submitting..." : "Submit"}
+                {isLoading ? "Submitting" : "Submit"}
               </button>
             </motion.div>
           </main>
         ) : scoringState.isActive ? (
           /* ACTIVE DOMAIN SCORING SCREEN */
-          <main className="flex-1 min-h-0 flex flex-col justify-between items-center gap-[25px] text-center max-w-2xl w-full mx-auto px-4 py-2 pt-[30px] md:pt-0 my-auto">
+          <main className="flex-1 min-h-0 flex flex-col justify-between items-center gap-5 text-center max-w-2xl w-full mx-auto px-4 py-2 pt-7.5 md:pt-0 my-auto">
             {/* Step Pill Badge */}
-            <div className="flex flex-col items-center gap-[15px] w-full shrink-0">
-              <div className="bg-white/10 px-[20px] py-[16px] rounded-full inline-block">
+            <div className="flex flex-col items-center gap-3 w-full shrink-0">
+              <div className="bg-white/10 px-5 py-3 rounded-full inline-block">
                 <span className="text-[15px] font-semibold tracking-wide text-white">
                   Step {currentStepNum}/{totalDomains}
                 </span>
               </div>
 
-              {/* Domain Title */}
               <h2 className="text-[24px] md:text-[30px] font-medium text-white tracking-[-4%] leading-[1.2]">
                 {activeDomain.domain}
               </h2>
 
-              {/* Progress Bar */}
-              <div className="w-full max-w-[320px] md:max-w-[480px] bg-white/20 h-1 rounded-full overflow-hidden mx-auto">
+              <div className="w-full max-w-[320px] md:max-w-120 bg-white/20 h-1 rounded-full overflow-hidden mx-auto">
                 <div
                   className="bg-white h-full transition-all duration-300 rounded-full"
                   style={{ width: `${progressPercent}%` }}
@@ -759,75 +863,66 @@ const ManasiAi = () => {
               </div>
             </div>
 
-            {/* 4-Question Sliding Window Container */}
-            <div className="flex flex-col justify-center items-center gap-[10px] w-full max-w-xl my-2 shrink-0 min-h-[320px] justify-center">
-              <AnimatePresence mode="popLayout" initial={false}>
-                {(() => {
-                  const totalQ = activeDomain.questions.length;
-                  const currentIdx = scoringState.currentQuestionIdx;
+            <div className="relative w-full max-w-xl h-82.5 overflow-hidden flex flex-col items-center justify-start my-2 shrink-0">
+              {(() => {
+                const totalQ = activeDomain.questions.length;
+                const currentIdx = scoringState.currentQuestionIdx;
 
-                  let startIndex = 0;
-                  if (totalQ <= 4 || currentIdx <= 1) {
-                    startIndex = 0;
+                let topIndex = 0;
+                if (totalQ > 4) {
+                  if (currentIdx <= 1) {
+                    topIndex = 0;
                   } else if (currentIdx >= totalQ - 2) {
-                    startIndex = totalQ - 4;
+                    topIndex = totalQ - 4;
                   } else {
-                    startIndex = currentIdx - 1;
+                    topIndex = currentIdx - 1;
                   }
+                }
 
-                  const visibleQuestions = activeDomain.questions.slice(
-                    startIndex,
-                    startIndex + 4,
-                  );
+                return (
+                  <motion.div
+                    animate={{
+                      y: -(topIndex * 85),
+                    }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="flex flex-col items-center gap-2.5 w-full absolute top-0"
+                  >
+                    {activeDomain.questions.map((qText, globalIdx) => {
+                      const isCurrent = globalIdx === currentIdx;
 
-                  return visibleQuestions.map((qText, localIdx) => {
-                    const globalIdx = startIndex + localIdx;
-                    const isCurrent = globalIdx === currentIdx;
-
-                    return (
-                      <motion.div
-                        key={qText}
-                        layout
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{
-                          opacity: isCurrent ? 1 : 0.5,
-                          y: 0,
-                          scale: isCurrent ? 1.08 : 1,
-                        }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        transition={{
-                          layout: {
-                            type: "spring",
-                            stiffness: 350,
-                            damping: 30,
-                          },
-                          opacity: { duration: 0.25 },
-                          scale: { duration: 0.25 },
-                        }}
-                        className={`rounded-[22px] h-[80px] w-[310px] md:w-[480px] md:rounded-[28px] flex  items-center px-[30px] text-[13px] md:text-[15px] font-medium text-left transition-colors duration-300 ${
-                          isCurrent
-                            ? "bg-white text-[#68270B]"
-                            : "bg-[#68270B]/20 text-white/70"
-                        }`}
-                      >
-                        Q{globalIdx + 1}. {qText}
-                      </motion.div>
-                    );
-                  });
-                })()}
-              </AnimatePresence>
+                      return (
+                        <motion.div
+                          key={globalIdx}
+                          animate={{
+                            opacity: isCurrent ? 1 : 0.45,
+                            scale: isCurrent ? 1 : 0.96,
+                          }}
+                          transition={{ duration: 0.2 }}
+                          className={`rounded-[22px] h-18.75 w-77.5 md:w-120 md:rounded-[28px] flex items-center px-6 text-[13px] md:text-[15px] font-medium text-left shrink-0 transition-colors duration-200 ${
+                            isCurrent
+                              ? "bg-white text-[#68270B]"
+                              : "bg-[#68270B]/20 text-white/80"
+                          }`}
+                        >
+                          Q{globalIdx + 1}. {qText}
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                );
+              })()}
             </div>
 
             {/* Rating Controls Section */}
             <div className="flex flex-col items-center gap-2 shrink-0 w-full">
-              <div className="flex justify-center items-center gap-[5px] md:gap-[10px]">
+              <div className="flex justify-center items-center gap-2 md:gap-3">
                 {[1, 2, 3, 4, 5].map((num) => {
                   const isSelected = scoringState.selectedRating === num;
                   return (
                     <button
                       key={num}
                       onClick={() => handleRatingSelect(num)}
-                      className={`w-15 h-15 md:w-20 md:h-20 rounded-full flex items-center justify-center font-semibold text-[15px] md:text-[17px] transition-all duration-150 cursor-pointer ${
+                      className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center font-semibold text-[15px] md:text-[17px] transition-all duration-150 cursor-pointer ${
                         isSelected
                           ? "bg-[#68270B] text-white scale-105"
                           : "bg-white text-[#68270B] hover:bg-white/90"
@@ -839,7 +934,7 @@ const ManasiAi = () => {
                 })}
               </div>
 
-              <p className="text-[12px] text-white font-medium">
+              <p className="text-[12px] text-white/90 font-medium mt-1">
                 Rate from 1-5 based on the severity of your symptoms
               </p>
             </div>
@@ -848,7 +943,7 @@ const ManasiAi = () => {
           </main>
         ) : (
           /* STANDARD CHAT VIEW */
-          <main className="flex-1 overflow-y-auto flex flex-col gap-6 max-w-2xl w-full mx-auto px-2 pt-4 mainBox will-change-transform transform-gpu">
+          <main className="flex-1 md:w-150 overflow-y-auto flex flex-col gap-6 max-w-2xl w-full mx-auto px-3.5 pt-4 mainBox will-change-transform transform-gpu">
             {renderedMessages}
             {isLoading && (
               <motion.div
@@ -873,9 +968,9 @@ const ManasiAi = () => {
               <div className="w-full flex items-center gap-3.5 md:overflow-visible overflow-x-auto flex-nowrap md:justify-center pb-2 px-1 scrollbar-none snap-x snap-mandatory">
                 <button
                   onClick={() => sendMessage("What is ADHD")}
-                  className="snap-center shrink-0 flex items-center justify-between gap-2.5 px-6.25 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
+                  className=" snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
                 >
-                  <p className="md:text-[14px] tracking-[-3%] text-left leading-[1.5]">
+                  <p className="md:text-[14px] tracking-[-3%] text-left leading-normal">
                     Explore ADHD
                   </p>
                   <span>
@@ -885,9 +980,9 @@ const ManasiAi = () => {
 
                 <button
                   onClick={() => sendMessage("Help me understand therapies")}
-                  className="snap-center shrink-0 flex items-center justify-between gap-[10px] px-[25px] py-[20px] text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
+                  className="snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
                 >
-                  <p className="md:text-[14px] tracking-[-3%] text-left leading-[1.5]">
+                  <p className="md:text-[14px] tracking-[-3%] text-left leading-normal">
                     Find Therapies
                   </p>
                   <span>
@@ -897,9 +992,9 @@ const ManasiAi = () => {
 
                 <button
                   onClick={() => sendMessage("Book a session")}
-                  className="snap-center shrink-0 flex items-center justify-between gap-[10px] px-[25px] py-[20px] text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
+                  className="snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
                 >
-                  <p className="md:text-[14px] tracking-[-3%] text-left leading-[1.5]">
+                  <p className="md:text-[14px] tracking-[-3%] text-left leading-normal">
                     Book Session
                   </p>
                   <span>
@@ -909,7 +1004,7 @@ const ManasiAi = () => {
               </div>
             )}
             {!scoringState.isActive && (
-              <div className="w-full rounded-[24px] md:rounded-[34px] px-3.75 pr-3 py-2.5 md:py-4.5 md:pl-6.25 md:px-3.75 max-w-2xl mx-auto bg-white text-gray-900 p-4 text-left flex justify-between items-center">
+              <div className="md:w-150 h-15 md:h-20 rounded-3xl md:rounded-[34px] px-3.75 pr-3 py-2.5 md:py-4.5 md:pl-6.25 md:px-3.75 max-w-2xl mx-auto bg-white text-gray-900 p-4 text-left flex justify-between items-center">
                 <textarea
                   rows="1"
                   placeholder="What would you like help with?"
@@ -927,12 +1022,12 @@ const ManasiAi = () => {
                     quizState.isActive ||
                     scoringState.isActive
                   }
-                  className="w-11 md:w-[48px] md:h-[45px] h-9.5 rounded-full bg-[#BA5023] hover:bg-amber-800 disabled:bg-amber-700/40 flex items-center justify-center text-white transition"
+                  className="w-11 md:w-12 md:h-11.25 h-9.5 rounded-full bg-[#BA5023] hover:bg-amber-800 disabled:bg-amber-700/40 flex items-center justify-center text-white transition"
                 >
                   <img
                     src={inparrow}
                     alt="send"
-                    className="-rotate-45 h-[12px]"
+                    className="-rotate-45 h-3"
                   />
                 </button>
               </div>

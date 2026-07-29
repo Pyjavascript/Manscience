@@ -5,7 +5,6 @@ import grid from "../assets/grid.svg";
 import plus from "../assets/plus.svg";
 import plusBrown from "../assets/plusBrown.svg";
 
-
 import Nav from "../components/Nav";
 import { supabase } from "../supabase";
 const Community = () => {
@@ -135,10 +134,12 @@ const Community = () => {
     try {
       const { data, error } = await supabase
         .from("community_hub")
-        .select(`
+        .select(
+          `
           *,
           community_tags ( name, color )
-        `)
+        `,
+        )
         .eq("status", "approved")
         .order("created_at", { ascending: false });
 
@@ -228,8 +229,8 @@ const Community = () => {
                 name="close-outline"
                 style={{ fontSize: "20px" }}
               ></ion-icon> */}
-                        <img src={plusBrown} className="rotate-45" alt="more"/>
-              
+              <img src={plusBrown} className="rotate-45" alt="more" />
+
               <span>Close</span>
             </button>
           ) : (
@@ -240,12 +241,11 @@ const Community = () => {
               }}
               className="flex gap-4 items-center cursor-pointer select-none group active:scale-95 transition-transform shrink-0"
             >
-              <div className="bg-[#BA5023] text-white text-[24px] h-12.5 w-12.5 flex justify-center items-center rounded-full">
+              <div className="bg-[#BA5023] text-white text-[24px] h-[40px] md:h-12.5 w-[40px] md:w-12.5 flex justify-center items-center rounded-full">
                 {/* <ion-icon name="add-outline"></ion-icon> */}
-                        <img src={plus} alt="more"/>
-
+                <img src={plus} alt="more" className="w-6 md:w-auto" />
               </div>
-              <span className="text-[#BA5023] text-[24px] font-normal">
+              <span className="text-[#BA5023] text-[18px] md:text-[24px] font-normal">
                 Filter
               </span>
             </div>
@@ -261,16 +261,16 @@ const Community = () => {
                 className="sr-only peer"
               />
 
-              <div className="relative w-20 h-11 bg-[#BA5023] rounded-full transition-colors duration-200 ease-in-out">
+              <div className="relative w-18 md:w-20 h-[40px] md:h-11 bg-[#BA5023] rounded-full transition-colors duration-200 ease-in-out">
                 <span
-                  className={`absolute top-[4px] w-9 h-9 bg-[#FAF4E8] rounded-full flex justify-center items-center transition-all transition-left duration-200 ease-in-out ${
-                    enabled ? "left-[40px]" : "left-[4px]"
+                  className={`absolute top-[4px] w-8 md:w-9 h-8 md:h-9 bg-[#FAF4E8] rounded-full flex justify-center items-center transition-all transition-left duration-200 ease-in-out ${
+                    enabled ? "left-[36px] md:left-[40px]" : "left-[4px]"
                   }`}
                 >
                   <img
                     src={enabled ? grid : toggle}
                     alt="toggle view"
-                    className="w-5 h-5 object-contain"
+                    className={`object-contain ${enabled ? 'w-4 h-4' : 'w-5 h-5 '}`}
                   />
                 </span>
               </div>
@@ -294,7 +294,6 @@ const Community = () => {
                 All
               </button>
 
-           
               {tagsList.map((tag) => {
                 const isSelected = selectedTagId === tag.id;
                 const tagColor = tag.color || "#C85527";
@@ -309,7 +308,6 @@ const Community = () => {
                         : "bg-[#FAF4E8] text-[#C85527] hover:bg-[#f2e7d3]"
                     }`}
                   >
-                    
                     <span
                       className="w-[8px] h-[8px] rounded-full inline-block transition-colors duration-150"
                       style={{
@@ -333,7 +331,7 @@ const Community = () => {
               .filter(
                 (post) =>
                   post.status === "approved" &&
-                  (!selectedTagId || post.tag_id === selectedTagId)
+                  (!selectedTagId || post.tag_id === selectedTagId),
               )
               .map((post) => {
                 const tagColor = post.community_tags?.color || "#BA5023";
@@ -341,11 +339,11 @@ const Community = () => {
                 return (
                   <div
                     key={post.id}
-                    className="w-full h-52.5 sm:h-100 bg-[#FFFBF3] rounded-[40px] sm:rounded-4xl mx-auto transition-transform p-5  md:p-2.5 md:p-5 flex flex-col justify-between"
+                    className="w-full h-[280px] sm:h-100 bg-[#FFFBF3] rounded-[40px] sm:rounded-4xl mx-auto transition-transform p-5  md:p-2.5 md:p-5 flex flex-col justify-between"
                   >
                     <div className="flex flex-col gap-4 md:gap-7.5">
                       {/* Tag Pill with Color Dot */}
-                      <div className="px-3 py-1.5 md:h-[60px] md:w-[160px] bg-white rounded-full text-[12px] font-medium md:text-[18px] flex justify-center items-center gap-2 text-center text-[#BA5023] w-fit max-w-[90%]">
+                      <div className="px-3.75 py-1.5 h-[50px] md:h-[60px] md:w-[160px] bg-white rounded-full text-[12px] font-medium md:text-[18px] flex justify-center items-center gap-2 text-center text-[#BA5023] w-fit max-w-[90%]">
                         <span
                           className="w-[8px] h-[8px] rounded-full inline-block shrink-0"
                           style={{ backgroundColor: tagColor }}
@@ -372,13 +370,13 @@ const Community = () => {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
-                            }
+                            },
                           )}
                         </p>
                       </div>
                       <div className="bg-[#BA5023] h-[40px] w-[40px] md:h-12.5 md:w-12.5 flex justify-center items-center rounded-full">
                         {/* <ion-icon name="add-outline"></ion-icon> */}
-                        <img src={plus} alt="more"/>
+                        <img src={plus} alt="more" />
                       </div>
                     </div>
                   </div>
@@ -396,110 +394,216 @@ const Community = () => {
       ) : (
         <section className="w-full min-h-[500px] lg:h-[900px] flex justify-center items-center relative overflow-hidden">
           {/* Center Text Header */}
-          <div className="absolute top-6 md:top-10 lg:top-1/2 left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-10 text-[#BA5023] text-center pointer-events-none px-4 w-full">
-            <h1 className="text-[32px] lg:text-[45px]">MANASCIENCE</h1>
-            <div className="max-w-[280px] sm:max-w-md md:max-w-xs lg:max-w-md mx-auto">
-              <p className="text-[12px] lg:text-[18px] w-auto">
-                Real experiences that reflect meaningful progress, support, &
-                positive outcomes real experiences.
+          <div className="absolute top-65 md:top-10 lg:top-1/2 left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-10 text-[#BA5023] text-center pointer-events-none px-4 w-full">
+            <div className="max-w-[280px] sm:max-w-md md:max-w-xs lg:max-w-xs mx-auto">
+              <p className="text-[12px] lg:text-[18px] font-medium w-auto ">
+                 Support, & positive<br/>outcomes real experiences.
               </p>
             </div>
           </div>
 
+          {/* animate-spin-smooth  - animation name  */}
           {/* Spinning Container Wrapper - Prevents Scrolling & Center Aligned */}
-          <div className="absolute inset-0 flex justify-center items-center pointer-events-none mt-20 md:mt-40 lg:mt-0">
-            <div className="h-[200px] lg:h-[560px] w-[200px] lg:w-[560px] rounded-full relative animate-spin-smooth flex justify-center items-center pointer-events-auto">
+          <div className="absolute inset-0 flex justify-center items-center animate-spin-smooth pointer-events-none mt-20 md:mt-40 lg:mt-0">
+            <div className="h-[200px] lg:h-[560px] w-[200px] lg:w-[560px] rounded-full relative flex justify-center items-center pointer-events-auto">
               {/* Card 1 */}
-              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
+              <div className="h-[320px] w-[55px] lg:h-[700px] lg:w-[115px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/f_auto,q_auto/01_ljve7j)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241707/Frame_2087330989_ysxxoz.png)`,
                     backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261178/02_m9nzpu.png)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330986_u1dmj3.png)`,
+                    backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Card 2 */}
-              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
+              <div className="h-[320px] w-[55px] lg:h-[700px] lg:w-[115px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261273/04_nygx31.jpg)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330985_zlrv98.png)`,
+                    backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261178/02_m9nzpu.png)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330987_r5gkiq.png)`,
+                    backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Card 3 */}
-              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
+              <div className="h-[320px] w-[55px] lg:h-[700px] lg:w-[115px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261274/09_jkepdg.png)`,
-                  }}
-                ></div>
-                <div
-                  onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
-                  style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/05_iizylf.png)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330982_qjfrbd.png)`,
                     backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
+                <div
+                  onClick={() => setIsModalOpen(true)}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
+                  style={{
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330980_gn4kbu.png)`,
+                    backgroundPosition: "center 0px",
+                  }}
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Card 4 */}
-              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
+              <div className="h-[320px] w-[55px] lg:h-[700px] lg:w-[115px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/08_v1as17.png)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330981_wpmiez.png)`,
+                    backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261275/10_vcg7uz.png)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330979_bbliqt.png)`,
+                    backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Card 5 */}
-              <div className="h-[280px] w-[50px] lg:h-[840px] lg:w-[140px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
+              <div className="h-[320px] w-[55px] lg:h-[700px] lg:w-[115px] md:h-[360px] md:w-[52px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261277/07_shd07t.png)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330983_s7wdtn.png)`,
                     backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`w-full h-[60px] lg:h-[165px] bg-center bg-cover rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity ${isModalOpen ? "opacity-50" : "opacity-100"}`}
+                  className={`relative overflow-hidden group w-full h-[65px] lg:h-[145px] rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                    isModalOpen ? "opacity-50" : "opacity-100"
+                  }`}
                   style={{
-                    backgroundImage: `url(https://res.cloudinary.com/nscfi7sz/image/upload/v1783261279/06_igpmof.png)`,
+                    backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1785241706/Frame_2087330977_p2nzwo.png)`,
+                    backgroundPosition: "center 0px",
                   }}
-                ></div>
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                    style={{
+                      background:
+                        "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -560,13 +664,13 @@ const Community = () => {
                 <div className="flex items-center justify-center gap-2 order-2 md:absolute md:w-full md:justify-between md:px-0 pointer-events-none">
                   <button
                     onClick={handlePrev}
-                    className="w-12 h-12 lg:w-[50px] lg:h-[50px] rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:-translate-x-5"
+                    className="w-12 h-12 lg:w-[55px] lg:h-[50px] rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:-translate-x-5"
                   >
                     &#8249;
                   </button>
                   <button
                     onClick={handleNext}
-                    className="w-12 h-12 lg:w-[50px] lg:h-[50px] rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:translate-x-5"
+                    className="w-12 h-12 lg:w-[55px] lg:h-[50px] rounded-full bg-[#BA5023] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center shadow-md transition-transform duration-100 pointer-events-auto lg:translate-x-5"
                   >
                     &#8250;
                   </button>
