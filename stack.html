@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stacked Card Slider</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Container for the 3D perspective */
+    .card-stack-container {
+      position: relative;
+      width: 320px;
+      height: 420px;
+      perspective: 1000px;
+      margin-bottom: 30px;
+    }
+
+    /* Individual Card Styles */
+    .card {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      user-select: none;
+      /* Smooth movement transitions */
+      transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                  opacity 0.6s ease;
+      cursor: pointer;
+    }
+
+    /* Card Themes / Colors */
+    .card:nth-child(1) { background: linear-gradient(135deg, #ec4899, #8b5cf6); }
+    .card:nth-child(2) { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+    .card:nth-child(3) { background: linear-gradient(135deg, #10b981, #059669); }
+    .card:nth-child(4) { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .card:nth-child(5) { background: linear-gradient(135deg, #6366f1, #4338ca); }
+
+    .card h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .card p {
+      font-size: 1rem;
+      line-height: 1.5;
+      opacity: 0.9;
+    }
+
+    .card .card-number {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+      opacity: 0.7;
+    }
+
+    /* Controls Navigation */
+    .controls {
+      display: flex;
+      gap: 20px;
+      z-index: 10;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(5px);
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Card Stack Container -->
+  <div class="card-stack-container" id="cardStack">
+    <div class="card">
+      <span class="card-number">Card 01</span>
+      <div>
+        <h2>Design Systems</h2>
+        <p>Creating beautiful, reusable component systems for web applications.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-number">Card 02</span>
+      <div>
+        <h2>3D Animations</h2>
+        <p>Leveraging CSS perspective and transforms to build tactile web depth.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-number">Card 03</span>
+      <div>
+        <h2>User Experience</h2>
+        <p>Prioritizing accessibility and seamless user flow in digital interfaces.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-number">Card 04</span>
+      <div>
+        <h2>Performance</h2>
+        <p>Optimizing render cycles and DOM updates for fluid 60fps experiences.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-number">Card 05</span>
+      <div>
+        <h2>Creative Code</h2>
+        <p>Blending art with logic to turn standard websites into memorable moments.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Controls -->
+  <div class="controls">
+    <button class="btn" id="prevBtn" aria-label="Previous card">
+      <!-- Left Arrow SVG -->
+      <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <button class="btn" id="nextBtn" aria-label="Next card">
+      <!-- Right Arrow SVG -->
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <script>
+    const stack = document.getElementById('cardStack');
+    const cards = Array.from(stack.children);
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+
+    // Number of visible stacked layers behind the top card
+    const maxVisibleDepth = 3; 
+
+    function updateStack() {
+      cards.forEach((card, index) => {
+        if (index < maxVisibleDepth) {
+          // Cards visible in the stack (index 0 = front, index 1 = second, etc.)
+          const scale = 1 - index * 0.05;          // Shrink cards further back
+          const translateY = index * 15;            // Shift down slightly
+          const translateZ = -index * 30;           // Push backward in 3D space
+          const opacity = 1 - index * 0.15;         // Slightly dim deeper cards
+
+          card.style.transform = `translateY(${translateY}px) translateZ(${translateZ}px) scale(${scale})`;
+          card.style.opacity = opacity;
+          card.style.zIndex = cards.length - index; // Ensure top cards overlap back cards
+          card.style.pointerEvents = index === 0 ? 'auto' : 'none';
+        } else {
+          // Hide cards beyond the max visible depth behind the stack
+          card.style.transform = `translateY(${maxVisibleDepth * 15}px) translateZ(-${maxVisibleDepth * 30}px) scale(${1 - maxVisibleDepth * 0.05})`;
+          card.style.opacity = 0;
+          card.style.zIndex = 0;
+          card.style.pointerEvents = 'none';
+        }
+      });
+    }
+
+    // Move top card to back
+    function handleNext() {
+      const topCard = cards.shift(); // Remove top card from front of array
+      cards.push(topCard);            // Push it to the end of array
+      updateStack();
+    }
+
+    // Bring back card to front
+    function handlePrev() {
+      const lastCard = cards.pop();   // Remove card from back of array
+      cards.unshift(lastCard);        // Add it to the front of array
+      updateStack();
+    }
+
+    // Event Listeners
+    nextBtn.addEventListener('click', handleNext);
+    prevBtn.addEventListener('click', handlePrev);
+
+    // Initial positioning setup
+    updateStack();
+  </script>
+</body>
+</html>
