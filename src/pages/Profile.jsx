@@ -138,7 +138,7 @@ export default function Profile() {
     try {
       setLoadingHistory(true);
       const response = await fetch(
-        `https://manasi-production.up.railway.app/chat/user/${user.id}/history`
+        `https://manasiai-production.up.railway.app/chat/user/${user.id}/history`
       );
       if (response.ok) {
         const historyJson = await response.json();

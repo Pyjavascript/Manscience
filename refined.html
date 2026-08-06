@@ -1,0 +1,1933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sanjeevni Clinic - Receptionist Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-surface: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      
+      --status-scheduled-bg: #fef3c7;
+      --status-scheduled-text: #92400e;
+      --status-checkedin-bg: #dbeafe;
+      --status-checkedin-text: #1e40af;
+      --status-inprog-bg: #dcfce7;
+      --status-inprog-text: #166534;
+      --status-completed-bg: #f1f5f9;
+      --status-completed-text: #475569;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* SIDEBAR NAVIGATION */
+    .sidebar-nav {
+      width: 220px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      padding-left: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      padding-left: 8px;
+    }
+
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-link {
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+
+    .nav-link.active, .nav-link:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .sidebar-footer-btn {
+      margin-top: auto;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      background: #dcfce7;
+      color: #166534;
+      font-weight: 600;
+      font-size: 0.875rem;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    /* MAIN APP AREA */
+    .app-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* VIEW SCREENS */
+    .screen-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .screen-view.active {
+      display: flex;
+    }
+
+    /* TOP HEADER */
+    .top-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .clinic-select {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-main);
+      font-weight: 500;
+      color: var(--text-main);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .search-bar {
+      flex: 1;
+      max-width: 400px;
+      position: relative;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 8px 12px 8px 36px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-main);
+      outline: none;
+      font-size: 0.9rem;
+    }
+
+    .search-bar svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-main);
+    }
+
+    .btn-success {
+      background: #166534;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #14532d;
+    }
+
+    /* DASHBOARD OVERVIEW CONTAINER */
+    .dashboard-overview-container {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .overview-top-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .overview-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .kpi-card-interactive {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 120px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-card-interactive:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+    }
+
+    .kpi-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .kpi-card-val {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .overview-grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .card-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* NOW SERVING CARDS */
+    .serving-card {
+      background: var(--bg-main);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .serving-doc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .doc-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .doc-avatar-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .serving-patient-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-surface);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .empty-serving-state {
+      padding: 30px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+    }
+
+    /* PATIENT QUEUE (DRAGGABLE) */
+    .queue-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .queue-item-card {
+      background: var(--bg-main);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: grab;
+      user-select: none;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .queue-item-card:active {
+      cursor: grabbing;
+    }
+
+    .queue-item-card.dragging {
+      opacity: 0.4;
+      background: var(--primary-light);
+      border-style: dashed;
+    }
+
+    .queue-item-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .drag-handle-icon {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      font-weight: bold;
+      cursor: grab;
+    }
+
+    .queue-pat-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    .queue-pat-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .queue-item-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* WEBSITE CMS DASHBOARD SCREEN */
+    .cms-container {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cms-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .cms-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 110px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cms-card-title {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .cms-card-value {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .cms-panels-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .cms-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: var(--bg-main);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+    }
+
+    .cms-item-title {
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text-main);
+    }
+
+    .cms-item-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* PATIENTS DASHBOARD VIEW */
+    .dashboard-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 24px;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .kpi-value-group {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .kpi-badge {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .controls-bar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .filter-select {
+      padding: 6px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      font-size: 0.875rem;
+      color: var(--text-main);
+      outline: none;
+    }
+
+    .view-toggle {
+      display: flex;
+      background: var(--bg-main);
+      padding: 2px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .toggle-btn {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .toggle-btn.active {
+      background: var(--bg-surface);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .view-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-wrapper {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .appointments-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    .appointments-table th {
+      background: var(--bg-main);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .appointments-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+    }
+
+    .appointments-table tr:hover {
+      background-color: var(--primary-light);
+      cursor: pointer;
+    }
+
+    .patient-cell {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .patient-name {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .patient-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      width: fit-content;
+    }
+
+    .status-scheduled { background: var(--status-scheduled-bg); color: var(--status-scheduled-text); }
+    .status-checked-in { background: var(--status-checkedin-bg); color: var(--status-checkedin-text); }
+    .status-in-progress { background: var(--status-inprog-bg); color: var(--status-inprog-text); }
+    .status-completed { background: var(--status-completed-bg); color: var(--status-completed-text); }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .action-cell {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* TIMELINE / RESOURCE GRID VIEW */
+    .timeline-wrapper {
+      display: none;
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    .grid-board {
+      display: grid;
+      grid-template-columns: 80px repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border-color);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+    }
+
+    .grid-cell {
+      background: var(--bg-surface);
+      padding: 8px;
+      min-height: 70px;
+      font-size: 0.8rem;
+    }
+
+    .grid-header {
+      background: var(--bg-main);
+      font-weight: 600;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .time-slot {
+      text-align: center;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--bg-main);
+    }
+
+    .app-card {
+      background: var(--status-checkedin-bg);
+      color: var(--status-checkedin-text);
+      border-left: 3px solid var(--primary);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+    }
+
+    /* DRAWER FOR PATIENT DETAILS */
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.4);
+      display: none;
+      justify-content: flex-end;
+      z-index: 1000;
+    }
+
+    .drawer-overlay.open {
+      display: flex;
+    }
+
+    .drawer-content {
+      width: 440px;
+      background: var(--bg-surface);
+      height: 100%;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      animation: slideIn 0.25s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .drawer-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-body {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .patient-hero-card {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: var(--bg-main);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .patient-hero-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar-big {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .btn-quick-action {
+      padding: 8px 4px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-quick-action:hover {
+      background: var(--bg-main);
+    }
+
+    .info-group-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .info-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .info-val {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .drawer-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 12px;
+    }
+
+    /* MODAL FOR NEW APPOINTMENT */
+    .modal-overlay {
+      position: fixed;
+      top:0; left:0; width:100vw; height:100vh;
+      background: rgba(15, 23, 42, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--bg-surface);
+      width: 100%;
+      max-width: 500px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .form-group input, .form-group select {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      outline: none;
+      font-size: 0.875rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar-nav">
+    <div class="brand-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg>
+      Sanjeevni Clinic
+    </div>
+
+    <div>
+      <div class="nav-section-label">Overview</div>
+      <ul class="nav-menu">
+        <li class="nav-link active" id="nav-overview" onclick="switchScreen('overview')">
+          <span>Appointment</span>
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="nav-section-label">Appointments</div>
+      <ul class="nav-menu">
+        <li class="nav-link" id="nav-patientlist" onclick="switchScreen('patientlist')">
+          <span>Queue / Patient List</span>
+        </li>
+        <li class="nav-link"><span>Tokens & Walk-Ins</span></li>
+        <li class="nav-link"><span>Billing & Receipts</span></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="nav-section-label">Website Content</div>
+      <ul class="nav-menu">
+        <li class="nav-link" id="nav-cms" onclick="switchScreen('cms')">
+          <span>Website Dashboard</span>
+        </li>
+        <li class="nav-link"><span>Testimonials</span></li>
+        <li class="nav-link"><span>Services</span></li>
+        <li class="nav-link"><span>Doctors</span></li>
+        <li class="nav-link"><span>Analytics</span></li>
+      </ul>
+    </div>
+
+    <button class="sidebar-footer-btn">Login</button>
+  </aside>
+
+  <!-- MAIN APP WRAPPER -->
+  <div class="app-main">
+
+    <!-- SCREEN 1: DASHBOARD OVERVIEW -->
+    <div class="screen-view active" id="screen-overview">
+      <div class="dashboard-overview-container">
+        
+        <!-- TOP CTA ACTION BAR -->
+        <div class="overview-top-bar">
+          <button class="btn btn-primary" onclick="toggleModal(true)">+ Book Appointment</button>
+          <button class="btn btn-outline" onclick="toggleModal(true)">+ Quick Walk-In / Token</button>
+          <button class="btn btn-outline" onclick="switchScreen('patientlist')">View Patient List →</button>
+          <button class="btn btn-outline">📞 Call Patient</button>
+        </div>
+
+        <!-- METRICS CARDS GRID -->
+        <div class="overview-kpis">
+          <div class="kpi-card-interactive" onclick="switchScreen('patientlist')">
+            <div class="kpi-card-header">
+              <span>Today's appointments</span>
+              <span>↗</span>
+            </div>
+            <div class="kpi-card-val" id="kpi-total">24</div>
+          </div>
+
+          <div class="kpi-card-interactive" onclick="switchScreen('patientlist')">
+            <div class="kpi-card-header">
+              <span>Patients Waiting</span>
+              <span>↗</span>
+            </div>
+            <div class="kpi-card-val" id="kpi-waiting">6</div>
+          </div>
+
+          <div class="kpi-card-interactive" onclick="switchScreen('cms')">
+            <div class="kpi-card-header">
+              <span>Website Visitors</span>
+              <span>↗</span>
+            </div>
+            <div class="kpi-card-val">1,284</div>
+          </div>
+
+          <div class="kpi-card-interactive" onclick="switchScreen('cms')">
+            <div class="kpi-card-header">
+              <span>Website Inquiries</span>
+              <span>↗</span>
+            </div>
+            <div class="kpi-card-val">24</div>
+          </div>
+        </div>
+
+        <!-- LOWER PANELS: NOW SERVING & DRAGGABLE QUEUE -->
+        <div class="overview-grid-2col">
+          
+          <!-- NOW SERVING PANEL -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <span class="panel-title">Now Serving</span>
+            </div>
+
+            <div id="now-serving-container" style="display: flex; flex-direction: column; gap: 12px;">
+              <!-- Dynamic Serving Cards Rendered Here -->
+            </div>
+          </div>
+
+          <!-- PATIENT QUEUE (DRAGGABLE WITH '=' HANDLE) -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <span class="panel-title">Patient Queue</span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">Hold '=' handle to drag & reorder</span>
+            </div>
+
+            <div class="queue-list-container" id="draggable-queue-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- SCREEN 2: WEBSITE CONTENT CMS DASHBOARD -->
+    <div class="screen-view" id="screen-cms">
+      <div class="cms-container">
+        
+        <div class="panel-header">
+          <span class="panel-title" style="font-size: 1.25rem;">Website Content</span>
+          <button class="btn btn-outline" onclick="switchScreen('overview')">← Back to Appointment Overview</button>
+        </div>
+
+        <!-- 8 METRIC KPI CARDS GRID -->
+        <div class="cms-metrics-grid">
+          <div class="cms-card">
+            <div class="cms-card-title">Website Visitors <span>↗</span></div>
+            <div class="cms-card-value">1,284</div>
+          </div>
+          <div class="cms-card">
+            <div class="cms-card-title">Appointment Conversions <span>↗</span></div>
+            <div class="cms-card-value">4.6%</div>
+          </div>
+          <div class="cms-card">
+            <div class="cms-card-title">Website Enquiries <span>↗</span></div>
+            <div class="cms-card-value">19</div>
+          </div>
+          <div class="cms-card">
+            <div class="cms-card-title">AI Conversations <span>↗</span></div>
+            <div class="cms-card-value">63</div>
+          </div>
+          <div class="cms-card">
+            <div class="cms-card-title">SEO Health <span>↗</span></div>
+            <div class="cms-card-value">78/100</div>
+          </div>
+          <div class="cms-card">
+            <div class="cms-card-title">Published pages <span>↗</span></div>
+            <div class="cms-card-value">18</div>
+          </div>
+          <div class="cms-card">
+            <div class="cms-card-title">Draft Pages <span>↗</span></div>
+            <div class="cms-card-value">5</div>
+          </div>
+          <div class="cms-card">
+            <div class="cms-card-title">Newsletter Subscriptions <span>↗</span></div>
+            <div class="cms-card-value">2,140</div>
+          </div>
+        </div>
+
+        <!-- WEBPAGE UPDATES & FEATURED TESTIMONIALS PANELS -->
+        <div class="cms-panels-grid">
+          
+          <!-- WEBPAGE UPDATES -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <span class="panel-title">Webpage Updates</span>
+            </div>
+
+            <div class="cms-item-row">
+              <div>
+                <div class="cms-item-title">New doctor added: Dr Ravi Kishan</div>
+                <div class="cms-item-meta">Last Edited: 12th Jul, 2026 • By Ritu S</div>
+              </div>
+              <button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;">View</button>
+            </div>
+
+            <div class="cms-item-row">
+              <div>
+                <div class="cms-item-title">New service added: Hair Transplant</div>
+                <div class="cms-item-meta">Last Edited: 15th Jul, 2026 • By Ritu S</div>
+              </div>
+              <button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;">View</button>
+            </div>
+
+            <button class="btn btn-primary" style="justify-content:center; margin-top:8px;">+ Edit Website</button>
+          </div>
+
+          <!-- FEATURED TESTIMONIALS -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <span class="panel-title">Featured Testimonials</span>
+            </div>
+
+            <div class="cms-item-row">
+              <div>
+                <div class="cms-item-title">Testimonial by Ravi Mehta: "The front desk reme..."</div>
+                <div class="cms-item-meta" style="color: #d97706;">★ 4.5/5</div>
+              </div>
+              <button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;">View</button>
+            </div>
+
+            <div class="cms-item-row">
+              <div>
+                <div class="cms-item-title">Testimonial by Ravi Mehta: "The front desk reme..."</div>
+                <div class="cms-item-meta" style="color: #d97706;">★ 4.5/5</div>
+              </div>
+              <button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;">View</button>
+            </div>
+
+            <button class="btn btn-primary" style="justify-content:center; margin-top:8px;">+ Edit Website</button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- SCREEN 3: PATIENTS LIST DUAL-VIEW -->
+    <div class="screen-view" id="screen-patientlist">
+      
+      <!-- TOP HEADER -->
+      <header class="top-header">
+        <div class="brand-section">
+          <select class="clinic-select">
+            <option>Downtown Health Center</option>
+            <option>Westside Medical Annex</option>
+          </select>
+        </div>
+
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="patient-search-input" placeholder="Search Patient Name, ID, or Phone..." onkeyup="filterAppointments()">
+        </div>
+
+        <div class="header-actions">
+          <button class="btn btn-outline" onclick="switchScreen('overview')">← Overview</button>
+          <button class="btn btn-primary" onclick="toggleModal(true)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            New Appointment
+          </button>
+        </div>
+      </header>
+
+      <!-- DASHBOARD CONTAINER -->
+      <main class="dashboard-container">
+
+        <!-- KPI STRIP -->
+        <section class="kpi-grid">
+          <div class="kpi-card">
+            <span class="kpi-title">Total Scheduled</span>
+            <div class="kpi-value-group">
+              <span class="kpi-value" id="kpi-strip-total">4</span>
+              <span class="kpi-badge" style="background:#f1f5f9; color:#475569;">Today</span>
+            </div>
+          </div>
+          <div class="kpi-card" style="border-left: 3px solid var(--primary);">
+            <span class="kpi-title">Checked-In / Waiting</span>
+            <div class="kpi-value-group">
+              <span class="kpi-value" id="kpi-strip-waiting">1</span>
+              <span class="kpi-badge" style="background:var(--status-checkedin-bg); color:var(--status-checkedin-text);">Avg Wait 11m</span>
+            </div>
+          </div>
+          <div class="kpi-card" style="border-left: 3px solid #16a34a;">
+            <span class="kpi-title">In Consultation</span>
+            <div class="kpi-value-group">
+              <span class="kpi-value" id="kpi-strip-active">2</span>
+              <span class="kpi-badge" style="background:var(--status-inprog-bg); color:var(--status-inprog-text);">Active Now</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-title">Completed</span>
+            <div class="kpi-value-group">
+              <span class="kpi-value" id="kpi-strip-completed">1</span>
+              <span class="kpi-badge" style="background:#f1f5f9; color:#475569;">Done</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONTROL & FILTER STRIP -->
+        <section class="controls-bar">
+          <div class="filter-group">
+            <div style="display:flex; align-items:center; gap:4px;">
+              <button class="btn btn-outline" style="padding:6px 10px;">&lt;</button>
+              <input type="date" class="filter-select" value="2026-08-04" style="font-weight:600;">
+              <button class="btn btn-outline" style="padding:6px 10px;">&gt;</button>
+            </div>
+            <select class="filter-select" id="doctor-filter" onchange="filterAppointments()">
+              <option value="all">All Doctors</option>
+              <option value="Dr. Ramesh Shah">Dr. Ramesh Shah</option>
+              <option value="Dr. Suresh Shah">Dr. Suresh Shah</option>
+              <option value="Dr. Sarah Adams">Dr. Sarah Adams</option>
+            </select>
+            <select class="filter-select" id="status-filter" onchange="filterAppointments()">
+              <option value="all">All Statuses</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Checked-In">Checked-In</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+
+          <div class="view-toggle">
+            <button class="toggle-btn active" id="btn-list" onclick="switchView('list')">List View</button>
+            <button class="toggle-btn" id="btn-timeline" onclick="switchView('timeline')">Resource Grid</button>
+          </div>
+        </section>
+
+        <!-- DATA VIEWS -->
+        <section class="view-container">
+          
+          <!-- TABULAR LIST VIEW -->
+          <div class="table-wrapper" id="list-view">
+            <table class="appointments-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Patient Details</th>
+                  <th>Phone</th>
+                  <th>Type / Complaint</th>
+                  <th>Assigned Provider</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="appointment-rows">
+                <!-- Dynamic rows inserted via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- TIMELINE VIEW (Resource Grid) -->
+          <div class="timeline-wrapper" id="timeline-view">
+            <div class="grid-board">
+              <div class="grid-header">Time</div>
+              <div class="grid-header">Dr. Ramesh Shah</div>
+              <div class="grid-header">Dr. Suresh Shah</div>
+              <div class="grid-header">Dr. Sarah Adams</div>
+
+              <div class="grid-cell time-slot">11:00 AM</div>
+              <div class="grid-cell"><div class="app-card" style="background:#dcfce7; border-color:#16a34a; color:#166534;">Sana Kapoor<br><i>In Progress (A-12)</i></div></div>
+              <div class="grid-cell"><div class="app-card" style="background:#dcfce7; border-color:#16a34a; color:#166534;">John Kapoor<br><i>In Progress (B-6)</i></div></div>
+              <div class="grid-cell"></div>
+
+              <div class="grid-cell time-slot">11:30 AM</div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"><div class="app-card" style="background:#dbeafe; border-color:#2563eb; color:#1e40af;">Sarah Jenkins<br><i>Checked-In (12m)</i></div></div>
+
+              <div class="grid-cell time-slot">12:00 PM</div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"><div class="app-card" style="background:#fef3c7; border-color:#d97706; color:#92400e;">Michael Chen<br><i>Scheduled</i></div></div>
+              <div class="grid-cell"></div>
+            </div>
+          </div>
+
+        </section>
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- SLIDE-OVER DRAWER FOR PATIENT DETAILS -->
+  <div class="drawer-overlay" id="drawer" onclick="closeDrawerOnBg(event)">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3 style="font-size: 1rem; font-weight: 700;">Appointment Details</h3>
+        <button class="close-btn" onclick="toggleDrawer(false)">&times;</button>
+      </div>
+      
+      <div class="drawer-body" id="drawer-details">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="drawer-footer" id="drawer-footer-actions">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK BOOKING / TOKEN MODAL -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>New Appointment / Walk-In Token</h3>
+        <button class="close-btn" onclick="toggleModal(false)">&times;</button>
+      </div>
+      <form onsubmit="handleNewAppointment(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Patient Name</label>
+            <input type="text" id="new-patient-name" placeholder="e.g. Rahul Sharma" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="new-patient-phone" placeholder="e.g. +91 98765-43210" required>
+          </div>
+          <div class="form-group">
+            <label>Visit Type / Chief Complaint</label>
+            <input type="text" id="new-visit-type" placeholder="e.g. Skin Consultation, Hair Transplant" required>
+          </div>
+          <div class="form-group">
+            <label>Assigned Provider</label>
+            <select id="new-doctor" required>
+              <option value="Dr. Ramesh Shah">Dr. Ramesh Shah (Dermatologist)</option>
+              <option value="Dr. Suresh Shah">Dr. Suresh Shah (Trichologist)</option>
+              <option value="Dr. Sarah Adams">Dr. Sarah Adams (General)</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <div class="form-group" style="flex:1;">
+              <label>Time Slot</label>
+              <input type="time" id="new-time" value="11:30" required>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Initial Status</label>
+              <select id="new-status">
+                <option value="Checked-In">Checked-In (Queue)</option>
+                <option value="Scheduled">Scheduled</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="drawer-footer">
+          <button type="submit" class="btn btn-primary" style="flex:1;">Confirm & Add to Queue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Initial State - Now Serving Patients & Doctor Queues
+    let nowServing = [
+      {
+        id: 'srv-1',
+        docName: 'Dr. Ramesh Shah',
+        docSpec: 'Dermatologist',
+        docAvatar: 'R',
+        patientName: 'Sana Kapoor',
+        phone: '+91 98123-45678',
+        token: 'A-12',
+        service: 'Chemical Peel Treatment',
+        fee: '$60 / ₹1500',
+        paymentStatus: 'Pending Invoice'
+      },
+      {
+        id: 'srv-2',
+        docName: 'Dr. Suresh Shah',
+        docSpec: 'Trichologist',
+        docAvatar: 'S',
+        patientName: 'John Kapoor',
+        phone: '+91 98765-12345',
+        token: 'B-6',
+        service: 'Hair Transplant',
+        fee: '$250 / ₹8000',
+        paymentStatus: 'Paid'
+      }
+    ];
+
+    let queueItems = [
+      { id: 'q1', token: 'A-13', name: 'Vikram Malhotra', phone: '+91 99887-76655', doctor: 'Dr. Ramesh Shah', service: 'Acne Consultation', status: 'Waiting', time: '11:15 AM', action: 'Call In' },
+      { id: 'q2', token: 'B-7', name: 'Ananya Roy', phone: '+91 98111-22334', doctor: 'Dr. Suresh Shah', service: 'Scalp Checkup', status: 'Waiting', time: '11:30 AM', action: 'Call In' },
+      { id: 'q3', token: 'A-14', name: 'Rajesh Mehta', phone: '+91 97123-98765', doctor: 'Dr. Ramesh Shah', service: 'Skin Laser', status: "Didn't show up", time: '11:45 AM', action: 'Check-In' },
+      { id: 'q4', token: 'B-8', name: 'Priya Sharma', phone: '+91 95432-10987', doctor: 'Dr. Suresh Shah', service: 'Hair Consultation', status: 'Waiting', time: '12:00 PM', action: 'Call In' }
+    ];
+
+    let appointments = [
+      { id: '101', time: '11:00 AM', name: 'Sana Kapoor', phone: '+91 98123-45678', pid: 'P-10492', age: 26, gender: 'Female', previousVisits: '2 previous visits', type: 'Chemical Peel Treatment', doctor: 'Dr. Ramesh Shah', status: 'In Progress', waitTime: '-' },
+      { id: '102', time: '11:00 AM', name: 'John Kapoor', phone: '+91 98765-12345', pid: 'P-10830', age: 32, gender: 'Male', previousVisits: '1 previous visit', type: 'Hair Transplant', doctor: 'Dr. Suresh Shah', status: 'In Progress', waitTime: '-' },
+      { id: '103', time: '11:30 AM', name: 'Sarah Jenkins', phone: '+91 91234-56789', pid: 'P-09221', age: 34, gender: 'Female', previousVisits: '4 previous visits', type: 'Routine Checkup', doctor: 'Dr. Sarah Adams', status: 'Checked-In', waitTime: '12m wait' },
+      { id: '104', time: '12:00 PM', name: 'Michael Chen', phone: '+91 93456-78901', pid: 'P-11002', age: 45, gender: 'Male', previousVisits: '0 previous visits', type: 'First Visit', doctor: 'Dr. Suresh Shah', status: 'Scheduled', waitTime: '-' }
+    ];
+
+    let selectedAppId = null;
+
+    // RENDER NOW SERVING CARDS
+    function renderNowServing() {
+      const container = document.getElementById('now-serving-container');
+      container.innerHTML = '';
+
+      if (nowServing.length === 0) {
+        container.innerHTML = `
+          <div class="empty-serving-state">
+            All consultations complete! Ready for next patients in queue.
+          </div>
+        `;
+        return;
+      }
+
+      nowServing.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'serving-card';
+        card.id = `serving-card-${item.id}`;
+
+        card.innerHTML = `
+          <div class="serving-doc-row">
+            <div class="doc-badge">
+              <div class="doc-avatar-circle">${item.docAvatar}</div>
+              <div>
+                <div style="font-weight: 600; font-size: 0.9rem;">${item.docName}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${item.docSpec}</div>
+              </div>
+            </div>
+            <span class="status-pill status-in-progress">
+              <span class="status-dot"></span> In Progress
+            </span>
+          </div>
+
+          <div class="serving-patient-row">
+            <div>
+              <div style="font-weight: 600; font-size: 0.875rem;">${item.patientName} <span style="font-size:0.75rem; font-weight:normal; color:var(--text-muted);">(${item.phone})</span></div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Token: ${item.token} • Service: ${item.service}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-primary" style="font-size: 0.75rem; padding: 6px 12px;" onclick="completeConsultation('${item.id}', '${item.patientName}', '${item.docName}')">
+                Consultation Complete
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // COMPLETE CONSULTATION (REMOVES CARD & MOVES QUEUE)
+    function completeConsultation(servingId, patientName, doctorName) {
+      // 1. Remove serving card from array
+      nowServing = nowServing.filter(item => item.id !== servingId);
+
+      // 2. Update status in master appointments list
+      const app = appointments.find(a => a.name === patientName);
+      if (app) {
+        app.status = 'Completed';
+      }
+
+      // 3. Auto-promote next waiting patient in queue for this doctor if available
+      const nextQueueIndex = queueItems.findIndex(q => q.doctor === doctorName && q.status === 'Waiting');
+      if (nextQueueIndex !== -1) {
+        const nextPat = queueItems.splice(nextQueueIndex, 1)[0];
+        
+        // Add to Now Serving
+        nowServing.push({
+          id: 'srv-' + Date.now(),
+          docName: nextPat.doctor,
+          docSpec: nextPat.doctor.includes('Ramesh') ? 'Dermatologist' : 'Trichologist',
+          docAvatar: nextPat.doctor.charAt(4),
+          patientName: nextPat.name,
+          phone: nextPat.phone,
+          token: nextPat.token,
+          service: nextPat.service,
+          fee: '$50 / ₹1200',
+          paymentStatus: 'Pending'
+        });
+
+        // Add/update appointment record
+        const existingApp = appointments.find(a => a.name === nextPat.name);
+        if (existingApp) {
+          existingApp.status = 'In Progress';
+        }
+      }
+
+      // Re-render UI
+      renderNowServing();
+      renderQueue();
+      renderAppointments();
+      updateKpis();
+
+      alert(`Consultation completed for ${patientName}. Next receptionist steps: Print receipt or generate bill if pending.`);
+    }
+
+    // CALL IN PATIENT FROM QUEUE DIRECTLY
+    function callInPatient(queueId) {
+      const qIndex = queueItems.findIndex(q => q.id === queueId);
+      if (qIndex === -1) return;
+
+      const pat = queueItems.splice(qIndex, 1)[0];
+      
+      nowServing.push({
+        id: 'srv-' + Date.now(),
+        docName: pat.doctor,
+        docSpec: pat.doctor.includes('Ramesh') ? 'Dermatologist' : 'Trichologist',
+        docAvatar: pat.doctor.charAt(4),
+        patientName: pat.name,
+        phone: pat.phone,
+        token: pat.token,
+        service: pat.service,
+        fee: '$50 / ₹1200',
+        paymentStatus: 'Pending'
+      });
+
+      const existingApp = appointments.find(a => a.name === pat.name);
+      if (existingApp) {
+        existingApp.status = 'In Progress';
+      } else {
+        appointments.push({
+          id: Date.now().toString(),
+          time: pat.time,
+          name: pat.name,
+          phone: pat.phone,
+          pid: 'P-' + Math.floor(10000 + Math.random() * 90000),
+          age: 28,
+          gender: 'Patient',
+          previousVisits: '1st Visit',
+          type: pat.service,
+          doctor: pat.doctor,
+          status: 'In Progress',
+          waitTime: '-'
+        });
+      }
+
+      renderNowServing();
+      renderQueue();
+      renderAppointments();
+      updateKpis();
+    }
+
+    // UPDATE KPIS
+    function updateKpis() {
+      const total = appointments.length;
+      const waiting = queueItems.filter(q => q.status === 'Waiting').length + appointments.filter(a => a.status === 'Checked-In').length;
+      const active = nowServing.length;
+      const completed = appointments.filter(a => a.status === 'Completed').length;
+
+      document.getElementById('kpi-total').innerText = total;
+      document.getElementById('kpi-waiting').innerText = waiting;
+      document.getElementById('kpi-strip-total').innerText = total;
+      document.getElementById('kpi-strip-waiting').innerText = waiting;
+      document.getElementById('kpi-strip-active').innerText = active;
+      document.getElementById('kpi-strip-completed').innerText = completed;
+    }
+
+    // RENDER APPOINTMENTS TABLE
+    function renderAppointments(filteredData = null) {
+      const tbody = document.getElementById('appointment-rows');
+      tbody.innerHTML = '';
+      const list = filteredData || appointments;
+
+      list.forEach(app => {
+        const row = document.createElement('tr');
+        row.onclick = () => openDrawer(app.id);
+
+        let statusClass = 'status-scheduled';
+        if (app.status === 'Checked-In') statusClass = 'status-checked-in';
+        if (app.status === 'In Progress') statusClass = 'status-in-progress';
+        if (app.status === 'Completed') statusClass = 'status-completed';
+
+        row.innerHTML = `
+          <td style="font-weight:700;">${app.time}</td>
+          <td>
+            <div class="patient-cell">
+              <span class="patient-name">${app.name}</span>
+              <span class="patient-sub">#${app.pid} • ${app.gender}/${app.age} yrs</span>
+            </div>
+          </td>
+          <td style="font-size:0.8rem; color:var(--text-muted);">${app.phone || 'N/A'}</td>
+          <td>${app.type}</td>
+          <td>${app.doctor}</td>
+          <td>
+            <span class="status-pill ${statusClass}">
+              <span class="status-dot"></span>
+              ${app.status} ${app.status === 'Checked-In' ? `(${app.waitTime})` : ''}
+            </span>
+          </td>
+          <td>
+            <div class="action-cell" onclick="event.stopPropagation()">
+              ${app.status === 'Scheduled' ? `<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="changeStatus('${app.id}', 'Checked-In')">Check-In</button>` : ''}
+              ${app.status === 'Checked-In' ? `<button class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="changeStatus('${app.id}', 'In Progress')">Start Visit</button>` : ''}
+              ${app.status === 'In Progress' ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="changeStatus('${app.id}', 'Completed')">Complete</button>` : ''}
+              ${app.status === 'Completed' ? `` : ''}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // FILTER APPOINTMENTS
+    function filterAppointments() {
+      const searchVal = document.getElementById('patient-search-input').value.toLowerCase();
+      const docFilter = document.getElementById('doctor-filter').value;
+      const statusFilter = document.getElementById('status-filter').value;
+
+      const filtered = appointments.filter(a => {
+        const matchesSearch = a.name.toLowerCase().includes(searchVal) || a.pid.toLowerCase().includes(searchVal) || (a.phone && a.phone.includes(searchVal));
+        const matchesDoc = docFilter === 'all' || a.doctor === docFilter;
+        const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+        return matchesSearch && matchesDoc && matchesStatus;
+      });
+
+      renderAppointments(filtered);
+    }
+
+    // RENDER DRAGGABLE QUEUE WITH '=' HANDLE
+    function renderQueue() {
+      const container = document.getElementById('draggable-queue-container');
+      container.innerHTML = '';
+
+      if (queueItems.length === 0) {
+        container.innerHTML = `<div class="empty-serving-state">No patients currently in queue.</div>`;
+        return;
+      }
+
+      queueItems.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'queue-item-card';
+        card.draggable = true;
+        card.dataset.index = index;
+
+        card.innerHTML = `
+          <div class="queue-item-left">
+            <span class="drag-handle-icon" title="Drag to reorder">=</span >
+            <div>
+              <div class="queue-pat-name">${item.name} <span style="font-size:0.75rem; color:var(--primary);">[${item.token}]</span></div>
+              <div class="queue-pat-status">${item.status} • Doctor: ${item.doctor} • ${item.time}</div>
+            </div>
+          </div>
+          <div class="queue-item-actions">
+            <button class="btn btn-primary" style="font-size:0.75rem; padding:6px 12px;" onclick="callInPatient('${item.id}')">${item.action}</button>
+            <button class="btn btn-outline" style="font-size:0.75rem; padding:6px 12px;" onclick="alert('Calling ${item.phone}...')">📞 Call</button>
+          </div>
+        `;
+
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragend', handleDragEnd);
+
+        container.appendChild(card);
+      });
+    }
+
+    let dragSrcIndex = null;
+
+    function handleDragStart(e) {
+      dragSrcIndex = this.dataset.index;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragOver(e) {
+      if (e.preventDefault) e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+    }
+
+    function handleDrop(e) {
+      e.stopPropagation();
+      const targetIndex = this.dataset.index;
+      if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+        const movedItem = queueItems.splice(dragSrcIndex, 1)[0];
+        queueItems.splice(targetIndex, 0, movedItem);
+        renderQueue();
+      }
+      return false;
+    }
+
+    function handleDragEnd() {
+      this.classList.remove('dragging');
+    }
+
+    // OPEN SIDE DRAWER FOR PATIENT DETAILS
+    function openDrawer(id) {
+      selectedAppId = id;
+      const app = appointments.find(a => a.id === id) || appointments[0];
+      const container = document.getElementById('drawer-details');
+      const footerContainer = document.getElementById('drawer-footer-actions');
+
+      const initials = app.name.split(' ').map(n=>n[0]).join('');
+
+      container.innerHTML = `
+        <div class="patient-hero-card">
+          <div class="patient-hero-header">
+            <div class="avatar-big">${initials}</div>
+            <div>
+              <div style="font-size: 1rem; font-weight: 700;">${app.name}</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">${app.age} Yrs • ${app.gender} • ${app.previousVisits}</div>
+            </div>
+          </div>
+
+          <div class="quick-actions-grid">
+            <button class="btn-quick-action" onclick="alert('Calling ${app.phone || 'patient'}...')">📞 Call</button>
+            <button class="btn-quick-action" onclick="alert('Sending WhatsApp SMS...')">💬 Message</button>
+            <button class="btn-quick-action" onclick="alert('Edititng Patient Details...')">Edit Details</button>
+            <button class="btn-quick-action" onclick="alert('Booking Appointment...')">Book Appointment</button>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px;">
+            Today's Appointment Information
+          </div>
+
+          <div class="info-group-grid">
+            <div class="info-item">
+              <span class="info-label">Contact Phone</span>
+              <span class="info-val">${app.phone || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Time Slot</span>
+              <span class="info-val">${app.time}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Doctor</span>
+              <span class="info-val">${app.doctor}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Service Required</span>
+              <span class="info-val">${app.type}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Patient ID</span>
+              <span class="info-val">${app.pid}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Status</span>
+              <span class="info-val" style="color:#d97706;">${app.status}</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      footerContainer.innerHTML = `
+        <button class="btn btn-primary" style="flex:1;" onclick="updateStatusFromDrawer('In Progress')">Start Visit</button>
+        <button class="btn btn-outline" style="color: #dc2626; border-color: #fca5a5;" onclick="toggleDrawer(false)">Cancel Visit</button>
+      `;
+
+      toggleDrawer(true);
+    }
+
+    function toggleDrawer(open) {
+      document.getElementById('drawer').classList.toggle('open', open);
+    }
+
+    function closeDrawerOnBg(e) {
+      if (e.target.id === 'drawer') toggleDrawer(false);
+    }
+
+    function changeStatus(id, newStatus) {
+      const app = appointments.find(a => a.id === id);
+      if (app) {
+        app.status = newStatus;
+
+        // If moved to completed, remove from Now Serving if present
+        if (newStatus === 'Completed') {
+          const srv = nowServing.find(s => s.patientName === app.name);
+          if (srv) {
+            completeConsultation(srv.id, srv.patientName, srv.docName);
+            return;
+          }
+        }
+
+        renderAppointments();
+        updateKpis();
+      }
+    }
+
+    function updateStatusFromDrawer(status) {
+      if (selectedAppId) {
+        changeStatus(selectedAppId, status);
+        toggleDrawer(false);
+      }
+    }
+
+    function toggleModal(open) {
+      document.getElementById('booking-modal').classList.toggle('open', open);
+    }
+
+    function handleNewAppointment(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-patient-name').value;
+      const phone = document.getElementById('new-patient-phone').value;
+      const type = document.getElementById('new-visit-type').value;
+      const doctor = document.getElementById('new-doctor').value;
+      const timeInput = document.getElementById('new-time').value;
+      const status = document.getElementById('new-status').value;
+
+      const [hours, minutes] = timeInput.split(':');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedTime = `${(hours % 12) || 12}:${minutes} ${ampm}`;
+
+      const newApp = {
+        id: Date.now().toString(),
+        time: formattedTime,
+        name: name,
+        phone: phone,
+        pid: 'P-' + Math.floor(10000 + Math.random() * 90000),
+        age: 28,
+        gender: 'Patient',
+        previousVisits: 'New Walk-In',
+        type: type,
+        doctor: doctor,
+        status: status,
+        waitTime: status === 'Checked-In' ? '0m wait' : '-'
+      };
+
+      appointments.push(newApp);
+
+      if (status === 'Checked-In') {
+        queueItems.push({
+          id: 'q-' + Date.now(),
+          token: 'T-' + Math.floor(10 + Math.random() * 90),
+          name: name,
+          phone: phone,
+          doctor: doctor,
+          service: type,
+          status: 'Waiting',
+          time: formattedTime,
+          action: 'Call In'
+        });
+      }
+
+      renderAppointments();
+      renderQueue();
+      updateKpis();
+      toggleModal(false);
+      e.target.reset();
+    }
+
+    // SCREEN SWITCHING
+    function switchScreen(screen) {
+      document.getElementById('screen-overview').classList.remove('active');
+      document.getElementById('screen-patientlist').classList.remove('active');
+      document.getElementById('screen-cms').classList.remove('active');
+
+      document.getElementById('nav-overview').classList.remove('active');
+      document.getElementById('nav-patientlist').classList.remove('active');
+      document.getElementById('nav-cms').classList.remove('active');
+
+      if (screen === 'overview') {
+        document.getElementById('screen-overview').classList.add('active');
+        document.getElementById('nav-overview').classList.add('active');
+      } else if (screen === 'patientlist') {
+        document.getElementById('screen-patientlist').classList.add('active');
+        document.getElementById('nav-patientlist').classList.add('active');
+      } else if (screen === 'cms') {
+        document.getElementById('screen-cms').classList.add('active');
+        document.getElementById('nav-cms').classList.add('active');
+      }
+    }
+
+    // VIEW SWITCHING (List View vs Resource Grid Timeline)
+    function switchView(view) {
+      const listView = document.getElementById('list-view');
+      const timelineView = document.getElementById('timeline-view');
+      const btnList = document.getElementById('btn-list');
+      const btnTimeline = document.getElementById('btn-timeline');
+
+      if (view === 'list') {
+        listView.style.display = 'block';
+        timelineView.style.display = 'none';
+        btnList.classList.add('active');
+        btnTimeline.classList.remove('active');
+      } else {
+        listView.style.display = 'none';
+        timelineView.style.display = 'flex';
+        btnList.classList.remove('active');
+        btnTimeline.classList.add('active');
+      }
+    }
+
+    // INITIALIZATION
+    renderNowServing();
+    renderAppointments();
+    renderQueue();
+    updateKpis();
+  </script>
+</body>
+</html>

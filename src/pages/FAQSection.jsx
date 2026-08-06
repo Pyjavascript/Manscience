@@ -7,7 +7,7 @@ export default function FAQSection() {
   const colors = {
     faqBg: '#faf4e8',
     primaryBrand: '#b05a36',
-    mobileText: '#68270b',
+    mobileText: '#B77145',
   };
 
   const faqData = [

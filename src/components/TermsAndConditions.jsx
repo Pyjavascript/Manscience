@@ -100,7 +100,7 @@ function TermsModal({ selectedTab, onClose }) {
       <div className="mt-6 flex justify-between items-center pt-2 shrink-0">
         <div className="relative w-28 sm:w-36 h-2 bg-white rounded-full overflow-hidden">
           <div
-            className="absolute top-0 left-0 h-full bg-[#BA5023] rounded-full transition-all duration-150 ease-out"
+            className="absolute top-0 left-0 h-full bg-[#B77145] rounded-full transition-all duration-150 ease-out"
             style={{
               width: "20px",
               left: `calc(${scrollPercentage}% - ${(scrollPercentage / 100) * 20}px)`,
@@ -110,7 +110,7 @@ function TermsModal({ selectedTab, onClose }) {
 
         <button
           onClick={onClose}
-          className="text-xs sm:text-sm font-semibold text-[#BA5023] hover:underline uppercase tracking-wider cursor-pointer"
+          className="text-xs sm:text-sm font-semibold text-[#B77145] hover:underline uppercase tracking-wider cursor-pointer"
         >
           Agree
         </button>
@@ -158,7 +158,7 @@ export default function PrivacyPolicy() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className="px-5 h-[70px] sm:h-[80px] min-w-[160px] sm:min-w-[180px] whitespace-nowrap rounded-full text-[13px] sm:text-[15px] font-semibold transition-all cursor-pointer bg-[#FAF4E8] text-[#B05A36] hover:bg-[#BA5023] hover:text-white active:scale-95 flex items-center justify-center text-center"
+                className="px-5 h-[70px] sm:h-[80px] min-w-[160px] sm:min-w-[180px] whitespace-nowrap rounded-full text-[13px] sm:text-[15px] font-semibold transition-all cursor-pointer bg-[#FAF4E8] text-[#B05A36] hover:bg-[#B77145] hover:text-white active:scale-95 flex items-center justify-center text-center"
               >
                 {tab}
               </button>

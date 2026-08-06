@@ -16,6 +16,8 @@ import FAQSection from "./pages/FAQSection";
 import SubscriptionInput from "./components/SubscriptionInput";
 import TermsAndConditions from "./components/TermsAndConditions";
 import PractitionerDashboard from "./pages/PractitionerDashboard";
+import ResetPassword from "./pages/ResetPassword";
+import CircleTimeline from "./components/CircleTimeline";
 
 export default function App() {
   return (
@@ -41,6 +43,8 @@ export default function App() {
         <Route path="/post/mnri" element={<FAQSection/>}/>
         <Route path="/legals" element={<TermsAndConditions/>}/>
         <Route path="/practitioner-dashboard" element={<PractitionerDashboard/>}/>
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/timeline" element={<CircleTimeline />} />
 
       </Routes>
     </BrowserRouter>

@@ -9,7 +9,7 @@ import journey from "../assets/Ai/journey.svg";
 import journeyWhite from "../assets/Ai/journeyWhite.svg";
 
 import sent from "../assets/Ai/sent.svg";
-import brainImg from "../assets/Ai/BrainImg.svg";
+// import brainImg from "../assets/Ai/BrainImg.svg";
 
 import { motion } from "framer-motion";
 import { supabase } from "../supabase";
@@ -74,7 +74,7 @@ const ManasiAi = () => {
   });
 
   const scrollRef = useRef(null);
-  const CHAT_ENDPOINT = "https://manasi-production.up.railway.app/chat";
+  const CHAT_ENDPOINT = "https://manasiai-production.up.railway.app/chat";
 
   // Prevent auto-scroll on every minor state update
   useEffect(() => {
@@ -115,8 +115,7 @@ const ManasiAi = () => {
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
       freshSessionId = crypto.randomUUID();
     } else {
-      freshSessionId =
-        "session_" + Math.random().toString(36).substring(2, 11);
+      freshSessionId = "session_" + Math.random().toString(36).substring(2, 11);
     }
 
     setSessionId(freshSessionId);
@@ -136,7 +135,7 @@ const ManasiAi = () => {
 
   const saveQuizTurnToHistory = async (questionText, answerText) => {
     try {
-      await fetch("https://manasi-production.up.railway.app/chat/save_turn", {
+      await fetch("https://manasiai-production.up.railway.app/chat/save_turn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -156,7 +155,7 @@ const ManasiAi = () => {
     if (!uid) return;
     try {
       const response = await fetch(
-        `https://manasi-production.up.railway.app/chat/user/${uid}/history`,
+        `https://manasiai-production.up.railway.app/chat/user/${uid}/history`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -383,7 +382,7 @@ const ManasiAi = () => {
     setIsLoading(true);
     const wireFormatBody = scoringState.pendingPayload;
 
-    fetch("https://manasi-production.up.railway.app/roadmap/submit", {
+    fetch("https://manasiai-production.up.railway.app/roadmap/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(wireFormatBody),
@@ -395,7 +394,7 @@ const ManasiAi = () => {
       })
       .then(() => {
         return fetch(
-          "https://manasi-production.up.railway.app/roadmap/mapped-therapies",
+          "https://manasiai-production.up.railway.app/roadmap/mapped-therapies",
           {
             method: "POST",
             headers: {
@@ -559,6 +558,7 @@ const ManasiAi = () => {
                     hasLongOption ? "max-w-105" : "md:max-w-full"
                   }`}
                 >
+                
                   <img src={ai} alt="Manasi" className="w-6 h-6" />
 
                   <div
@@ -573,7 +573,9 @@ const ManasiAi = () => {
                       </div>
                     )}
 
-                    <p className="whitespace-pre-wrap">{msg.content?.trim()}</p>
+                    <p className="whitespace-pre-wrap break-words">
+                      {msg.content?.trim()}
+                    </p>
 
                     {/* Quiz Options */}
                     {msg.isQuiz && (
@@ -628,13 +630,10 @@ const ManasiAi = () => {
                           return (
                             <button
                               onClick={() => {
-                                const time = new Date().toLocaleTimeString(
-                                  [],
-                                  {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  },
-                                );
+                                const time = new Date().toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                });
 
                                 setMessages((prev) => [
                                   ...prev.map((m, i) =>
@@ -754,7 +753,10 @@ const ManasiAi = () => {
             })()
           ) : (
             <div className="flex flex-col items-end gap-2 max-w-[85%]">
-              <div className="px-5 flex justify-center items-center h-15 rounded-full font-medium text-[15px] leading-[105%] tracking-[-2%] bg-[#FAF4E8] text-[#68270B] text-left">
+              {/* <div className="px-5 flex justify-center items-center h-15 rounded-full font-medium text-[15px] leading-[105%] tracking-[-2%] bg-[#FAF4E8] text-[#68270B] text-left">
+                {msg.content}
+              </div> */}
+              <div className="px-6 py-4 flex items-center min-h-[60px] rounded-3xl font-medium text-[15px] leading-[140%] bg-[#FAF4E8] text-[#68270B] text-left break-words">
                 {msg.content}
               </div>
               <div className="flex gap-2.5 justify-center items-center text-[10px] text-white">
@@ -775,11 +777,7 @@ const ManasiAi = () => {
     >
       <div className="flex-1 flex flex-col min-h-0 relative">
         <div className="md:absolute pl-5 md:pl-11 pb-2 z-10">
-          <img
-            src={Logo}
-            className="w-28.75 md:w-51"
-            alt="Manascience"
-          />
+          <img src={Logo} className="w-28.75 md:w-51" alt="Manascience" />
         </div>
 
         {!hasConversation ? (
@@ -810,7 +808,9 @@ const ManasiAi = () => {
             >
               <div className="w-full flex items-center justify-center relative min-h-45">
                 <img
-                  src={brainImg}
+                  src={
+                    "https://res.cloudinary.com/dspwbbjyt/image/upload/v1785586774/brainImg_obpn0v.svg"
+                  }
                   alt="Brain Illustration"
                   className="object-cover"
                 />
@@ -968,7 +968,7 @@ const ManasiAi = () => {
               <div className="w-full flex items-center gap-3.5 md:overflow-visible overflow-x-auto flex-nowrap md:justify-center pb-2 px-1 scrollbar-none snap-x snap-mandatory">
                 <button
                   onClick={() => sendMessage("What is ADHD")}
-                  className=" snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
+                  className=" snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-[#68270B]/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
                 >
                   <p className="md:text-[14px] tracking-[-3%] text-left leading-normal">
                     Explore ADHD
@@ -980,7 +980,7 @@ const ManasiAi = () => {
 
                 <button
                   onClick={() => sendMessage("Help me understand therapies")}
-                  className="snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
+                  className="snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-[#68270B]/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
                 >
                   <p className="md:text-[14px] tracking-[-3%] text-left leading-normal">
                     Find Therapies
@@ -992,7 +992,7 @@ const ManasiAi = () => {
 
                 <button
                   onClick={() => sendMessage("Book a session")}
-                  className="snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-black/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
+                  className="snap-center shrink-0 flex items-center justify-between gap-4.5 px-7.5 py-5 text-[14px] font-medium md:text-sm text-white/90 transition bg-[#68270B]/11 rounded-3xl md:rounded-[34px] md:px-9.5 md:py-6.25 cursor-pointer"
                 >
                   <p className="md:text-[14px] tracking-[-3%] text-left leading-normal">
                     Book Session
@@ -1004,15 +1004,25 @@ const ManasiAi = () => {
               </div>
             )}
             {!scoringState.isActive && (
-              <div className="md:w-150 h-15 md:h-20 rounded-3xl md:rounded-[34px] px-3.75 pr-3 py-2.5 md:py-4.5 md:pl-6.25 md:px-3.75 max-w-2xl mx-auto bg-white text-gray-900 p-4 text-left flex justify-between items-center">
+              // <div className="md:w-150 h-15 md:h-20 rounded-3xl md:rounded-[34px] px-3.75 pr-3 py-2.5 md:py-4.5 md:pl-6.25 md:px-3.75 max-w-2xl mx-auto bg-white text-gray-900 p-4 text-left flex justify-between items-center">
+              //   <textarea
+              //     rows="1"
+              //     placeholder="What would you like help with?"
+              //     value={userInput}
+              //     onChange={(e) => setUserInput(e.target.value)}
+              //     onKeyDown={handleKeyDown}
+              //     disabled={quizState.isActive || scoringState.isActive}
+              //     className="placeholder:text-black w-full text-[13px] md:text-[18px] font-semibold text-gray-800 bg-transparent resize-none focus:outline-none focus:ring-0 border-none p-0 disabled:opacity-50"
+              //   />
+              <div className="md:w-150 min-h-15 md:min-h-20 rounded-3xl md:rounded-[34px] px-3.75 py-2.5 md:py-4 md:px-6 max-w-2xl mx-auto bg-white text-gray-900 flex justify-between items-center gap-2">
                 <textarea
-                  rows="1"
+                  rows={1}
                   placeholder="What would you like help with?"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={quizState.isActive || scoringState.isActive}
-                  className="placeholder:text-black w-full text-[13px] md:text-[18px] font-semibold text-gray-800 bg-transparent resize-none focus:outline-none focus:ring-0 border-none p-0 disabled:opacity-50"
+                  className="placeholder:text-black w-full text-[13px] md:text-[18px] font-semibold text-gray-800 bg-transparent resize-none focus:outline-none focus:ring-0 border-none p-0 max-h-32 overflow-y-auto"
                 />
                 <button
                   onClick={() => sendMessage()}
@@ -1022,13 +1032,9 @@ const ManasiAi = () => {
                     quizState.isActive ||
                     scoringState.isActive
                   }
-                  className="w-11 md:w-12 md:h-11.25 h-9.5 rounded-full bg-[#BA5023] hover:bg-amber-800 disabled:bg-amber-700/40 flex items-center justify-center text-white transition"
+                  className="w-11 md:w-12 md:h-11.25 h-9.5 rounded-full bg-[#B77145] hover:bg-amber-800 disabled:bg-amber-700/40 flex items-center justify-center text-white transition"
                 >
-                  <img
-                    src={inparrow}
-                    alt="send"
-                    className="-rotate-45 h-3"
-                  />
+                  <img src={inparrow} alt="send" className="-rotate-45 h-3" />
                 </button>
               </div>
             )}

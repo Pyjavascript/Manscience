@@ -66,12 +66,71 @@ const Dashboard = () => {
   const [communityFilter, setCommunityFilter] = useState("pending"); // "pending" | "approved"
   const [editingPost, setEditingPost] = useState(null); // Tracks post metadata details during updates
   const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(false);
+  // const [newTestimonialForm, setNewTestimonialForm] = useState({
+  //   username: "",
+  //   header: "",
+  //   content: "",
+  //   tag: "",
+  // });
   const [newTestimonialForm, setNewTestimonialForm] = useState({
+    post_type: "text",
     username: "",
     header: "",
     content: "",
-    tag: "",
+    tag_id: "",
+    video_url: "",
+    thumbnail_url: "",
   });
+
+  const uploadVideoToSupabase = async (file) => {
+    if (!file) return null;
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const filePath = `community_videos/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from("community_videos")
+        .upload(filePath, file, { cacheControl: "3600", upsert: false });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage
+        .from("community_videos")
+        .getPublicUrl(filePath);
+
+      return publicUrlData.publicUrl;
+    } catch (err) {
+      console.error("Video upload error:", err.message);
+      alert(`Video upload failed: ${err.message}`);
+      return null;
+    }
+  };
+
+  const uploadThumbnailToSupabase = async (file) => {
+    if (!file) return null;
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const filePath = `community_thumbnails/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from("community_videos")
+        .upload(filePath, file, { cacheControl: "3600", upsert: false });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage
+        .from("community_videos")
+        .getPublicUrl(filePath);
+
+      return publicUrlData.publicUrl;
+    } catch (err) {
+      console.error("Thumbnail upload error:", err.message);
+      alert(`Thumbnail upload failed: ${err.message}`);
+      return null;
+    }
+  };
 
   // --- AI ROADMAP STORAGE STATES ---
   const [roadmapsList, setRoadmapsList] = useState([]);
@@ -542,29 +601,77 @@ const Dashboard = () => {
     }
   };
 
+  // const handleCreateTestimonial = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const { error } = await supabase.from("community_hub").insert([
+  //       {
+  //         username: newTestimonialForm.username,
+  //         header: newTestimonialForm.header || null,
+  //         tag_id: newTestimonialForm.tag_id || null,
+  //         content: newTestimonialForm.content,
+  //         status: "approved",
+  //       },
+  //     ]);
+
+  //     if (error) throw error;
+  //     alert("Testimonial registered successfully.");
+  //     setIsTestimonialModalOpen(false);
+  //     setNewTestimonialForm({ username: "", header: "", content: "", tag: "" });
+  //     fetchCommunityPosts();
+  //   } catch (err) {
+  //     alert(`Creation error: ${err.message}`);
+  //   }
+  // };
+  // Modal State
+
   const handleCreateTestimonial = async (e) => {
     e.preventDefault();
+
+    if (
+      newTestimonialForm.post_type === "video" &&
+      (newTestimonialForm.video_url === "Uploading..." ||
+        newTestimonialForm.thumbnail_url === "Uploading...")
+    ) {
+      alert("Please wait for video and thumbnail uploads to finish!");
+      return;
+    }
+
     try {
+      const isVideo = newTestimonialForm.post_type === "video";
+
       const { error } = await supabase.from("community_hub").insert([
         {
           username: newTestimonialForm.username,
           header: newTestimonialForm.header || null,
           tag_id: newTestimonialForm.tag_id || null,
-          content: newTestimonialForm.content,
+          content: isVideo ? "" : newTestimonialForm.content,
+          video_url: isVideo ? newTestimonialForm.video_url || null : null,
+          thumbnail_url: isVideo
+            ? newTestimonialForm.thumbnail_url || null
+            : null,
           status: "approved",
         },
       ]);
 
       if (error) throw error;
-      alert("Testimonial registered successfully.");
+      alert("Post/Testimonial created successfully!");
       setIsTestimonialModalOpen(false);
-      setNewTestimonialForm({ username: "", header: "", content: "", tag: "" });
+      setNewTestimonialForm({
+        post_type: "text",
+        username: "",
+        header: "",
+        content: "",
+        tag_id: "",
+        video_url: "",
+        thumbnail_url: "",
+      });
       fetchCommunityPosts();
     } catch (err) {
       alert(`Creation error: ${err.message}`);
     }
   };
-  // Modal State
+
   const [selectedPractitioner, setSelectedPractitioner] = useState(null);
 
   // Navigation Tabs States
@@ -624,34 +731,6 @@ const Dashboard = () => {
 
   const BLOGS_COLLECTION_ID = "6a23cdf5d3cdf3ce98515784";
   const TAGS_COLLECTION_ID = "6a4a29998a1508d3ea0976f9";
-
-  const uploadVideoToSupabase = async (file) => {
-    if (!file) return null;
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `podcasts/${fileName}`;
-
-      const { data, error } = await supabase.storage
-        .from("therapy-images")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (error) throw error;
-
-      const { data: publicUrlData } = supabase.storage
-        .from("therapy-images")
-        .getPublicUrl(filePath);
-
-      return publicUrlData.publicUrl;
-    } catch (error) {
-      console.error("Video storage upload error:", error.message);
-      alert(`Video upload failed: ${error.message}`);
-      return null;
-    }
-  };
 
   const fetchBlogsFromCms = async () => {
     try {
@@ -3170,121 +3249,247 @@ const Dashboard = () => {
       )}
 
       {isTestimonialModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
-          <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h2 className="text-xl font-medium text-gray-800">
-                Create Hub Testimonial
-              </h2>
-              <button
-                onClick={() => setIsTestimonialModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-2"
-              >
-                <FaTimes size={20} />
-              </button>
-            </div>
-            <form
-              onSubmit={handleCreateTestimonial}
-              className="p-6 space-y-4 text-sm"
+  <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
+    <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+      {/* Modal Header */}
+      <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h2 className="text-xl font-medium text-gray-800">
+          Create Hub Post / Testimonial
+        </h2>
+        <button
+          onClick={() => setIsTestimonialModalOpen(false)}
+          className="text-gray-400 hover:text-gray-600 p-2"
+        >
+          <FaTimes size={20} />
+        </button>
+      </div>
+
+      {/* FIXED: Form tag added around inputs */}
+      <form
+        onSubmit={handleCreateTestimonial}
+        className="p-6 overflow-y-auto space-y-4 text-sm"
+      >
+        {/* POST TYPE SELECTION TOGGLE */}
+        <div>
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+            Select Post Format *
+          </label>
+          <div className="grid grid-cols-2 gap-3 bg-gray-100 p-1.5 rounded-xl">
+            <button
+              type="button"
+              onClick={() =>
+                setNewTestimonialForm({
+                  ...newTestimonialForm,
+                  post_type: "text",
+                })
+              }
+              className={`py-2 text-xs font-bold rounded-lg transition ${
+                newTestimonialForm.post_type === "text"
+                  ? "bg-white text-[#5932EA] shadow-xs"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
             >
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Author Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., Jane Doe"
-                  value={newTestimonialForm.username}
-                  onChange={(e) =>
-                    setNewTestimonialForm({
-                      ...newTestimonialForm,
-                      username: e.target.value,
-                    })
-                  }
-                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                    Header Text *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Amazing platform UI"
-                    value={newTestimonialForm.header}
-                    onChange={(e) =>
-                      setNewTestimonialForm({
-                        ...newTestimonialForm,
-                        header: e.target.value,
-                      })
-                    }
-                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                    Tag Value *
-                  </label>
-                  <select
-                    required
-                    value={newTestimonialForm.tag_id || ""}
-                    onChange={(e) =>
-                      setNewTestimonialForm({
-                        ...newTestimonialForm,
-                        tag_id: e.target.value,
-                      })
-                    }
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-[#5932EA] focus:outline-none text-sm text-gray-800"
-                  >
-                    <option value="">-- Choose Assigned Tag --</option>
-                    {tagsList.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Content Review Text *
-                </label>
-                <textarea
-                  rows="4"
-                  required
-                  placeholder="Write comprehensive feedback review content..."
-                  value={newTestimonialForm.content}
-                  onChange={(e) =>
-                    setNewTestimonialForm({
-                      ...newTestimonialForm,
-                      content: e.target.value,
-                    })
-                  }
-                  className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-[#5932EA] focus:outline-none"
-                />
-              </div>
-              <div className="pt-4 border-t flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsTestimonialModalOpen(false)}
-                  className="px-5 py-2 border rounded-xl text-gray-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-[#5932EA] text-white rounded-xl"
-                >
-                  Publish Live
-                </button>
-              </div>
-            </form>
+              Standard Text Card
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setNewTestimonialForm({
+                  ...newTestimonialForm,
+                  post_type: "video",
+                })
+              }
+              className={`py-2 text-xs font-bold rounded-lg transition ${
+                newTestimonialForm.post_type === "video"
+                  ? "bg-white text-[#5932EA] shadow-xs"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Video Experience Card
+            </button>
           </div>
         </div>
-      )}
+
+        {/* AUTHOR NAME */}
+        <div>
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+            Author Name *
+          </label>
+          <input
+            type="text"
+            required
+            placeholder="e.g., Jane Doe"
+            value={newTestimonialForm.username}
+            onChange={(e) =>
+              setNewTestimonialForm({
+                ...newTestimonialForm,
+                username: e.target.value,
+              })
+            }
+            className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+          />
+        </div>
+
+        {/* HEADER & TAG */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+              Header Text *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="Amazing platform UI"
+              value={newTestimonialForm.header}
+              onChange={(e) =>
+                setNewTestimonialForm({
+                  ...newTestimonialForm,
+                  header: e.target.value,
+                })
+              }
+              className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+              Tag Value *
+            </label>
+            <select
+              value={newTestimonialForm.tag_id || ""}
+              onChange={(e) =>
+                setNewTestimonialForm({
+                  ...newTestimonialForm,
+                  tag_id: e.target.value,
+                })
+              }
+              className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-[#5932EA] focus:outline-none text-sm text-gray-800"
+            >
+              <option value="">-- Choose Assigned Tag --</option>
+              {tagsList.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* TEXT POST TYPE: CONTENT REVIEW TEXT */}
+        {newTestimonialForm.post_type === "text" && (
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+              Content Review Text *
+            </label>
+            <textarea
+              rows="5"
+              required
+              placeholder="Write comprehensive feedback review content..."
+              value={newTestimonialForm.content}
+              onChange={(e) =>
+                setNewTestimonialForm({
+                  ...newTestimonialForm,
+                  content: e.target.value,
+                })
+              }
+              className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-[#5932EA] focus:outline-none"
+            />
+          </div>
+        )}
+
+        {/* VIDEO POST TYPE: VIDEO FILE & THUMBNAIL UPLOAD */}
+        {newTestimonialForm.post_type === "video" && (
+          <div className="space-y-4 bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
+            <div>
+              <label className="block text-xs font-bold text-purple-900 uppercase tracking-wider mb-1">
+                Video Media Asset *
+              </label>
+              <input
+                type="file"
+                required={!newTestimonialForm.video_url}
+                accept="video/*"
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setNewTestimonialForm((prev) => ({
+                      ...prev,
+                      video_url: "Uploading...",
+                    }));
+                    const url = await uploadVideoToSupabase(file);
+                    setNewTestimonialForm((prev) => ({
+                      ...prev,
+                      video_url: url || "",
+                    }));
+                  }
+                }}
+                className="w-full bg-white border border-gray-200 px-3 py-2 rounded-xl text-xs"
+              />
+              {newTestimonialForm.video_url && (
+                <p className="text-xs text-indigo-600 mt-1 truncate font-medium">
+                  {newTestimonialForm.video_url === "Uploading..."
+                    ? "Uploading video asset..."
+                    : `✓ Uploaded: ${newTestimonialForm.video_url}`}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-purple-900 uppercase tracking-wider mb-1">
+                Thumbnail Cover Image (Optional)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setNewTestimonialForm((prev) => ({
+                      ...prev,
+                      thumbnail_url: "Uploading...",
+                    }));
+                    const url = await uploadThumbnailToSupabase(file);
+                    setNewTestimonialForm((prev) => ({
+                      ...prev,
+                      thumbnail_url: url || "",
+                    }));
+                  }
+                }}
+                className="w-full bg-white border border-gray-200 px-3 py-2 rounded-xl text-xs"
+              />
+              {newTestimonialForm.thumbnail_url && (
+                <p className="text-xs text-green-600 mt-1 truncate font-medium">
+                  {newTestimonialForm.thumbnail_url === "Uploading..."
+                    ? "Uploading thumbnail asset..."
+                    : `✓ Uploaded: ${newTestimonialForm.thumbnail_url}`}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* FIXED: Form Actions / Submit buttons restored */}
+        <div className="pt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => setIsTestimonialModalOpen(false)}
+            className="px-5 py-2 border rounded-xl text-gray-500 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={
+              newTestimonialForm.video_url === "Uploading..." ||
+              newTestimonialForm.thumbnail_url === "Uploading..."
+            }
+            className="px-6 py-2 bg-[#5932EA] text-white font-medium rounded-xl hover:bg-[#4826c9] transition disabled:opacity-50"
+          >
+            Publish Live
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {selectedUser && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
