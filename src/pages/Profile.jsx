@@ -8,9 +8,6 @@ import uploadBg from "../assets/profile/uploadBg.svg";
 import banner from "../assets/profile/banner.svg";
 import UserImg from "../assets/profile/user.svg";
 
-
-
-
 export default function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -419,11 +416,7 @@ export default function Profile() {
           <div className="bg-[#FAF4EB] rounded-[40px] md:rounded-[60px] p-6.25 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-end min-h-75 md:h-90">
             <div className="flex flex-col h-full justify-between max-w-full md:max-w-105">
               <div>
-                <img
-                  src={users}
-                  alt="Users"
-                  className="w-35 md:w-40 h-auto"
-                />
+                <img src={users} alt="Users" className="w-35 md:w-40 h-auto" />
               </div>
 
               <div className="flex flex-col gap-2.5 md:gap-4">
@@ -555,7 +548,7 @@ export default function Profile() {
           </div>
         </div>
       )}
-      {/* 2. MULTI-STEP "SHARE YOUR STORY" POPUP MODAL (FIGMA MATCH) */}
+      {/* 2. MULTI-STEP "SHARE YOUR STORY" POPUP MODAL */}
       {isShareModalOpen && (
         <div
           onClick={resetShareModal}
@@ -563,18 +556,22 @@ export default function Profile() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#FAF4EB] h-95 md:h-135 w-82.5 md:w-125 p-3.75 md:p-6.25 rounded-[20px] md:rounded-[40px] flex flex-col justify-between relative transition-all"
+            className="bg-[#FAF4EB] w-[330px] md:w-[500px] max-h-[90vh] overflow-y-auto p-4 md:p-6 rounded-[20px] md:rounded-[40px] flex flex-col justify-between relative transition-all shadow-xl"
           >
             {/* STEP 1: INITIAL SELECTION CARD */}
             {shareStep === "selection" && (
-              <div className="flex flex-col justify-between items-center gap-7.5 md:gap-10">
-                <div className="flex flex-col  md:gap-5.5 w-full">
+              <div className="flex flex-col justify-between items-center gap-6 md:gap-8 w-full">
+                <div className="flex flex-col gap-4 w-full">
                   <div className="flex justify-start w-full">
                     <button
                       onClick={resetShareModal}
                       className="text-[#B77145] text-xl font-bold cursor-pointer"
                     >
-                      <img src={arrow} alt="Arrow" className="rotate-180"/>
+                      <img
+                        src={arrow}
+                        alt="Arrow"
+                        className="rotate-180 w-5 h-5"
+                      />
                     </button>
                   </div>
                   {/* Avatars */}
@@ -582,36 +579,35 @@ export default function Profile() {
                     <img
                       src={users}
                       alt="Community Members"
-                      className="w-28.75 md:w-40 h-auto"
+                      className="w-28 md:w-40 h-auto object-contain"
                     />
                   </div>
                 </div>
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="flex flex-col items-center gap-2.5 md:gap-6.25">
-                    <h2 className="md:text-[34px] text-[20px] font-medium md:font-normal text-[#B77145] leading-[120%] tracking-[-2%]">
-                      Share Your Story
-                    </h2>
 
-                    <p className="text-[12px] font-normal md:text-[16px] text-[#B77145] leading-relaxed max-w-60 md:max-w-87.5">
-                      Your story can help other individuals and families feel
-                      informed, supported, and hopeful throughout their own
-                      journey.
-                    </p>
-                  </div>
+                <div className="flex flex-col items-center text-center gap-3">
+                  <h2 className="text-[20px] md:text-[34px] font-medium md:font-normal text-[#B77145] leading-[120%] tracking-[-2%]">
+                    Share Your Story
+                  </h2>
+
+                  <p className="text-[12px] md:text-[16px] font-normal text-[#B77145] leading-relaxed max-w-[320px]">
+                    Your story can help other individuals and families feel
+                    informed, supported, and hopeful throughout their own
+                    journey.
+                  </p>
                 </div>
 
                 {/* Option Buttons */}
-                <div className="w-full flex flex-col gap-2.5 md:gap-5 text-[14px] md:text-[16px]">
+                <div className="w-full flex flex-col gap-3 md:gap-4 text-[14px] md:text-[16px]">
                   <button
                     onClick={() => setShareStep("review")}
-                    className="w-full bg-white text-[#B77145] font-medium md:font-semibold rounded-[40px] hover:bg-gray-50 transition cursor-pointer h-12.5 md:h-15 leading-[124%] tracking-[0%] ]"
+                    className="w-full bg-white text-[#B77145] font-medium md:font-semibold rounded-[40px] hover:bg-gray-50 transition cursor-pointer h-12 md:h-14 flex items-center justify-center leading-[124%]"
                   >
                     Write a review
                   </button>
 
                   <button
                     onClick={() => setShareStep("video")}
-                    className="w-full h-12.5 bg-[#B77145] text-white font-semibold rounded-[40px] hover:opacity-90 transition cursor-pointer md:h-15 leading-[124%] tracking-[0%]"
+                    className="w-full bg-[#B77145] text-white font-semibold rounded-[40px] hover:opacity-90 transition cursor-pointer h-12 md:h-14 flex items-center justify-center leading-[124%]"
                   >
                     Record a Video
                   </button>
@@ -623,24 +619,28 @@ export default function Profile() {
             {shareStep === "review" && (
               <form
                 onSubmit={handleSubmitTextReview}
-                className="flex flex-col md:gap-6 h-full "
+                className="flex flex-col gap-4 md:gap-6 h-full w-full"
               >
-                <div className="flex flex-col md:gap-6 justify-center">
+                <div className="flex flex-col gap-4 justify-center w-full">
                   <div className="flex justify-start items-center">
                     <button
                       type="button"
                       onClick={() => setShareStep("selection")}
-                      className="text-[#B77145] text-xl font-bold"
+                      className="text-[#B77145] text-xl font-bold cursor-pointer"
                     >
-                      <img src={arrow} alt="Arrow" className="rotate-180" />
+                      <img
+                        src={arrow}
+                        alt="Arrow"
+                        className="rotate-180 w-5 h-5"
+                      />
                     </button>
                   </div>
 
-                  <div className="text-center flex flex-col items-center gap-4 md:gap-5">
+                  <div className="text-center flex flex-col items-center gap-2 md:gap-3">
                     <h2 className="text-[20px] md:text-[34px] font-medium md:font-normal text-[#B77145]">
                       Write a review
                     </h2>
-                    <p className="text-[12px] md:text-[16px] font-normal text-[#B77145] md:leading-tight md:px-4">
+                    <p className="text-[12px] md:text-[16px] font-normal text-[#B77145] md:leading-tight px-2">
                       Record a short video sharing your ManaScience experience
                       and how it has supported your journey.
                     </p>
@@ -654,49 +654,55 @@ export default function Profile() {
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
                     placeholder="Write your feedback here..."
-                    className="w-full h-full text-[12px] md:text-[16px] bg-white rounded-[20px] p-5 md:p-7.5  text-[#B77145] placeholder-[#B77145]/60 focus:outline-none  resize-none"
+                    className="w-full min-h-[120px] text-[12px] md:text-[16px] bg-white rounded-[20px] p-4 md:p-6 text-[#B77145] placeholder-[#B77145]/60 focus:outline-none resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={uploading || !reviewText.trim()}
-                  className="w-full h-12.5 md:h-15 bg-[#B77145] text-white font-medium text-[14px] md:text-[16px] rounded-full hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
+                  className="w-full h-12 md:h-14 bg-[#B77145] text-white font-medium text-[14px] md:text-[16px] rounded-full hover:opacity-90 transition disabled:opacity-50 cursor-pointer flex items-center justify-center"
                 >
                   {uploading ? "Sharing..." : "Share"}
                 </button>
               </form>
             )}
 
+            {/* STEP 3: VIDEO CARD */}
             {shareStep === "video" && (
-              <div className="flex flex-col justify-between h-full gap-5.5 md:gap-12.5">
-                <div className="flex flex-col md:gap-6">
+              <div className="flex flex-col justify-between h-full gap-4 md:gap-6 w-full">
+                <div className="flex flex-col gap-4 w-full">
                   <div className="flex justify-start items-center">
                     <button
                       type="button"
                       onClick={() => setShareStep("selection")}
-                      className="text-[#B77145] text-xl font-bold"
+                      className="text-[#B77145] text-xl font-bold cursor-pointer"
                     >
-                      <img src={arrow} alt="Arrow" className="rotate-180" />
+                      <img
+                        src={arrow}
+                        alt="Arrow"
+                        className="rotate-180 w-5 h-5"
+                      />
                     </button>
                   </div>
 
-                  <div className="text-center flex flex-col items-center gap-2.5 md:gap-5">
-                    <h2 className="md:text-[34px] text-[20px] font-medium md:font-normal text-[#B77145]">
+                  <div className="text-center flex flex-col items-center gap-2">
+                    <h2 className="text-[20px] md:text-[34px] font-medium md:font-normal text-[#B77145]">
                       Upload a Video
                     </h2>
-                    <p className="text-[12px] md:text-[16px] font-normal text-[#B77145] md:leading-tight px-5 md:px-4">
+                    <p className="text-[12px] md:text-[16px] font-normal text-[#B77145] md:leading-tight px-2">
                       Record a short video sharing your ManaScience experience
                       and how it has supported your journey.
                     </p>
                   </div>
                 </div>
 
-                {/* Video Container Box matching Figma */}
-                <div className="relative w-full h-75 rounded-4xl overflow-hidden flex flex-col justify-between p-6 bg-cover bg-center" style={{ backgroundImage: `url(${uploadBg})` }}>
-                  {/* Status Badge */}
+                <div
+                  className="relative w-full h-[220px] rounded-3xl overflow-hidden flex flex-col justify-between p-5 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${uploadBg})` }}
+                >
                   <div className="self-start">
-                    <span className="flex items-center px-6 h-10 md:h-15 rounded-full text-[14px] md:text-[16px] font-semibold text-[#B77145] bg-white shadow-sm">
+                    <span className="flex items-center px-4 h-9 md:h-12 rounded-full text-[13px] md:text-[15px] font-semibold text-[#B77145] bg-white shadow-sm">
                       {uploading
                         ? "Uploading..."
                         : videoFile
@@ -705,10 +711,9 @@ export default function Profile() {
                     </span>
                   </div>
 
-                  {/* Upload Icon Button */}
                   <div className="self-end">
                     <label
-                      className={`cursor-pointer bg-white w-12 h-12 rounded-full flex items-center justify-center hover:scale-105 transition-transform ${uploading ? "pointer-events-none opacity-50" : ""}`}
+                      className={`cursor-pointer bg-white w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center hover:scale-105 transition-transform ${uploading ? "pointer-events-none opacity-50" : ""}`}
                     >
                       <input
                         type="file"
@@ -718,7 +723,7 @@ export default function Profile() {
                         onChange={handleFileSelect}
                         className="hidden"
                       />
-                      <img src={upload} alt="Upload" />
+                      <img src={upload} alt="Upload" className="w-5 h-5" />
                     </label>
                   </div>
                 </div>
