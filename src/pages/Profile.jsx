@@ -1,116 +1,35 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
+import users from "../assets/users.svg";
+import arrow from "../assets/profile/arrow.svg";
+import upload from "../assets/profile/upload.svg";
+import uploadBg from "../assets/profile/uploadBg.svg";
+import banner from "../assets/profile/banner.svg";
+import UserImg from "../assets/profile/user.svg";
+
+
+
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [subscription, setSubscription] = useState(null);
   const [user, setUser] = useState(null);
+  const [subscription, setSubscription] = useState(null);
 
-  // State variables for post submission
-  const [reviewContent, setReviewContent] = useState("");
-  const [anonName, setAnonName] = useState("");
-  const [submittingPost, setSubmittingPost] = useState(false);
+  // --- SHARE MODAL STATES ---
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareStep, setShareStep] = useState("selection"); // "selection" | "review" | "video"
+  const [reviewText, setReviewText] = useState("");
+  const [videoFile, setVideoFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  // State variables to handle the chat history preview
-  const [historyData, setHistoryData] = useState(null);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-
-  // Practitioner Queries States
-  const [pendingQueries, setPendingQueries] = useState([]);
-  const [multiQueryResponses, setMultiQueryResponses] = useState({});
-  const [submittingQueryId, setSubmittingQueryId] = useState(null);
-
-  // Fetch pending queries from Supabase
-  async function fetchPendingQueries(userId) {
-    try {
-      const { data, error } = await supabase
-        .from("practitioner_queries")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      if (data) setPendingQueries(data);
-    } catch (err) {
-      console.error("Error fetching practitioner queries:", err.message);
-    }
-  }
-
-  const handleAnswerInputChange = (queryId, questionIndex, answerText) => {
-    setMultiQueryResponses((prev) => ({
-      ...prev,
-      [queryId]: {
-        ...(prev[queryId] || {}),
-        [questionIndex]: answerText,
-      },
-    }));
-  };
-
-  async function handleMultiQueryResponseSubmit(queryItem) {
-    const answersObj = multiQueryResponses[queryItem.id] || {};
-    const questionsArr =
-      Array.isArray(queryItem.questions) && queryItem.questions.length > 0
-        ? queryItem.questions
-        : [queryItem.question];
-
-    const formattedResponses = questionsArr.map(
-      (_, idx) => answersObj[idx] || ""
-    );
-
-    if (formattedResponses.some((ans) => !ans.trim())) {
-      alert("Please answer all questions before submitting.");
-      return;
-    }
-
-    try {
-      setSubmittingQueryId(queryItem.id);
-
-      // 1. Update response in Supabase
-      const { error } = await supabase
-        .from("practitioner_queries")
-        .update({
-          responses: formattedResponses,
-          response: formattedResponses.join(" | "),
-          status: "answered",
-          answered_at: new Date().toISOString(),
-        })
-        .eq("id", queryItem.id);
-
-      if (error) throw error;
-
-      // 2. Safely trigger email alert to practitioner (wrapped to avoid app crashing)
-      try {
-        const { data: pData } = await supabase
-          .from("practitioners")
-          .select("email, name")
-          .eq("id", queryItem.practitioner_id)
-          .maybeSingle();
-
-        if (pData?.email) {
-          await supabase.functions.invoke("send-notification-email", {
-            method: "POST",
-            body: {
-              recipientEmail: pData.email,
-              subject: `Patient Response Received: ${queryItem.subject}`,
-              message: `Hello Dr. ${pData.name},\n\nPatient ${user.user_metadata?.name || user.email} has completed the responses for: "${queryItem.subject}".`,
-              actionLink: `${window.location.origin}/practitioner-dashboard`,
-              buttonText: "View Responses in Dashboard",
-            },
-          });
-        }
-      } catch (emailErr) {
-        console.warn("Email alert could not be sent:", emailErr.message);
-      }
-
-      alert("All answers submitted to your practitioner!");
-      fetchPendingQueries(user.id);
-    } catch (err) {
-      alert(`Error submitting response: ${err.message}`);
-    } finally {
-      setSubmittingQueryId(null);
-    }
-  }
+  // --- CHANGE PASSWORD MODAL STATES ---
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -122,10 +41,7 @@ export default function Profile() {
     } = await supabase.auth.getUser();
 
     if (!user) return;
-
     setUser(user);
-
-    fetchPendingQueries(user.id);
 
     const { data } = await supabase
       .from("subscriptions")
@@ -134,444 +50,683 @@ export default function Profile() {
       .maybeSingle();
 
     setSubscription(data);
-
-    try {
-      setLoadingHistory(true);
-      const response = await fetch(
-        `https://manasiai-production.up.railway.app/chat/user/${user.id}/history`
-      );
-      if (response.ok) {
-        const historyJson = await response.json();
-        setHistoryData(historyJson);
-      }
-    } catch (err) {
-      console.error("Could not load chat history preview:", err);
-    } finally {
-      setLoadingHistory(false);
-    }
   }
 
-  async function handlePostReview(e) {
-    e.preventDefault();
-    if (!reviewContent.trim()) return;
+  useEffect(() => {
+    const isAnyModalOpen = isShareModalOpen || isPasswordModalOpen;
 
-    if (!user && !anonName.trim()) {
-      alert("Please provide your name before submitting.");
-      return;
+    if (isAnyModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
     }
 
-    try {
-      setSubmittingPost(true);
+    // Cleanup when component unmounts
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isShareModalOpen, isPasswordModalOpen]);
 
-      let displayName = "";
-      let userIdField = null;
-
-      if (user) {
-        userIdField = user.id;
-        displayName =
-          user.user_metadata?.name ||
-          user.user_metadata?.full_name ||
-          user.email.split("@")[0];
-      } else {
-        displayName = anonName.trim();
-      }
-
-      const { error } = await supabase.from("community_hub").insert([
-        {
-          user_id: userIdField,
-          username: displayName,
-          content: reviewContent.trim(),
-          header: null,
-          tag_id: null,
-          status: "pending",
-        },
-      ]);
-
-      if (error) throw error;
-
-      alert("Review posted successfully! Awaiting admin moderation.");
-      setReviewContent("");
-      setAnonName("");
-    } catch (err) {
-      console.error("Submission failed:", err.message);
-      alert(`Error submitting post: ${err.message}`);
-    } finally {
-      setSubmittingPost(false);
-    }
-  }
+  // --- ACCOUNT MANAGEMENT ACTIONS ---
 
   async function logout() {
     await supabase.auth.signOut();
     setUser(null);
     setSubscription(null);
-    setHistoryData(null);
     navigate("/auth");
   }
 
   async function deleteAccount() {
-    const confirmed = confirm("Delete account permanently?");
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account permanently? This action cannot be undone.",
+    );
     if (!confirmed) return;
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    const response = await fetch(
-      "https://obzogpozgoolhededqkb.supabase.co/functions/v1/delete-account",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      if (!session) {
+        alert("Session expired. Please log in again.");
+        return;
       }
-    );
 
-    const data = await response.json();
+      const response = await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/delete-account",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
+      );
 
-    if (!response.ok) {
-      alert(data.error);
-      return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete account");
+      }
+
+      await supabase.auth.signOut();
+      alert("Account deleted successfully.");
+      setUser(null);
+      navigate("/auth");
+    } catch (err) {
+      alert(`Error deleting account: ${err.message}`);
     }
-
-    await supabase.auth.signOut();
-    alert("Account deleted");
-    setUser(null);
-    navigate("/auth");
   }
 
   async function cancelSubscription() {
-    const confirmed = confirm("Cancel subscription?");
+    const confirmed = window.confirm("Cancel subscription?");
     if (!confirmed) return;
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    await fetch(
-      "https://obzogpozgoolhededqkb.supabase.co/functions/v1/cancel-subscription",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
+      await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/cancel-subscription",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         },
-      }
-    );
+      );
 
-    await fetch(
-      "https://obzogpozgoolhededqkb.supabase.co/functions/v1/delete-subscription",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
+      await fetch(
+        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/delete-subscription",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         },
-      }
-    );
+      );
 
-    setSubscription(null);
-    alert("Subscription cancelled");
+      setSubscription(null);
+      alert("Subscription cancelled successfully.");
+    } catch (err) {
+      alert(`Error cancelling subscription: ${err.message}`);
+    }
+  }
+
+  async function handlePasswordUpdate(e) {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setUpdatingPassword(true);
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      setPasswordSuccess("Password updated successfully!");
+      setTimeout(() => {
+        setIsPasswordModalOpen(false);
+        setNewPassword("");
+        setConfirmPassword("");
+        setPasswordSuccess("");
+      }, 1500);
+    } catch (err) {
+      setPasswordError(err.message);
+    } finally {
+      setUpdatingPassword(false);
+    }
+  }
+
+  // --- SHARE STORY SUBMISSION HANDLERS ---
+
+  const userDisplayName =
+    user?.user_metadata?.name ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] ||
+    "Anonymous Member";
+
+  async function handleSubmitTextReview(e) {
+    e.preventDefault();
+    if (!reviewText.trim()) return;
+
+    try {
+      setUploading(true);
+      const { error } = await supabase.from("community_hub").insert([
+        {
+          user_id: user?.id || null,
+          username: userDisplayName,
+          content: reviewText.trim(),
+          header: "Member Story",
+          status: "pending", // Goes to Dashboard for approval
+        },
+      ]);
+
+      if (error) throw error;
+
+      alert("Your review has been submitted for approval!");
+      resetShareModal();
+    } catch (err) {
+      alert(`Submission failed: ${err.message}`);
+    } finally {
+      setUploading(false);
+    }
+  }
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setVideoFile(file);
+      handleSubmitVideoReview(file);
+    }
+  };
+
+  async function handleSubmitVideoReview(eOrFile) {
+    // If eOrFile is an event object (has preventDefault), prevent default form submission
+    if (eOrFile && typeof eOrFile.preventDefault === "function") {
+      eOrFile.preventDefault();
+    }
+
+    // Use passed file directly if available; otherwise fallback to state
+    const fileToUpload =
+      eOrFile && eOrFile instanceof File ? eOrFile : videoFile;
+
+    if (!fileToUpload) {
+      alert("Please select or record a video first.");
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // 1. Upload video file to Supabase Storage Bucket
+      const fileExt = fileToUpload.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const filePath = `community_videos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("community_videos")
+        .upload(filePath, fileToUpload, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 2. Fetch public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("community_videos")
+        .getPublicUrl(filePath);
+
+      const videoPublicUrl = publicUrlData.publicUrl;
+
+      // 3. Insert record into community_hub table with pending status
+      const { error: dbError } = await supabase.from("community_hub").insert([
+        {
+          user_id: user?.id || null,
+          username: userDisplayName,
+          video_url: videoPublicUrl,
+          content: "",
+          header: "Video Story",
+          status: "pending", // Goes to Dashboard for approval
+        },
+      ]);
+
+      if (dbError) throw dbError;
+
+      alert("Your video story has been submitted for approval!");
+      resetShareModal();
+    } catch (err) {
+      alert(`Video submission failed: ${err.message}`);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function resetShareModal() {
+    setIsShareModalOpen(false);
+    setShareStep("selection");
+    setReviewText("");
+    setVideoFile(null);
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 flex flex-col items-center justify-center font-mono p-4 gap-6">
-      <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
-        <h2 className="text-2xl font-bold mb-5">User Profile</h2>
+    <main className="min-h-screen bg-[#FDFBF7] py-8 px-3.75 md:px-10 flex flex-col items-center manrope">
+      <div className="w-full space-y-6">
+        {/* Cover Header Banner */}
+        <div className="relative w-full h-87.5 md:h-130 rounded-[30px] md:rounded-[40px] overflow-hidden">
+          <img
+            src={banner}
+            alt="Profile Cover"
+            className="w-full h-full object-cover"
+          />
 
-        {user ? (
-          <div className="space-y-3">
-            <p>
-              <strong>ID:</strong> {user.id}
-            </p>
-            <p>
-              <strong>Name:</strong> {user.user_metadata?.name || "—"}
-            </p>
-            <p>
-              <strong>Email:</strong> {user.email}
-            </p>
-            <p>
-              <strong>Subscription:</strong> {subscription?.plan || "None"}
-            </p>
-            {subscription && (
-              <p>
-                <strong>Next Billing Date:</strong>{" "}
-                {subscription.current_period_end
-                  ? new Date(
-                      subscription.current_period_end
-                    ).toLocaleDateString()
-                  : "—"}
-              </p>
-            )}
-
-            <div className="pt-2 flex gap-3">
-              {subscription && (
-                <button
-                  className="bg-red-600 text-white px-5 py-2 rounded-lg"
-                  onClick={cancelSubscription}
-                >
-                  Cancel Subscription
-                </button>
-              )}
-
-              {!subscription && (
-                <button
-                  onClick={() => navigate("/subscription")}
-                  className="bg-black text-white px-5 py-2 rounded-lg"
-                >
-                  Choose Plan
-                </button>
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-6 border-t pt-4">
-              <button
-                onClick={logout}
-                className="px-5 py-2 border rounded-lg hover:bg-gray-50"
-              >
-                Logout
-              </button>
-              <button
-                onClick={deleteAccount}
-                className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                Delete Account
-              </button>
-            </div>
+          <div className="absolute top-6 left-6 sm:top-10 sm:left-10">
+            <h1 className="bg-[#B77145] flex justify-center items-center text-white px-7.5 h-12.5 md:h-17.5 leading-[120%] tracking-[-3%] font-semibold md:font-medium text-[14px] md:text-[18px] rounded-[40px]">
+              {subscription?.plan
+                ? `${subscription.plan} Member`
+                : "Premium Membership"}
+            </h1>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-gray-500 text-sm">
-              You are currently viewing this page as a guest anonymous reader.
-              Log in to sync account profile parameters.
-            </p>
-            <button
-              onClick={() => navigate("/auth")}
-              className="bg-black text-white px-5 py-2 rounded-lg text-sm"
-            >
-              Sign In / Authenticate
-            </button>
-          </div>
-        )}
-      </div>
-
-      {user && (
-        <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
-          <div className="flex justify-between items-center border-b pb-3 mb-4">
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">
-                Your Chat History
-              </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Stored conversation sessions with Manasi AI
-              </p>
-            </div>
-            {historyData && historyData.history_records && (
-              <span className="bg-amber-100 text-amber-800 font-bold text-xs px-3 py-1 rounded-full">
-                Sessions: {historyData.history_records.length}
-              </span>
-            )}
-          </div>
-
-          {loadingHistory ? (
-            <p className="text-sm text-gray-500 font-sans py-4">
-              Loading your conversations...
-            </p>
-          ) : historyData &&
-            historyData.history_records &&
-            historyData.history_records.length > 0 ? (
-            <div className="flex flex-col gap-4 max-h-96 overflow-y-auto pr-1">
-              {historyData.history_records.map((session, sIndex) => (
-                <div
-                  key={sIndex}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3"
-                >
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <span className="text-xs font-bold text-amber-700 uppercase tracking-tight truncate max-w-[70%]">
-                      {session.title || "Roadmap Assessment / Chat"}
-                    </span>
-                    <span className="text-[10px] text-gray-400 font-mono">
-                      {session.updated_at
-                        ? new Date(session.updated_at).toLocaleDateString()
-                        : "—"}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 pl-1">
-                    {session.history &&
-                      session.history.slice(0, 2).map((turn, tIndex) => (
-                        <div key={tIndex} className="text-xs space-y-1">
-                          <div className="truncate text-gray-700">
-                            <strong className="text-amber-800">Q:</strong>{" "}
-                            {turn.question}
-                          </div>
-                          <div className="text-gray-600 pl-2 border-l-2 border-amber-600/40 truncate">
-                            <strong className="text-gray-400">A:</strong>{" "}
-                            {turn.answer}
-                          </div>
-                        </div>
-                      ))}
-
-                    {session.history && session.history.length > 2 && (
-                      <p className="text-[10px] text-amber-700/70 font-medium italic pt-1">
-                        + {session.history.length - 2} more turns in this
-                        window...
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 font-sans py-2">
-              No chat logs found. Start a conversation with Manasi AI to back up
-              your interaction logs!
-            </p>
-          )}
         </div>
-      )}
 
-      {user && (
-        <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
-          <h3 className="text-xl font-bold mb-1 text-gray-800">
-            Practitioner Requests
-          </h3>
-          <p className="text-xs text-gray-500 mb-4 font-sans">
-            Inquiries or questionnaires sent by your practitioner
-          </p>
-
-          {pendingQueries.length === 0 ? (
-            <p className="text-sm text-gray-400 font-sans italic">
-              No pending requests from your practitioner.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {pendingQueries.map((q) => {
-                const qList =
-                  Array.isArray(q.questions) && q.questions.length > 0
-                    ? q.questions
-                    : [q.question];
-                const aList = Array.isArray(q.responses) ? q.responses : [];
-
-                return (
-                  <div
-                    key={q.id}
-                    className="border border-gray-200 rounded-lg p-4 space-y-4 bg-gray-50/50"
-                  >
-                    <div className="flex justify-between items-center border-b pb-2">
-                      <span className="font-bold text-sm text-gray-900">
-                        {q.subject}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${q.status === "answered" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}
-                      >
-                        {q.status}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      {qList.map((qText, qIdx) => (
-                        <div key={qIdx} className="space-y-1">
-                          <p className="text-xs font-semibold text-gray-700">
-                            {qList.length > 1 ? `${qIdx + 1}. ` : ""}
-                            {qText}
-                          </p>
-
-                          {q.status === "answered" ? (
-                            <div className="text-xs bg-emerald-50 border border-emerald-100 p-2 rounded-lg text-emerald-900 font-sans">
-                              <strong>Answer:</strong>{" "}
-                              {aList[qIdx] || q.response}
-                            </div>
-                          ) : (
-                            <input
-                              type="text"
-                              placeholder={`Your answer for question #${qIdx + 1}...`}
-                              value={multiQueryResponses[q.id]?.[qIdx] || ""}
-                              onChange={(e) =>
-                                handleAnswerInputChange(
-                                  q.id,
-                                  qIdx,
-                                  e.target.value
-                                )
-                              }
-                              className="w-full border border-gray-300 p-2 rounded-lg text-xs font-sans focus:outline-none focus:border-black"
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {q.status !== "answered" && (
-                      <button
-                        onClick={() => handleMultiQueryResponseSubmit(q)}
-                        disabled={submittingQueryId === q.id}
-                        className="bg-black text-white px-4 py-2 rounded-lg text-xs font-sans disabled:opacity-50 transition w-full mt-2"
-                      >
-                        {submittingQueryId === q.id
-                          ? "Submitting Answers..."
-                          : "Submit All Responses"}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow p-6 w-full max-w-xl text-left">
-        <h3 className="text-xl font-bold mb-3">Share to Community Hub</h3>
-        <p className="text-sm text-gray-500 mb-4 font-sans">
-          Post feedback, suggestions, or a general review. Your message will be
-          visible in the hub upon admin approval.
-        </p>
-
-        <form onSubmit={handlePostReview} className="space-y-4">
-          {!user && (
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                Your Name *
-              </label>
-              <input
-                type="text"
-                required
-                disabled={submittingPost}
-                placeholder="e.g., John Doe"
-                value={anonName}
-                onChange={(e) => setAnonName(e.target.value)}
-                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:border-black font-sans text-sm"
+        {/* User Info Bar */}
+        <div className="flex flex-row sm:items-end justify-between px-4 sm:px-10 -mt-16 sm:-mt-24 md:-mt-28 relative z-10 gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6">
+            <div className="w-37.5 h-37.5 md:w-50 md:h-50 rounded-full overflow-hidden bg-white shrink-0">
+              <img
+                src={UserImg}
+                alt="User Avatar"
+                className="w-full h-full object-cover"
               />
             </div>
-          )}
 
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-              Review Content *
-            </label>
-            <textarea
-              rows="4"
-              required
-              disabled={submittingPost}
-              placeholder="Type your review or community post content here..."
-              value={reviewContent}
-              onChange={(e) => setReviewContent(e.target.value)}
-              className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:border-black font-sans resize-none text-sm"
-            />
+            <div className="pb-1 pt-1 sm:pb-3">
+              <h1 className="text-2xl sm:text-3xl lg:text-[40px] font-medium text-[#B77145]">
+                {userDisplayName}
+              </h1>
+              <p className="text-[13px] md:text-[18px] text-[#B77145] font-medium mt-1.25 md:mt-2.5">
+                {user?.email || "guest@manascience.com"}
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={
-                submittingPost ||
-                !reviewContent.trim() ||
-                (!user && !anonName.trim())
-              }
-              className="bg-black text-white px-6 py-2 rounded-lg text-sm disabled:opacity-50 transition"
-            >
-              {submittingPost ? "Submitting..." : "Submit Post"}
+          <div className="pb-1 sm:pb-3 flex justify-end items-end cursor-pointer">
+            <button className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-full transition h-12.5 md:h-20 w-27.5 md:w-40 cursor-pointer">
+              Edit Profile
             </button>
           </div>
-        </form>
+        </div>
+
+        {/* Action Options List */}
+        <div className="space-y-4 pt-2">
+          {/* Manage Subscription */}
+          <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between h-20 md:h-35 px-5 md:px-10">
+            <span className="text-[16px] md:text-[28px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
+              Manage Subscription
+            </span>
+            {subscription ? (
+              <button
+                onClick={cancelSubscription}
+                className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] transition md:h-20 h-12.5 w-27.5 md:w-45"
+              >
+                Cancel
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/subscription")}
+                className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] transition md:h-20 h-12.5 w-27.5 md:w-45 cursor-pointer"
+              >
+                Manage
+              </button>
+            )}
+          </div>
+
+          {/* Log Out */}
+          <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
+            <span className="text-[16px] md:text-[28px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
+              Log out
+            </span>
+            <button
+              onClick={logout}
+              className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] transition md:h-20 h-12.5 w-27.5 md:w-45 cursor-pointer"
+            >
+              Log Out
+            </button>
+          </div>
+
+          {/* Change Password */}
+          <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
+            <span className="text-[16px] md:text-[28px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
+              Change Password
+            </span>
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] transition md:h-20 h-12.5 w-27.5 md:w-45 cursor-pointer"
+            >
+              Update
+            </button>
+          </div>
+
+          {/* Delete Account */}
+          <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
+            <span className="text-[16px] md:text-[28px] font-medium text-[#B77145] leading-[120%] tracking-[-3%] cursor-pointer">
+              Delete Account
+            </span>
+            <button
+              onClick={deleteAccount}
+              className="bg-[#68270B] hover:bg-[#47220f] text-white text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] transition md:h-20 h-12.5 w-27.5 md:w-45 cursor-pointer"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+
+        {/* Feature Cards Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 items-stretch">
+          {/* Card 1: Share Your Story */}
+          <div className="bg-[#FAF4EB] rounded-[40px] md:rounded-[60px] p-6.25 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-end min-h-75 md:h-90">
+            <div className="flex flex-col h-full justify-between max-w-full md:max-w-105">
+              <div>
+                <img
+                  src={users}
+                  alt="Users"
+                  className="w-35 md:w-40 h-auto"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2.5 md:gap-4">
+                <h3 className="text-[24px] md:text-[38px] font-normal text-[#B77145] leading-[120%] tracking-[-4%]">
+                  Share Your Story
+                </h3>
+
+                <p className="text-[14px] md:text-[16px] font-normal text-[#B77145] leading-[120%] md:leading-[128%] max-w-85">
+                  Your story can help other individuals and families feel
+                  informed, supported, and hopeful throughout their own journey.
+                </p>
+              </div>
+            </div>
+
+            {/* CLICKING SHARE OPENS POPUP */}
+            <div className="mt-6 md:mt-0 flex justify-end w-full md:w-auto">
+              <button
+                onClick={() => {
+                  setIsShareModalOpen(true);
+                  setShareStep("selection");
+                }}
+                className="bg-[#B77145] hover:opacity-90 text-white transition h-12.5 md:h-20 w-27.5 md:w-37.5 text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] flex items-center justify-center cursor-pointer"
+              >
+                Share
+              </button>
+            </div>
+          </div>
+
+          {/* Card 2: Promo Offer */}
+          <div
+            className="rounded-[40px] md:rounded-[60px] p-6.25 md:p-10 text-white flex flex-col justify-between min-h-75 md:h-90"
+            style={{
+              backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1786094800/promoBg_d1mppq.svg)`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div>
+              <h3 className="text-[24px] md:text-[38px] font-normal mb-2 md:mb-3 text-white leading-[120%] tracking-[-4%]">
+                Promo Offer
+              </h3>
+              <p className="text-[16px] md:text-[24px] font-normal text-white leading-[120%] tracking-[-4%]">
+                $899/mo
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => navigate("/subscription")}
+                className="bg-white hover:bg-white/90 text-[#B77145] text-[14px] md:text-[16px] font-semibold rounded-full transition md:h-20 h-12.5 w-43.75 md:w-50 cursor-pointer"
+              >
+                Upgrade Plan
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* 1. CHANGE PASSWORD POPUP MODAL                            */}
+      {isPasswordModalOpen && (
+        <div
+          onClick={() => setIsPasswordModalOpen(false)}
+          className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4 backdrop-blur-xs"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#FAF4E8] w-full max-w-md rounded-[30px] p-6 md:p-8 space-y-6 shadow-2xl relative"
+          >
+            <div className="flex justify-between items-center border-b border-[#B77145]/20 pb-3">
+              <h2 className="text-xl font-semibold text-[#68270B]">
+                Update Password
+              </h2>
+              <button
+                onClick={() => setIsPasswordModalOpen(false)}
+                className="text-[#68270B] font-bold text-lg p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handlePasswordUpdate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#68270B] mb-1">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Minimum 8 characters"
+                  className="w-full h-12 bg-white rounded-full px-4 text-sm focus:outline-none border border-transparent focus:border-[#B77145]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#68270B] mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter password"
+                  className="w-full h-12 bg-white rounded-full px-4 text-sm focus:outline-none border border-transparent focus:border-[#B77145]"
+                />
+              </div>
+
+              {passwordError && (
+                <p className="text-xs text-red-600 font-medium">
+                  {passwordError}
+                </p>
+              )}
+              {passwordSuccess && (
+                <p className="text-xs text-green-700 font-medium">
+                  {passwordSuccess}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={updatingPassword}
+                className="w-full h-12 bg-[#B77145] text-white font-semibold rounded-full hover:opacity-90 transition disabled:opacity-50"
+              >
+                {updatingPassword ? "Updating..." : "Save New Password"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* 2. MULTI-STEP "SHARE YOUR STORY" POPUP MODAL (FIGMA MATCH) */}
+      {isShareModalOpen && (
+        <div
+          onClick={resetShareModal}
+          className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center p-4 backdrop-blur-xs"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#FAF4EB] h-95 md:h-135 w-82.5 md:w-125 p-3.75 md:p-6.25 rounded-[20px] md:rounded-[40px] flex flex-col justify-between relative transition-all"
+          >
+            {/* STEP 1: INITIAL SELECTION CARD */}
+            {shareStep === "selection" && (
+              <div className="flex flex-col justify-between items-center gap-7.5 md:gap-10">
+                <div className="flex flex-col  md:gap-5.5 w-full">
+                  <div className="flex justify-start w-full">
+                    <button
+                      onClick={resetShareModal}
+                      className="text-[#B77145] text-xl font-bold cursor-pointer"
+                    >
+                      <img src={arrow} alt="Arrow" className="rotate-180"/>
+                    </button>
+                  </div>
+                  {/* Avatars */}
+                  <div className="flex justify-center h-auto">
+                    <img
+                      src={users}
+                      alt="Community Members"
+                      className="w-28.75 md:w-40 h-auto"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="flex flex-col items-center gap-2.5 md:gap-6.25">
+                    <h2 className="md:text-[34px] text-[20px] font-medium md:font-normal text-[#B77145] leading-[120%] tracking-[-2%]">
+                      Share Your Story
+                    </h2>
+
+                    <p className="text-[12px] font-normal md:text-[16px] text-[#B77145] leading-relaxed max-w-60 md:max-w-87.5">
+                      Your story can help other individuals and families feel
+                      informed, supported, and hopeful throughout their own
+                      journey.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Option Buttons */}
+                <div className="w-full flex flex-col gap-2.5 md:gap-5 text-[14px] md:text-[16px]">
+                  <button
+                    onClick={() => setShareStep("review")}
+                    className="w-full bg-white text-[#B77145] font-medium md:font-semibold rounded-[40px] hover:bg-gray-50 transition cursor-pointer h-12.5 md:h-15 leading-[124%] tracking-[0%] ]"
+                  >
+                    Write a review
+                  </button>
+
+                  <button
+                    onClick={() => setShareStep("video")}
+                    className="w-full h-12.5 bg-[#B77145] text-white font-semibold rounded-[40px] hover:opacity-90 transition cursor-pointer md:h-15 leading-[124%] tracking-[0%]"
+                  >
+                    Record a Video
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: WRITE A REVIEW CARD */}
+            {shareStep === "review" && (
+              <form
+                onSubmit={handleSubmitTextReview}
+                className="flex flex-col md:gap-6 h-full "
+              >
+                <div className="flex flex-col md:gap-6 justify-center">
+                  <div className="flex justify-start items-center">
+                    <button
+                      type="button"
+                      onClick={() => setShareStep("selection")}
+                      className="text-[#B77145] text-xl font-bold"
+                    >
+                      <img src={arrow} alt="Arrow" className="rotate-180" />
+                    </button>
+                  </div>
+
+                  <div className="text-center flex flex-col items-center gap-4 md:gap-5">
+                    <h2 className="text-[20px] md:text-[34px] font-medium md:font-normal text-[#B77145]">
+                      Write a review
+                    </h2>
+                    <p className="text-[12px] md:text-[16px] font-normal text-[#B77145] md:leading-tight md:px-4">
+                      Record a short video sharing your ManaScience experience
+                      and how it has supported your journey.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex-1 my-2">
+                  <textarea
+                    rows={4}
+                    required
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    placeholder="Write your feedback here..."
+                    className="w-full h-full text-[12px] md:text-[16px] bg-white rounded-[20px] p-5 md:p-7.5  text-[#B77145] placeholder-[#B77145]/60 focus:outline-none  resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={uploading || !reviewText.trim()}
+                  className="w-full h-12.5 md:h-15 bg-[#B77145] text-white font-medium text-[14px] md:text-[16px] rounded-full hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
+                >
+                  {uploading ? "Sharing..." : "Share"}
+                </button>
+              </form>
+            )}
+
+            {shareStep === "video" && (
+              <div className="flex flex-col justify-between h-full gap-5.5 md:gap-12.5">
+                <div className="flex flex-col md:gap-6">
+                  <div className="flex justify-start items-center">
+                    <button
+                      type="button"
+                      onClick={() => setShareStep("selection")}
+                      className="text-[#B77145] text-xl font-bold"
+                    >
+                      <img src={arrow} alt="Arrow" className="rotate-180" />
+                    </button>
+                  </div>
+
+                  <div className="text-center flex flex-col items-center gap-2.5 md:gap-5">
+                    <h2 className="md:text-[34px] text-[20px] font-medium md:font-normal text-[#B77145]">
+                      Upload a Video
+                    </h2>
+                    <p className="text-[12px] md:text-[16px] font-normal text-[#B77145] md:leading-tight px-5 md:px-4">
+                      Record a short video sharing your ManaScience experience
+                      and how it has supported your journey.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Video Container Box matching Figma */}
+                <div className="relative w-full h-75 rounded-4xl overflow-hidden flex flex-col justify-between p-6 bg-cover bg-center" style={{ backgroundImage: `url(${uploadBg})` }}>
+                  {/* Status Badge */}
+                  <div className="self-start">
+                    <span className="flex items-center px-6 h-10 md:h-15 rounded-full text-[14px] md:text-[16px] font-semibold text-[#B77145] bg-white shadow-sm">
+                      {uploading
+                        ? "Uploading..."
+                        : videoFile
+                          ? "Uploaded!"
+                          : "Not Recording"}
+                    </span>
+                  </div>
+
+                  {/* Upload Icon Button */}
+                  <div className="self-end">
+                    <label
+                      className={`cursor-pointer bg-white w-12 h-12 rounded-full flex items-center justify-center hover:scale-105 transition-transform ${uploading ? "pointer-events-none opacity-50" : ""}`}
+                    >
+                      <input
+                        type="file"
+                        accept="video/*"
+                        capture="environment"
+                        disabled={uploading}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <img src={upload} alt="Upload" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -558,7 +558,6 @@ const ManasiAi = () => {
                     hasLongOption ? "max-w-105" : "md:max-w-full"
                   }`}
                 >
-                
                   <img src={ai} alt="Manasi" className="w-6 h-6" />
 
                   <div
@@ -573,7 +572,7 @@ const ManasiAi = () => {
                       </div>
                     )}
 
-                    <p className="whitespace-pre-wrap break-words">
+                    <p className="whitespace-pre-wrap wrap-break-word">
                       {msg.content?.trim()}
                     </p>
 
@@ -753,10 +752,8 @@ const ManasiAi = () => {
             })()
           ) : (
             <div className="flex flex-col items-end gap-2 max-w-[85%]">
-              {/* <div className="px-5 flex justify-center items-center h-15 rounded-full font-medium text-[15px] leading-[105%] tracking-[-2%] bg-[#FAF4E8] text-[#68270B] text-left">
-                {msg.content}
-              </div> */}
-              <div className="px-6 py-4 flex items-center min-h-[60px] rounded-3xl font-medium text-[15px] leading-[140%] bg-[#FAF4E8] text-[#68270B] text-left break-words">
+              
+              <div className="px-6 py-4 flex items-center min-h-15 rounded-3xl font-medium text-[15px] leading-[140%] bg-[#FAF4E8] text-[#68270B] text-left wrap-break-word">
                 {msg.content}
               </div>
               <div className="flex gap-2.5 justify-center items-center text-[10px] text-white">
@@ -942,8 +939,16 @@ const ManasiAi = () => {
             <div ref={scrollRef} />
           </main>
         ) : (
-          /* STANDARD CHAT VIEW */
-          <main className="flex-1 md:w-150 overflow-y-auto flex flex-col gap-6 max-w-2xl w-full mx-auto px-3.5 pt-4 mainBox will-change-transform transform-gpu">
+
+          <main
+            style={{
+              WebkitMaskImage:
+                "linear-gradient(to bottom, transparent 0%, black 8%, black 88%, transparent 100%)",
+              maskImage:
+                "linear-gradient(to bottom, transparent 0%, black 8%, black 88%, transparent 100%)",
+            }}
+            className="flex-1 md:w-150 overflow-y-auto flex flex-col gap-6 max-w-2xl w-full mx-auto px-3.5 pt-6 pb-4 mainBox will-change-transform transform-gpu"
+          >
             {renderedMessages}
             {isLoading && (
               <motion.div
@@ -1022,7 +1027,7 @@ const ManasiAi = () => {
                   onChange={(e) => setUserInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={quizState.isActive || scoringState.isActive}
-                  className="placeholder:text-black w-full text-[13px] md:text-[18px] font-semibold text-gray-800 bg-transparent resize-none focus:outline-none focus:ring-0 border-none p-0 max-h-32 overflow-y-auto"
+                  className="placeholder:text-black w-full text-[13px] md:text-[18px] font-semibold text-gray-800 bg-transparent resize-none focus:outline-none focus:ring-0 border-none p-0 field-sizing-content max-h-36 overflow-y-auto scrollbar-none "
                 />
                 <button
                   onClick={() => sendMessage()}
