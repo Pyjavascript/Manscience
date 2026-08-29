@@ -1,0 +1,371 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Circle Timeline</title>
+    <style>
+      :root {
+        --grey: #d4d2cf;
+        --black: #1f1f1f;
+        --white: #f1f1f1;
+        --biege: #c5b197;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background-color: #010101;
+        color: var(--white);
+        font-family: Arial, sans-serif;
+        overflow-x: hidden;
+      }
+
+      /* Scroll track setup for long scroll effect */
+      .scroll_track {
+        height: 500vh;
+        position: relative;
+      }
+
+      .scroll_section {
+        background-color: #010101;
+        width: 100vw;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        overflow: hidden;
+      }
+
+      .heading_world {
+        position: absolute;
+        top: 4em;
+        left: 4vw;
+        z-index: 10;
+      }
+
+      .h2 {
+        color: var(--white);
+        font-size: 3.5rem;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .container.is-timeline {
+        justify-content: center;
+        align-items: flex-start;
+        height: 100vh;
+        padding-top: 35vh;
+        display: flex;
+        position: relative;
+      }
+
+      .circle_wrap {
+        width: clamp(650px, 85vw, 1200px);
+        height: clamp(650px, 85vw, 1200px);
+        position: relative;
+        margin: 0 auto;
+      }
+
+      .circle_height {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .circle {
+        border: 1px solid #ffffff59;
+        border-radius: 50%;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        inset: 0;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: center center;
+      }
+
+      .circle_list {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .circle_item {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        pointer-events: none;
+      }
+
+      .circle_link-2 {
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        transform: translateY(-50%);
+      }
+
+      .circle_date {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 1px solid #ffffff73;
+        color: var(--white);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .circle_dot {
+        background-color: var(--white);
+        border-radius: 50%;
+        width: 10px;
+        height: 10px;
+        transition: transform 0.3s ease, background-color 0.3s ease;
+      }
+
+      .circle_item.current .circle_dot {
+        background-color: #ffb937;
+        transform: scale(1.6);
+      }
+
+      /* Fixed Center Text Panel */
+      .circle_description {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 440px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        pointer-events: none;
+      }
+
+      .circle_item.current .circle_description {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .circle_line {
+        width: 1px;
+        height: 80px;
+        background-color: #ffffff73;
+        margin-bottom: 16px;
+      }
+
+      .txt_circle {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .circle_p.headline_circle {
+        font-size: 2.2rem;
+        font-weight: 500;
+        color: var(--white);
+        margin: 0;
+      }
+
+      .circle_p.base_txt {
+        font-size: 1.05rem;
+        color: #ffffffcc;
+        margin: 0;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scroll_track">
+      <section id="circle-timeline" class="scroll_section">
+        <div class="container is-timeline">
+          
+          <div class="heading_world">
+            <h2 class="h2">What If<br />Health Was ...</h2>
+          </div>
+
+          <div class="circle_wrap">
+            <div class="circle_height">
+              <div class="circle" id="rotatingCircle">
+                <div class="circle_wrapper">
+                  <div class="circle_list">
+                    
+                    <!-- Item 1 -->
+                    <div class="circle_item current" data-index="0">
+                      <a href="#" class="circle_link-2">
+                        <p class="circle_date">1</p>
+                        <div class="circle_dot"></div>
+                      </a>
+                      <div class="circle_description">
+                        <div class="circle_line"></div>
+                        <div class="txt_circle">
+                          <p class="circle_p headline_circle">Instant</p>
+                          <p class="circle_p base_txt">
+                            What once took months, now happens in moments.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Item 2 -->
+                    <div class="circle_item" data-index="1">
+                      <a href="#" class="circle_link-2">
+                        <p class="circle_date">2</p>
+                        <div class="circle_dot"></div>
+                      </a>
+                      <div class="circle_description">
+                        <div class="circle_line"></div>
+                        <div class="txt_circle">
+                          <p class="circle_p headline_circle">Predictive</p>
+                          <p class="circle_p base_txt">
+                            So you never had to wait for symptoms.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Item 3 -->
+                    <div class="circle_item" data-index="2">
+                      <a href="#" class="circle_link-2">
+                        <p class="circle_date">3</p>
+                        <div class="circle_dot"></div>
+                      </a>
+                      <div class="circle_description">
+                        <div class="circle_line"></div>
+                        <div class="txt_circle">
+                          <p class="circle_p headline_circle">Accessible</p>
+                          <p class="circle_p base_txt">
+                            No longer limited by geographical location and availability.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Item 4 -->
+                    <div class="circle_item" data-index="3">
+                      <a href="#" class="circle_link-2">
+                        <p class="circle_date">4</p>
+                        <div class="circle_dot"></div>
+                      </a>
+                      <div class="circle_description">
+                        <div class="circle_line"></div>
+                        <div class="txt_circle">
+                          <p class="circle_p headline_circle">Intelligent</p>
+                          <p class="circle_p base_txt">
+                            Where data tells your story — and changes your outcome.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Item 5 -->
+                    <div class="circle_item" data-index="4">
+                      <a href="#" class="circle_link-2">
+                        <p class="circle_date">5</p>
+                        <div class="circle_dot"></div>
+                      </a>
+                      <div class="circle_description">
+                        <div class="circle_line"></div>
+                        <div class="txt_circle">
+                          <p class="circle_p headline_circle">Designed for you</p>
+                          <p class="circle_p base_txt">
+                            Because you’re not a checkbox or a protocol.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <!-- jQuery for smooth calculations -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        const $circleParent = $("#rotatingCircle");
+        const $circleItems = $(".circle_item");
+        const itemLength = $circleItems.length;
+        const rotateAmount = 360 / itemLength;
+        let activeIndex = 0;
+
+        // Position nodes evenly around the circle perimeter
+        $circleItems.each(function (index) {
+          const itemRotation = rotateAmount * index;
+          $(this).css("transform", `rotate(${itemRotation}deg)`);
+        });
+
+        function makeItemActiveByIndex(index) {
+          if (index < 0) index = 0;
+          if (index >= itemLength) index = itemLength - 1;
+          if (index === activeIndex && $circleItems.eq(index).hasClass("current")) return;
+
+          activeIndex = index;
+          const totalRotation = -activeIndex * rotateAmount;
+
+          // Rotate the main circle container
+          $circleParent.css("transform", `rotate(${totalRotation}deg)`);
+
+          // Toggle 'current' active class
+          $circleItems.removeClass("current");
+          $circleItems.eq(activeIndex).addClass("current");
+        }
+
+        // Handle page scroll calculation
+        $(window).on("scroll", function () {
+          const $track = $(".scroll_track");
+          const trackTop = $track.offset().top;
+          const trackHeight = $track.height() - $(window).height();
+          const scrollY = $(window).scrollTop() - trackTop;
+
+          if (scrollY >= 0 && scrollY <= trackHeight) {
+            const progress = scrollY / trackHeight;
+            const targetStep = Math.min(
+              Math.round(progress * (itemLength - 1)),
+              itemLength - 1
+            );
+            makeItemActiveByIndex(targetStep);
+          }
+        });
+
+        // Click handler on numbers to jump directly
+        $(".circle_link-2").on("click", function (e) {
+          e.preventDefault();
+          const index = $(this).closest(".circle_item").data("index");
+          const $track = $(".scroll_track");
+          const trackTop = $track.offset().top;
+          const trackHeight = $track.height() - $(window).height();
+          const targetScroll = trackTop + (index / (itemLength - 1)) * trackHeight;
+
+          $("html, body").animate({ scrollTop: targetScroll }, 500);
+        });
+      });
+    </script>
+  </body>
+</html>

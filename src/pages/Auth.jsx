@@ -166,7 +166,7 @@ export default function Auth() {
         </div>
 
         {/* Right Side Inner Beige Card */}
-        <div className="w-full md:w-[500px] h-[440px] md:h-[570px] bg-[#FAF4E8] rounded-[30px] md:rounded-[40px] p-5 md:p-10 flex flex-col justify-between">
+        <div className="w-full md:w-[500px] h-[440px] md:h-[570px] bg-[#FAF4E8] rounded-[30px] md:rounded-[40px] p-5 md:px-10 flex flex-col justify-between">
           {isSubmitted ? (
             /* VERIFY EMAIL VIEW */
             <div className="flex flex-col justify-between h-full">
@@ -187,7 +187,7 @@ export default function Auth() {
                       setIsSubmitted(false);
                       resetErrors();
                     }}
-                    className="underline cursor-pointer font-medium"
+                    className="hover:underline cursor-pointer font-medium"
                   >
                     Change Email address
                   </button>
@@ -201,7 +201,7 @@ export default function Auth() {
                     type="button"
                     onClick={resendVerificationEmail}
                     disabled={resending}
-                    className="underline cursor-pointer font-medium"
+                    className="hover:underline cursor-pointer font-medium"
                   >
                     {resending ? "Sending..." : "Resend Email"}
                   </button>
@@ -210,7 +210,7 @@ export default function Auth() {
                 <button
                   onClick={resendVerificationEmail}
                   disabled={resending}
-                  className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[24px] md:rounded-[34px] text-[15px] md:text-[16px]"
+                  className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[24px] md:rounded-[34px] text-[15px] md:text-[16px] hover:scale-[1.02] transition-all"
                 >
                   {resending ? "Resending..." : "Resend Email"}
                 </button>
@@ -231,7 +231,7 @@ export default function Auth() {
               {/* Email Input */}
               <div>
                 <div>
-                  <label className="block text-[14px] md:text-[16px] font-normal text-[#68270B] poppin mb-1">
+                  <label className="block text-[14px] md:text-[16px] font-normal text-[#68270B] poppin">
                     Email address
                   </label>
                   <input
@@ -291,7 +291,7 @@ export default function Auth() {
                       setAuthMode(authMode === "login" ? "signup" : "login");
                       resetErrors();
                     }}
-                    className="text-[14px] md:text-[16px] font-normal text-[#68270B] underline cursor-pointer"
+                    className="text-[14px] md:text-[16px] font-normal text-[#68270B] hover:underline cursor-pointer"
                   >
                     {authMode === "login" ? "Sign up" : "Login"}
                   </button>
@@ -303,7 +303,7 @@ export default function Auth() {
                 <div className="flex flex-col gap-[12px] md:gap-[15px]">
                   {authMode === "signup" && (
                     <div>
-                      <label className="block text-[14px] md:text-[16px] font-normal text-[#68270B] poppin mb-1">
+                      <label className="block text-[14px] md:text-[16px] font-normal text-[#68270B] poppin">
                         Name
                       </label>
                       <input
@@ -317,12 +317,12 @@ export default function Auth() {
 
                   {/* Email Field */}
                   <div>
-                    <label className="block text-[14px] md:text-[16px] font-normal text-[#68270B] poppin mb-1">
+                    <label className="block text-[14px] md:text-[16px] font-normal text-[#68270B] poppin">
                       Email address
                     </label>
                     <input
                       type="email"
-                      className={`w-full poppin h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
+                      className={`w-full poppin h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-5 py-5 my-[5px] text-sm focus:outline-none transition-all ${
                         emailError
                           ? "border border-[#ED0000]"
                           : "border border-transparent"
@@ -338,7 +338,7 @@ export default function Auth() {
 
                   {/* Password Field */}
                   <div>
-                    <div className="flex justify-between items-center pb-[4px]">
+                    <div className="flex justify-between items-center">
                       <label className="block text-[14px] md:text-[16px] font-normal text-[#68270B] poppin">
                         Password
                       </label>
@@ -354,7 +354,7 @@ export default function Auth() {
                     </div>
                     <input
                       type={showPassword ? "text" : "password"}
-                      className={`poppin w-full h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
+                      className={`poppin w-full h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-5 py-5 my-[5px] text-sm focus:outline-none transition-all ${
                         passwordError
                           ? "border border-[#ED0000]"
                           : "border border-transparent"

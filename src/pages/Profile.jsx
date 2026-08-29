@@ -193,7 +193,7 @@ export default function Profile() {
     user?.user_metadata?.name ||
     user?.user_metadata?.full_name ||
     user?.email?.split("@")[0] ||
-    "Anonymous Member";
+    "New Member";
 
   async function handleSubmitTextReview(e) {
     e.preventDefault();
@@ -300,7 +300,7 @@ export default function Profile() {
 
   return (
     <main className="min-h-screen bg-[#FDFBF7] py-8 px-3.75 md:px-10 flex flex-col items-center manrope">
-      <div className="w-full space-y-6">
+      <div className="w-full flex flex-col gap-6">
         {/* Cover Header Banner */}
         <div className="relative w-full h-87.5 md:h-130 rounded-[30px] md:rounded-[40px] overflow-hidden">
           <img
@@ -310,7 +310,7 @@ export default function Profile() {
           />
 
           <div className="absolute top-6 left-6 sm:top-10 sm:left-10">
-            <h1 className="bg-[#B77145] flex justify-center items-center text-white px-7.5 h-12.5 md:h-17.5 leading-[120%] tracking-[-3%] font-semibold md:font-medium text-[14px] md:text-[18px] rounded-[40px]">
+            <h1 className="bg-[#B77145] flex justify-center items-center text-white px-7.5 h-12.5 md:h-[60px] md:min-w-[200px] leading-[120%] tracking-[-3%] font-semibold md:font-medium text-[14px] md:text-[18px] rounded-[40px]">
               {subscription?.plan
                 ? `${subscription.plan} Member`
                 : "Premium Membership"}
@@ -329,28 +329,28 @@ export default function Profile() {
               />
             </div>
 
-            <div className="pb-1 pt-1 sm:pb-3">
-              <h1 className="text-2xl sm:text-3xl lg:text-[40px] font-medium text-[#B77145]">
+            <div className="pb-1 pt-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-medium text-[#B77145]">
                 {userDisplayName}
               </h1>
-              <p className="text-[13px] md:text-[18px] text-[#B77145] font-medium mt-1.25 md:mt-2.5">
+              <p className="text-[13px] md:text-[16px] text-[#B77145] font-medium mt-1.25 md:mt-2.5">
                 {user?.email || "guest@manascience.com"}
               </p>
             </div>
           </div>
 
           <div className="pb-1 sm:pb-3 flex justify-end items-end cursor-pointer">
-            <button className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-full transition h-12.5 md:h-20 w-27.5 md:w-40 cursor-pointer">
+            <button className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-full transition md:h-20 h-12.5 w-27.5 md:w-45 cursor-pointer">
               Edit Profile
             </button>
           </div>
         </div>
 
         {/* Action Options List */}
-        <div className="space-y-4 pt-2">
+        <div className="flex flex-col gap-4">
           {/* Manage Subscription */}
           <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between h-20 md:h-35 px-5 md:px-10">
-            <span className="text-[16px] md:text-[28px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
+            <span className="text-[16px] md:text-[24px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
               Manage Subscription
             </span>
             {subscription ? (
@@ -372,7 +372,7 @@ export default function Profile() {
 
           {/* Log Out */}
           <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
-            <span className="text-[16px] md:text-[28px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
+            <span className="text-[16px] md:text-[24px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
               Log out
             </span>
             <button
@@ -385,7 +385,7 @@ export default function Profile() {
 
           {/* Change Password */}
           <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
-            <span className="text-[16px] md:text-[28px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
+            <span className="text-[16px] md:text-[24px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
               Change Password
             </span>
             <button
@@ -398,7 +398,7 @@ export default function Profile() {
 
           {/* Delete Account */}
           <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
-            <span className="text-[16px] md:text-[28px] font-medium text-[#B77145] leading-[120%] tracking-[-3%] cursor-pointer">
+            <span className="text-[16px] md:text-[24px] font-medium text-[#B77145] leading-[120%] tracking-[-3%] cursor-pointer">
               Delete Account
             </span>
             <button
@@ -411,7 +411,7 @@ export default function Profile() {
         </div>
 
         {/* Feature Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-2 items-stretch">
           {/* Card 1: Share Your Story */}
           <div className="bg-[#FAF4EB] rounded-[40px] md:rounded-[60px] p-6.25 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-end min-h-75 md:h-90">
             <div className="flex flex-col h-full justify-between max-w-full md:max-w-105">
@@ -420,7 +420,7 @@ export default function Profile() {
               </div>
 
               <div className="flex flex-col gap-2.5 md:gap-4">
-                <h3 className="text-[24px] md:text-[38px] font-normal text-[#B77145] leading-[120%] tracking-[-4%]">
+                <h3 className="text-[24px] md:text-[30px] font-normal text-[#B77145] leading-[120%] tracking-[-4%]">
                   Share Your Story
                 </h3>
 
@@ -438,7 +438,7 @@ export default function Profile() {
                   setIsShareModalOpen(true);
                   setShareStep("selection");
                 }}
-                className="bg-[#B77145] hover:opacity-90 text-white transition h-12.5 md:h-20 w-27.5 md:w-37.5 text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] flex items-center justify-center cursor-pointer"
+                className="bg-[#B77145] hover:opacity-90 text-white transition h-12.5 md:h-20 w-27.5 md:w-50 text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all"
               >
                 Share
               </button>
@@ -466,7 +466,7 @@ export default function Profile() {
             <div className="flex justify-end">
               <button
                 onClick={() => navigate("/subscription")}
-                className="bg-white hover:bg-white/90 text-[#B77145] text-[14px] md:text-[16px] font-semibold rounded-full transition md:h-20 h-12.5 w-43.75 md:w-50 cursor-pointer"
+                className="bg-white hover:bg-white/90 text-[#B77145] text-[14px] md:text-[16px] font-semibold rounded-full transition md:h-20 h-12.5 w-43.75 md:w-50 cursor-pointer hover:scale-[1.02] transition-all"
               >
                 Upgrade Plan
               </button>
@@ -552,11 +552,11 @@ export default function Profile() {
       {isShareModalOpen && (
         <div
           onClick={resetShareModal}
-          className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center p-4 backdrop-blur-xs"
+          className="fixed inset-0 bg-white/70 z-50 flex justify-center items-center p-4 backdrop-blur-xs"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#FAF4EB] w-[330px] md:w-[500px] max-h-[90vh] overflow-y-auto p-4 md:p-6 rounded-[20px] md:rounded-[40px] flex flex-col justify-between relative transition-all shadow-xl"
+            className="bg-[#FAF4EB] w-[330px] md:w-[500px] max-h-[90vh] overflow-y-auto p-4 md:p-8 rounded-[20px] md:rounded-[40px] flex flex-col justify-between relative transition-all shadow-xl"
           >
             {/* STEP 1: INITIAL SELECTION CARD */}
             {shareStep === "selection" && (
@@ -600,14 +600,14 @@ export default function Profile() {
                 <div className="w-full flex flex-col gap-3 md:gap-4 text-[14px] md:text-[16px]">
                   <button
                     onClick={() => setShareStep("review")}
-                    className="w-full bg-white text-[#B77145] font-medium md:font-semibold rounded-[40px] hover:bg-gray-50 transition cursor-pointer h-12 md:h-14 flex items-center justify-center leading-[124%]"
+                    className="w-full bg-white text-[#B77145] font-medium md:font-semibold rounded-[40px] hover:bg-gray-50 transition cursor-pointer h-12 md:h-[70px] flex items-center justify-center leading-[124%]"
                   >
                     Write a review
                   </button>
 
                   <button
                     onClick={() => setShareStep("video")}
-                    className="w-full bg-[#B77145] text-white font-semibold rounded-[40px] hover:opacity-90 transition cursor-pointer h-12 md:h-14 flex items-center justify-center leading-[124%]"
+                    className="w-full bg-[#B77145] text-white font-semibold rounded-[40px] hover:opacity-90 transition cursor-pointer h-12 md:h-[70px] flex items-center justify-center leading-[124%]"
                   >
                     Record a Video
                   </button>
@@ -661,7 +661,7 @@ export default function Profile() {
                 <button
                   type="submit"
                   disabled={uploading || !reviewText.trim()}
-                  className="w-full h-12 md:h-14 bg-[#B77145] text-white font-medium text-[14px] md:text-[16px] rounded-full hover:opacity-90 transition disabled:opacity-50 cursor-pointer flex items-center justify-center"
+                  className="w-full h-12 md:h-[70px] bg-[#B77145] text-white font-medium text-[14px] md:text-[16px] rounded-full hover:opacity-90 transition disabled:opacity-50 cursor-pointer flex items-center justify-center"
                 >
                   {uploading ? "Sharing..." : "Share"}
                 </button>
@@ -698,11 +698,11 @@ export default function Profile() {
                 </div>
 
                 <div
-                  className="relative w-full h-[220px] rounded-3xl overflow-hidden flex flex-col justify-between p-5 bg-cover bg-center"
+                  className="relative w-full h-[260px] rounded-3xl overflow-hidden flex flex-col justify-between p-5 bg-cover bg-center"
                   style={{ backgroundImage: `url(${uploadBg})` }}
                 >
                   <div className="self-start">
-                    <span className="flex items-center px-4 h-9 md:h-12 rounded-full text-[13px] md:text-[15px] font-semibold text-[#B77145] bg-white shadow-sm">
+                    <span className="flex items-center px-4 h-9 md:h-[60px] rounded-full text-[13px] md:text-[15px] font-semibold text-[#B77145] bg-white shadow-sm">
                       {uploading
                         ? "Uploading..."
                         : videoFile

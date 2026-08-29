@@ -23,10 +23,10 @@ function TermsModal({ selectedTab, onClose }) {
       {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h2 className="text-[22px] sm:text-[28px] lg:text-[34px] font-medium text-[#B05A36] leading-tight">
+          <h2 className="text-[22px] sm:text-[28px] lg:text-[34px] font-medium text-[#B77145] leading-tight">
             Terms and Conditions
           </h2>
-          <p className="text-[14px] md:text-[16px] text-[#B05A36] font-semibold tracking-[1.5] mt-[14px]">
+          <p className="text-[14px] md:text-[16px] text-[#B77145] font-semibold tracking-[1.5] mt-[14px]">
             {selectedTab}
           </p>
         </div>
@@ -34,7 +34,7 @@ function TermsModal({ selectedTab, onClose }) {
           onClick={onClose}
           type="button"
           aria-label="Close"
-          className="text-[#B05A36] hover:opacity-75 text-3xl font-bold leading-none p-1 transition-opacity cursor-pointer"
+          className="text-[#B77145] hover:opacity-75 text-3xl font-bold leading-none p-1 transition-opacity cursor-pointer"
         >
           &times;
         </button>
@@ -110,9 +110,9 @@ function TermsModal({ selectedTab, onClose }) {
 
         <button
           onClick={onClose}
-          className="text-xs sm:text-sm font-semibold text-[#B77145] hover:underline uppercase tracking-wider cursor-pointer"
+          className="md:text-[15px] text-[10px] font-semibold text-[#B77145] rounded-[27px] md:rounded-[35px] md:min-w-[117px] min-w-[110px] h-[40px] md:h-[60px] bg-white hover:underline uppercase tracking-wider cursor-pointer"
         >
-          Agree
+          Continue
         </button>
       </div>
     </div>
@@ -141,10 +141,10 @@ export default function PrivacyPolicy() {
       ) : (
         <div className="flex flex-col items-center text-center">
           {/* Main Title */}
-          <h1 className="text-[32px] sm:text-[48px] lg:text-[64px] font-medium md:font-normal text-[#B05A36] leading-tight tracking-tight mb-[20px]">
+          <h1 className="text-[32px] sm:text-[48px] lg:text-[64px] font-medium md:font-normal text-[#B77145] leading-tight tracking-tight mb-[20px]">
             Privacy Policy
           </h1>
-          <p className="text-[12px] sm:text-[14px] lg:text-[16px] text-[#B05A36] font-medium mt-1">
+          <p className="text-[12px] sm:text-[14px] lg:text-[16px] text-[#B77145] font-medium mt-1">
             Last Updated: July 2026
           </p>
 
@@ -158,7 +158,7 @@ export default function PrivacyPolicy() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className="px-5 h-[70px] sm:h-[80px] min-w-[160px] sm:min-w-[180px] whitespace-nowrap rounded-full text-[13px] sm:text-[15px] font-semibold transition-all cursor-pointer bg-[#FAF4E8] text-[#B05A36] hover:bg-[#B77145] hover:text-white active:scale-95 flex items-center justify-center text-center"
+                className="px-5 h-[70px] sm:h-[80px] min-w-[160px] sm:min-w-[180px] whitespace-nowrap rounded-full text-[13px] sm:text-[15px] font-semibold transition-all cursor-pointer bg-[#FAF4E8] text-[#B77145] hover:bg-[#B77145] hover:text-white active:scale-95 flex items-center justify-center text-center hover:scale-[1.02]"
               >
                 {tab}
               </button>

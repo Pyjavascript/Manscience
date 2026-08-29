@@ -1,3 +1,4 @@
+
 # Plan: Implement Mansi AI Phase 1 (Steps 3–8) per `claude/spec/mansi-ai-spec-steps-3-8.md`
 
 ## Context

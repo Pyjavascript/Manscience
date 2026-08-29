@@ -128,7 +128,7 @@ export default function Subscription() {
     },
     yearly: {
       id: "yearly",
-      title: "Yearly Transformation",
+      title: "Yearly Care",
       subtitle:
         "Long-term mental care with full access to all therapy resources.",
       price: "₹11,999",
@@ -146,7 +146,7 @@ export default function Subscription() {
   return (
     <main className="min-h-screen py-10 px-4 flex flex-col items-center justify-start text-[#B77145] font-sans selection:bg-[#B77145]/20 manrope">
       {/* Title */}
-      <div className="max-w-50 md:max-w-125">
+      <div className="">
         <h1 className="text-[32px] md:text-[54px] font-normal leading-[1.2] tracking-[-4%] text-center mb-7.5">
           Find Your Perfect Plan
         </h1>
@@ -158,7 +158,7 @@ export default function Subscription() {
           onClick={() => setSelectedTab("starter")}
           className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14.4px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-6%] py-4 md:py-5.75 ${
             selectedTab === "starter"
-              ? "bg-[#FAF4E8] text-[#B77145] shadow-sm"
+              ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
           }`}
         >
@@ -169,7 +169,7 @@ export default function Subscription() {
           onClick={() => setSelectedTab("quarterly")}
           className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14.4px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-0.06em] py-4 md:py-5.75 ${
             selectedTab === "quarterly"
-              ? "bg-[#FAF4E8] text-[#B77145] shadow-sm"
+              ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
           }`}
         >
@@ -180,7 +180,7 @@ export default function Subscription() {
           onClick={() => setSelectedTab("yearly")}
           className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14.4px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-0.06em] py-4 md:py-5.75 ${
             selectedTab === "yearly"
-              ? "bg-[#FAF4E8] text-[#B77145] shadow-sm"
+              ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
           }`}
         >
@@ -189,7 +189,7 @@ export default function Subscription() {
       </div>
 
       {/* Main Card Container */}
-      <div className="w-full max-w-82.5 md:max-w-125 bg-[#FAF4E8] rounded-4xl md:rounded-[60px] pt-10 p-6.25 flex flex-col items-center text-center shadow-xs manrope mb-7.5">
+      <div className="w-full max-w-82.5 md:max-w-125 bg-[#FAF4E8] rounded-4xl md:rounded-[40px] pt-10 p-6.25 flex flex-col items-center text-center shadow-xs manrope mb-7.5">
         {/* Dynamic Card Header Text */}
         <h2 className="text-[28px] md:text-[38px] font-medium mb-3 text-[#B77145] leading-[120%] tracking-[-4%]">
           {currentPlan.title}
@@ -218,7 +218,7 @@ export default function Subscription() {
             <button
               onClick={() => buyPlan(currentPlan.id)}
               disabled={isCurrentlyActive || activeLoadingPlanId !== null}
-              className="bg-[#B77145] hover:bg-[#a26038]  text-white w-35 h-15 rounded-full text-sm md:text-[16px] font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+              className="bg-[#B77145] hover:bg-[#a26038]  text-white w-35 h-[70px] rounded-full text-sm md:text-[16px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
             >
               {isCurrentlyActive ? (
                 "Current Plan"
@@ -252,10 +252,7 @@ export default function Subscription() {
           </div>
         </div>
       </div>
-      <div
-        ref={popupRef}
-        className="relative group inline-block mb-5 z-30"
-      >
+      <div ref={popupRef} className="relative group inline-block mb-5 z-30">
         {/* Know More Button */}
         <button
           type="button"
@@ -268,9 +265,10 @@ export default function Subscription() {
         {/* Popup Bubble */}
         <div
           className={`transition-all duration-200 z-50 bg-[#FAF4E8] rounded-[30px] shadow-xl text-left text-[#B77145]
-    ${isPopupOpen ? "block" : "hidden md:group-hover:block"}
-    absolute top-full left-1/2 -translate-x-1/2 mt-3 w-72.5 py-4.5 px-7 text-[12px]
-    md:-top-37.5 md:left-[130%] md:translate-x-0 md:w-95 md:p-7 md:text-[16px]`}
+            absolute w-72 md:w-95 p-5 md:p-7 text-[12px] md:text-[16px]
+            top-full left-1/2 -translate-x-1/2 mt-3 
+            md:-top-35 md:left-full md:translate-x-15 md:ml-6 md:mt-0
+            ${isPopupOpen ? "block" : "hidden md:group-hover:block"}`}
         >
           <h4 className="font-semibold text-[14px] md:text-[16px] mb-3 md:mb-3.75 leading-[130%] tracking-[0%]">
             Whats included
@@ -278,27 +276,47 @@ export default function Subscription() {
 
           <ul className="flex flex-col gap-1.25 font-normal text-[12px] md:text-[16px]">
             <li className="flex items-center gap-[2.5px]">
-              <img src={tick} alt="tick" className="md:w-4 md:h-4 h-2.5 w-2.5 " />
+              <img
+                src={tick}
+                alt="tick"
+                className="md:w-4 md:h-4 h-2.5 w-2.5 "
+              />
               <span>One personalized Manasi roadmap</span>
             </li>
             <li className="flex items-center gap-[2.5px]">
-              <img src={tick} alt="tick" className="md:w-4 md:h-4 h-2.5 w-2.5 " />
-              
+              <img
+                src={tick}
+                alt="tick"
+                className="md:w-4 md:h-4 h-2.5 w-2.5 "
+              />
+
               <span>7-day full platform access</span>
             </li>
             <li className="flex items-center gap-[2.5px]">
-              <img src={tick} alt="tick" className="md:w-4 md:h-4 h-2.5 w-2.5 " />
-              
+              <img
+                src={tick}
+                alt="tick"
+                className="md:w-4 md:h-4 h-2.5 w-2.5 "
+              />
+
               <span>Therapy Library & Learning Hub</span>
             </li>
             <li className="flex items-center gap-[2.5px]">
-              <img src={tick} alt="tick" className="md:w-4 md:h-4 h-2.5 w-2.5 " />
-              
+              <img
+                src={tick}
+                alt="tick"
+                className="md:w-4 md:h-4 h-2.5 w-2.5 "
+              />
+
               <span>Community access</span>
             </li>
             <li className="flex items-center gap-[2.5px]">
-              <img src={tick} alt="tick" className="md:w-4 md:h-4 h-2.5 w-2.5 " />
-              
+              <img
+                src={tick}
+                alt="tick"
+                className="md:w-4 md:h-4 h-2.5 w-2.5 "
+              />
+
               <span>Save & revisit your roadmap</span>
             </li>
           </ul>
