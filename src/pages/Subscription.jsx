@@ -57,7 +57,8 @@ export default function Subscription() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      navigate("/auth");
+      // navigate("/auth");
+      window.location.href = `${window.location.origin}/auth`;
       return;
     }
 
@@ -111,7 +112,7 @@ export default function Subscription() {
         "A personalized roadmap for your therapy journey. No subscription needed.",
       price: "₹1,499",
       period: "/mo",
-      buttonText: "Buy Now",
+      buttonText: "Get Involved",
       image:
         "https://res.cloudinary.com/dspwbbjyt/image/upload/v1785938548/Image_jyjcj0.png",
     },
@@ -122,9 +123,9 @@ export default function Subscription() {
         "Consistent guidance and structured support designed for families.",
       price: "₹3,999",
       period: "/quarter",
-      buttonText: "Buy Now",
+      buttonText: "Get Involved",
       image:
-        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1785938548/Image_jyjcj0.png",
+        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1789202513/Group_1261154510_ifnyz6.png",
     },
     yearly: {
       id: "yearly",
@@ -133,9 +134,9 @@ export default function Subscription() {
         "Long-term mental care with full access to all therapy resources.",
       price: "₹11,999",
       period: "/year",
-      buttonText: "Buy Now",
+      buttonText: "Get Involved",
       image:
-        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1785938548/Image_jyjcj0.png",
+        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1789202513/Group_1261154509_r7pqmu.png",
     },
   };
 
@@ -146,17 +147,17 @@ export default function Subscription() {
   return (
     <main className="min-h-screen py-10 px-4 flex flex-col items-center justify-start text-[#B77145] font-sans selection:bg-[#B77145]/20 manrope">
       {/* Title */}
-      <div className="">
-        <h1 className="text-[32px] md:text-[54px] font-normal leading-[1.2] tracking-[-4%] text-center mb-7.5">
+      <div className="flex justify-center items-center">
+        <h1 className="text-[32px] md:text-[54px] font-normal leading-[1.2] tracking-[-4%] text-center mb-7.5 max-w-[60%]">
           Find Your Perfect Plan
         </h1>
       </div>
 
-      <div className="bg-[#B77145] h-16 p-1.5 rounded-full mb-10 flex items-center justify-between w-full max-w-75">
+      <div className="bg-[#B77145] h-[51px] md:h-[67px] p-[5px] rounded-full mb-10 flex items-center justify-between w-auto gap-[2px] md:gap-[5px]">
         <button
           type="button"
           onClick={() => setSelectedTab("starter")}
-          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14.4px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-6%] py-4 md:py-5.75 ${
+          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${
             selectedTab === "starter"
               ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
@@ -167,7 +168,7 @@ export default function Subscription() {
         <button
           type="button"
           onClick={() => setSelectedTab("quarterly")}
-          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14.4px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-0.06em] py-4 md:py-5.75 ${
+          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${
             selectedTab === "quarterly"
               ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
@@ -178,7 +179,7 @@ export default function Subscription() {
         <button
           type="button"
           onClick={() => setSelectedTab("yearly")}
-          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14.4px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-0.06em] py-4 md:py-5.75 ${
+          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19x] w-[80px] md:w-[80px] ${
             selectedTab === "yearly"
               ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
@@ -189,12 +190,12 @@ export default function Subscription() {
       </div>
 
       {/* Main Card Container */}
-      <div className="w-full max-w-82.5 md:max-w-125 bg-[#FAF4E8] rounded-4xl md:rounded-[40px] pt-10 p-6.25 flex flex-col items-center text-center shadow-xs manrope mb-7.5">
+      <div className="md:h-[480px] lg:h-[540px] h-auto w-full max-w-82.5  md:max-w-[420px] lg:max-w-[440px] lg:max-w-125 bg-[#FAF4E8] rounded-[45px] md:rounded-[60px] px-[15px] py-[15px] pt-[25px] md:pb-[25px] md:pt-[40px] md:px-[25px] flex flex-col items-center text-center shadow-xs manrope mb-7.5">
         {/* Dynamic Card Header Text */}
-        <h2 className="text-[28px] md:text-[38px] font-medium mb-3 text-[#B77145] leading-[120%] tracking-[-4%]">
+        <h2 className="text-[28px] md:text-[32px] lg:text-[38px] font-medium mb-3 text-[#B77145] leading-[120%] tracking-[-4%]">
           {currentPlan.title}
         </h2>
-        <p className="text-[13px] md:text-[16px] text-[#B77145]/80 max-w-90 leading-relaxed mb-6.5 font-normal tracking-[-2%]">
+        <p className="text-[13px] md:text-[16px] text-[#B77145]/80 max-w-60  md:max-w-80 lg:max-w-80 leading-relaxed mb-6.5 font-normal tracking-[-2%]">
           {currentPlan.subtitle}
         </p>
 
@@ -218,7 +219,7 @@ export default function Subscription() {
             <button
               onClick={() => buyPlan(currentPlan.id)}
               disabled={isCurrentlyActive || activeLoadingPlanId !== null}
-              className="bg-[#B77145] hover:bg-[#a26038]  text-white w-35 h-[70px] rounded-full text-sm md:text-[16px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
+              className="bg-[#b77145]  text-white w-[160px] md:w-[160px] h-[60px] md:h-[70px] rounded-full text-sm  font-semibold transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
             >
               {isCurrentlyActive ? (
                 "Current Plan"
@@ -257,29 +258,23 @@ export default function Subscription() {
         <button
           type="button"
           onClick={() => setIsPopupOpen((prev) => !prev)}
-          className="cursor-pointer text-sm md:text-[16px] font-bold text-[#B77145] leading-[120%] tracking-[-2%] border-b border-transparent group-hover:border-dashed group-hover:border-[#B77145] transition-all focus:outline-none"
+          className="cursor-pointer text-sm md:text-[16px] font-bold text-[#68270B] leading-[120%] tracking-[-2%] border-b border-transparent group-hover:border-solid group-hover:border-[#68270B] transition-all focus:outline-none"
         >
           Know more
         </button>
 
         {/* Popup Bubble */}
-        <div
-          className={`transition-all duration-200 z-50 bg-[#FAF4E8] rounded-[30px] shadow-xl text-left text-[#B77145]
-            absolute w-72 md:w-95 p-5 md:p-7 text-[12px] md:text-[16px]
-            top-full left-1/2 -translate-x-1/2 mt-3 
-            md:-top-35 md:left-full md:translate-x-15 md:ml-6 md:mt-0
-            ${isPopupOpen ? "block" : "hidden md:group-hover:block"}`}
-        >
-          <h4 className="font-semibold text-[14px] md:text-[16px] mb-3 md:mb-3.75 leading-[130%] tracking-[0%]">
+        <div className={`custom-popup ${isPopupOpen ? "is-open" : ""}`}>
+          <h4 className="font-semibold text-[14px] md:text-[16px] mb-3 md:mb-2 lg:mb-3.75 leading-[130%] tracking-[0%]">
             Whats included
           </h4>
 
-          <ul className="flex flex-col gap-1.25 font-normal text-[12px] md:text-[16px]">
+          <ul className="flex flex-col gap-1.25 font-normal text-[12px] lg:text-[16px]">
             <li className="flex items-center gap-[2.5px]">
               <img
                 src={tick}
                 alt="tick"
-                className="md:w-4 md:h-4 h-2.5 w-2.5 "
+                className="md:w-4 md:h-4 h-2.5 w-2.5"
               />
               <span>One personalized Manasi roadmap</span>
             </li>
@@ -289,7 +284,6 @@ export default function Subscription() {
                 alt="tick"
                 className="md:w-4 md:h-4 h-2.5 w-2.5 "
               />
-
               <span>7-day full platform access</span>
             </li>
             <li className="flex items-center gap-[2.5px]">
@@ -298,7 +292,6 @@ export default function Subscription() {
                 alt="tick"
                 className="md:w-4 md:h-4 h-2.5 w-2.5 "
               />
-
               <span>Therapy Library & Learning Hub</span>
             </li>
             <li className="flex items-center gap-[2.5px]">
@@ -307,7 +300,6 @@ export default function Subscription() {
                 alt="tick"
                 className="md:w-4 md:h-4 h-2.5 w-2.5 "
               />
-
               <span>Community access</span>
             </li>
             <li className="flex items-center gap-[2.5px]">
@@ -316,14 +308,13 @@ export default function Subscription() {
                 alt="tick"
                 className="md:w-4 md:h-4 h-2.5 w-2.5 "
               />
-
               <span>Save & revisit your roadmap</span>
             </li>
           </ul>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 mt-4">
+      {/* <div className="flex items-center gap-1.5 mt-4">
         <span
           className={`h-2 rounded-full transition-all duration-300 ${
             selectedTab === "starter"
@@ -345,7 +336,7 @@ export default function Subscription() {
               : "w-2 bg-[#B77145]/30"
           }`}
         />
-      </div>
+      </div> */}
     </main>
   );
 }

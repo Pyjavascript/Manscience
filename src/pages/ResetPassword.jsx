@@ -46,7 +46,8 @@ export default function ResetPassword() {
       setPasswordError(error.message);
     } else {
       alert("Password updated successfully!");
-      navigate("/profile"); // Redirect to profile or login
+      // navigate("/profile"); // Redirect to profile or login
+      window.location.href = `${window.location.origin}/profile`;
     }
   }
 
@@ -55,7 +56,7 @@ export default function ResetPassword() {
       className="flex justify-center items-center min-h-dvh w-full text-black manrope bg-cover bg-center bg-no-repeat p-4 md:p-0"
       style={{ backgroundImage: `url("${bg}")` }}
     >
-      <section className="bg-white min-h-[600px] w-[330px] md:w-[890px] md:h-[600px] rounded-[30px] md:rounded-[40px] flex flex-col md:flex-row items-center p-[12px] md:p-[15px] gap-3 md:gap-0">
+      <section className="bg-white min-h-[600px] w-[330px] md:w-[890px] h-[440px] md:h-[600px] rounded-[30px] md:rounded-[40px] flex flex-col md:flex-row items-center p-[12px] md:p-[15px] gap-3 md:gap-0">
         {/* Branding Section */}
         <div className="w-full md:flex-1 h-auto md:h-full flex flex-col justify-between p-2 md:p-8">
           <div>
@@ -76,9 +77,9 @@ export default function ResetPassword() {
         <div className="w-full md:w-[500px] h-[440px] md:h-[570px] bg-[#FAF4E8] rounded-[30px] md:rounded-[40px] p-5 md:p-10 flex flex-col justify-between">
           <form
             onSubmit={handleResetPassword}
-            className="flex flex-col  gap-[50px] md:gap-[50px] h-full"
+            className="flex flex-col  gap-[50px] md:gap-[90px] h-full"
           >
-            <div className="flex flex-col gap-[40px]">
+            <div className="flex flex-col gap-[30px] md:gap-[50px]">
               {/* Heading */}
               <div className="flex flex-col gap-[6px]">
                 <h1 className="text-[20px] md:text-[28px] font-semibold text-[#68270B]">
@@ -110,7 +111,7 @@ export default function ResetPassword() {
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    className={`w-full h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
+                    className={`w-full h-[50px] md:h-[60px] bg-white rounded-[20px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
                       passwordError
                         ? "border border-[#ED0000]"
                         : "border border-transparent"
@@ -146,7 +147,7 @@ export default function ResetPassword() {
                   </div>
                   <input
                     type={showConfirmPassword ? "text" : "password"}
-                    className={`w-full h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
+                    className={`w-full h-[50px] md:h-[60px] bg-white rounded-[20px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
                       confirmError
                         ? "border border-[#ED0000]"
                         : "border border-transparent"
@@ -166,12 +167,22 @@ export default function ResetPassword() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[24px] md:rounded-[34px] text-[16px]"
+              disabled={!password || !confirmPassword || loading}
+              className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[20px] md:rounded-[34px] text-[16px] disabled:opacity-60 disabled:cursor-not-allowed hover:bg-[#A65827] hover:scale-[1.02] transition-all"
             >
               {loading ? "Resetting..." : "Reset password"}
             </button>
           </form>
+        </div>
+
+        <div className="w-full flex md:hidden flex-col gap-[2px] px-3 pb-2 self-start">
+          <p className="text-[12px] text-[#68270B] font-normal">
+            Begin your journey
+          </p>
+          <h1 className="text-[15px] font-medium text-[#68270B] leading-snug">
+            Discover your brain. <br />
+            Unlock your potential.
+          </h1>
         </div>
       </section>
     </main>

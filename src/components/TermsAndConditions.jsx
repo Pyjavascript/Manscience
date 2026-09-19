@@ -1,10 +1,27 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef,useEffect } from "react";
 import logo from "../assets/icons/manascience.svg";
+import cross from "../assets/icons/cross.svg";
+
 
 // Terms & Conditions Modal Component
 function TermsModal({ selectedTab, onClose }) {
   const containerRef = useRef(null);
   const [scrollPercentage, setScrollPercentage] = useState(0);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  // 2. Add useEffect to check for overflow on mount and tab change
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (containerRef.current) {
+        setIsOverflowing(
+          containerRef.current.scrollHeight > containerRef.current.clientHeight,
+        );
+      }
+    };
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    return () => window.removeEventListener("resize", checkOverflow);
+  }, [selectedTab]);
 
   const handleScroll = () => {
     const container = containerRef.current;
@@ -19,7 +36,7 @@ function TermsModal({ selectedTab, onClose }) {
   };
 
   return (
-    <div className="w-full mx-auto p-5 sm:p-8 lg:p-[40px] bg-[#FAF4E8] rounded-[34px] sm:rounded-[36px] manrope relative transition-all duration-300">
+    <div className="w-full mx-auto p-5 sm:p-8 lg:p-[40px] bg-[#FAF4E8] rounded-[34px] sm:rounded-[36px] manrope relative transition-all duration-300 ">
       {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <div>
@@ -36,63 +53,70 @@ function TermsModal({ selectedTab, onClose }) {
           aria-label="Close"
           className="text-[#B77145] hover:opacity-75 text-3xl font-bold leading-none p-1 transition-opacity cursor-pointer"
         >
-          &times;
+          <img src={cross} className="w-[24px] h-auto" />
         </button>
       </div>
 
       {/* Content Container */}
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="h-[40vh] sm:h-[40vh] w-full overflow-y-auto py-2 pr-2 sm:pr-4 text-[13px] sm:text-[14px] lg:text-[16px] font-medium md:font-normal leading-[1.6] text-[#424242] tracking-wide space-y-4"
-        style={{
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
-      >
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
+      <div className="relative flex-1 min-h-0 w-full overflow-hidden">
+        
+        <div
+          ref={containerRef}
+          onScroll={handleScroll}
+          className="h-[50vh] sm:h-[40vh] w-full overflow-y-auto py-2 pr-2 sm:pr-4 text-[13px] sm:text-[14px] lg:text-[16px] font-medium md:font-normal leading-[1.6] text-[#424242] tracking-wide space-y-4"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
           div::-webkit-scrollbar {
             display: none;
           }
         `,
-          }}
-        />
+            }}
+          />
 
-        <p>
-          At ManaScience, we collect only the information necessary to provide,
-          maintain, and continuously improve our platform and services. When you
-          create an account, subscribe to a membership, register for courses,
-          book a consultation, or contact our support team, we may collect
-          personal information such as your name, email address, phone number,
-          country of residence, and account credentials.
-        </p>
-        <p>
-          If you choose to use features such as assessments, progress tracking,
-          therapy recommendations, or practitioner consultations, we may collect
-          the information you voluntarily provide, including assessment
-          responses, developmental concerns, therapy goals, progress updates,
-          and other relevant information.
-        </p>
-        <p>
-          When interacting with the Manasi AI Assistant, we may collect your
-          prompts, questions, conversation history, and feedback to improve the
-          quality, accuracy, and safety of AI-generated responses.
-        </p>
-        <p>
-          We automatically collect certain technical and usage information
-          whenever you access the platform. This may include your IP address,
-          browser type, operating system, device information, pages visited,
-          session duration, referral sources, clickstream data, and diagnostic
-          logs.
-        </p>
-        <p>
-          For users purchasing memberships or paid services, payment
-          transactions are securely processed through trusted third-party
-          payment providers. ManaScience does not store your complete credit or
-          debit card information on its servers.
-        </p>
+          <p>
+            At ManaScience, we collect only the information necessary to
+            provide, maintain, and continuously improve our platform and
+            services. When you create an account, subscribe to a membership,
+            register for courses, book a consultation, or contact our support
+            team, we may collect personal information such as your name, email
+            address, phone number, country of residence, and account
+            credentials.
+          </p>
+          <p>
+            If you choose to use features such as assessments, progress
+            tracking, therapy recommendations, or practitioner consultations, we
+            may collect the information you voluntarily provide, including
+            assessment responses, developmental concerns, therapy goals,
+            progress updates, and other relevant information.
+          </p>
+          <p>
+            When interacting with the Manasi AI Assistant, we may collect your
+            prompts, questions, conversation history, and feedback to improve
+            the quality, accuracy, and safety of AI-generated responses.
+          </p>
+          <p>
+            We automatically collect certain technical and usage information
+            whenever you access the platform. This may include your IP address,
+            browser type, operating system, device information, pages visited,
+            session duration, referral sources, clickstream data, and diagnostic
+            logs.
+          </p>
+          <p>
+            For users purchasing memberships or paid services, payment
+            transactions are securely processed through trusted third-party
+            payment providers. ManaScience does not store your complete credit
+            or debit card information on its servers.
+          </p>
+        </div>
+        {isOverflowing && scrollPercentage < 98 && (
+          <div className="bottom-fade-overlay" />
+        )}
       </div>
 
       {/* Footer Controls */}
@@ -110,7 +134,7 @@ function TermsModal({ selectedTab, onClose }) {
 
         <button
           onClick={onClose}
-          className="md:text-[15px] text-[10px] font-semibold text-[#B77145] rounded-[27px] md:rounded-[35px] md:min-w-[117px] min-w-[110px] h-[40px] md:h-[60px] bg-white hover:underline uppercase tracking-wider cursor-pointer"
+          className="md:text-[14px] text-[10px] font-semibold text-[#B77145] rounded-[27px] md:rounded-[35px] md:min-w-[117px] min-w-[110px] h-[40px] md:h-[60px] bg-white uppercase tracking-wider cursor-pointer transition-all hover:scale-[1.02] active:scale-[1.02]"
         >
           Continue
         </button>

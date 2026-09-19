@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import logo from "../assets/logo-white.png";
 import toggle from "../assets/toggle.svg";
 import grid from "../assets/community/grid.svg";
@@ -214,44 +215,49 @@ const Community = () => {
       setCurrentIndex((prev) => (prev - 1 + deckData.length) % deckData.length);
       setIsSwiping(false);
       setSwipeDirection(null);
-    }, 300);
+    }, 500);
   };
 
   const getCardPlacementClass = (idx) => {
     const nextIndex = (currentIndex + 1) % deckData.length;
     const prevIndex = (currentIndex - 1 + deckData.length) % deckData.length;
+    const secondIndex = (currentIndex + 2) % deckData.length;
 
     // ACTIVE CARD
     if (idx === currentIndex) {
-      // KEEP ORIGINAL > ANIMATION
       if (isSwiping && swipeDirection === "next") {
         return "opacity-100 z-30 scale-100 translate-y-0 rotate-0 pointer-events-auto";
       }
-
-      // < animation
       if (isSwiping && swipeDirection === "prev") {
-        return "opacity-0 z-30 scale-95 -translate-x-[100%] -rotate-[10deg] pointer-events-none";
+        // ease into the "next slot" look instead of vanishing off-screen
+        return "opacity-95 z-20 scale-96 -translate-y-[20px] md:-translate-y-[25px] -rotate-3 pointer-events-none";
       }
-
       return "opacity-100 z-30 scale-100 translate-y-0 rotate-0 pointer-events-auto";
     }
 
-    // NEXT CARD — DON'T CHANGE ITS NORMAL STACK POSITION
+    // NEXT CARD
     if (idx === nextIndex) {
+      if (isSwiping && swipeDirection === "prev") {
+        // gets pushed one slot further back to make room
+        return "opacity-90 z-10 scale-92 -translate-y-[35px] md:-translate-y-[45px] rotate-3 pointer-events-none";
+      }
       return "opacity-95 z-20 scale-96 -translate-y-[20px] md:-translate-y-[25px] -rotate-3 pointer-events-none";
     }
 
-    // PREVIOUS CARD — comes OUT from behind on <
+    // PREVIOUS CARD — comes to front on prev click
     if (idx === prevIndex) {
       if (isSwiping && swipeDirection === "prev") {
         return "opacity-100 z-30 scale-100 translate-y-0 translate-x-0 rotate-0 pointer-events-auto";
       }
-
       return "opacity-0 z-0 scale-80 translate-y-[20px] translate-x-[-40px] -rotate-8 pointer-events-none";
     }
 
     // SECOND CARD BEHIND
-    if (idx === (currentIndex + 2) % deckData.length) {
+    if (idx === secondIndex) {
+      if (isSwiping && swipeDirection === "prev") {
+        // it's about to fall out of the visible stack
+        return "opacity-0 scale-80 pointer-events-none";
+      }
       return "opacity-90 z-10 scale-92 -translate-y-[35px] md:-translate-y-[45px] rotate-3 pointer-events-none";
     }
 
@@ -439,7 +445,7 @@ const Community = () => {
                             "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
                         }}
                       />
-                      <div className="px-3.75 py-1.5 h-[50px] md:h-[60px] md:w-[160px] bg-white rounded-full text-[12px] font-medium md:text-[18px] flex justify-center items-center gap-2 text-center text-[#B77145] w-fit max-w-[90%] z-10">
+                      <div className="px-3.75 py-1.5 h-[40px] md:h-[50px] md:w-[160px] bg-white rounded-full text-[12px] font-medium md:text-[18px] flex justify-center items-center gap-2 text-center text-[#B77145] w-fit max-w-[90%] z-10">
                         <span
                           className="w-[8px] h-[8px] rounded-full inline-block shrink-0"
                           style={{ backgroundColor: tagColor }}
@@ -731,63 +737,14 @@ const Community = () => {
                   {deckData.map((card, idx) => {
                     const isActive = idx === currentIndex;
                     return (
-                      <div
+                      <CarouselCard
                         key={card.id}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          transformOrigin: "bottom center",
-
-                          transform:
-                            isSwiping && isActive && swipeDirection === "next"
-                              ? "translateX(100%) scale(0.95) rotate(10deg)"
-                              : isSwiping &&
-                                  isActive &&
-                                  swipeDirection === "prev"
-                                ? "translateX(0%) scale(0.95) rotate(-10deg)"
-                                : undefined,
-
-                          opacity:
-                            isSwiping && isActive && swipeDirection === "next"
-                              ? 0.3
-                              : undefined,
-
-                          fontFamily: '"Manrope", sans-serif',
-                        }}
-                        className={`absolute w-full h-full rounded-[30px] lg:rounded-[40px] p-6 lg:p-8.75 flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${card.bgClass} ${getCardPlacementClass(idx)}`}
-                      >
-                        <>
-                          <div className="shrink-0 flex flex-col gap-3.75">
-                            <div className="flex flex-col gap-6.25">
-                              <div
-                                className={`h-10 md:h-12.5 w-40 border rounded-full text-[13px] lg:text-[13px] ${card.tagClass} flex justify-center items-center text-center bg-[#B77145]`}
-                              >
-                                <p className="font-medium">{card.tag}</p>
-                              </div>
-                              <h2
-                                className={`text-[18px] lg:text-[24px] font-normal leading-tight ${card.titleClass} w-full lg:w-2/3`}
-                              >
-                                {card.title}
-                              </h2>
-                            </div>
-                            <div className="flex justify-between items-center text-xs lg:text-[14px] font-medium pb-2">
-                              <span>{card.author}</span>
-                              <span>{card.time}</span>
-                            </div>
-                          </div>
-
-                          <div className="relative flex-1 min-h-0 mt-6.25">
-                            <div className="h-full overflow-y-auto pr-1 scrollbar-none">
-                              <p
-                                className={`text-[13px] lg:text-[14px] leading-relaxed lg:leading-[1.6] font-medium ${card.descClass}`}
-                              >
-                                {card.desc}
-                              </p>
-                            </div>
-
-                            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
-                          </div>
-                        </>
-                      </div>
+                        card={card}
+                        isActive={isActive}
+                        isSwiping={isSwiping}
+                        swipeDirection={swipeDirection}
+                        placementClass={getCardPlacementClass(idx)}
+                      />
                     );
                   })}
                 </div>
@@ -843,3 +800,102 @@ const Community = () => {
 };
 
 export default Community;
+
+const CarouselCard = ({
+  card,
+  isActive,
+  isSwiping,
+  swipeDirection,
+  placementClass,
+}) => {
+  const textRef = useRef(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (textRef.current) {
+        setIsOverflowing(
+          textRef.current.scrollHeight > textRef.current.clientHeight,
+        );
+      }
+    };
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    return () => window.removeEventListener("resize", checkOverflow);
+  }, [card.desc]);
+
+  // Determine the correct shadow color based on the card's background class
+  const getShadowColor = (bgClass) => {
+    if (bgClass.includes("#B77145")) return "#B77145";
+    if (bgClass.includes("#fcf9f5")) return "#fcf9f5";
+    if (bgClass.includes("#faf4e8")) return "#faf4e8";
+    return "#ffffff";
+  };
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        transformOrigin: "bottom center",
+        transform:
+          isSwiping && isActive && swipeDirection === "next"
+            ? "translateX(100%) scale(0.95) rotate(10deg)"
+            : isSwiping && isActive && swipeDirection === "prev"
+              ? "translateX(-5%) scale(0.95) rotate(-10deg)"
+              : undefined,
+        // Restored floaty fade out effect for Next (0.3), kept 0 for Prev to avoid ghosting
+        opacity:
+          isSwiping && isActive && swipeDirection === "next"
+            ? 0.3
+            : isSwiping && isActive
+              ? 0
+              : undefined,
+        fontFamily: '"Manrope", sans-serif',
+      }}
+      // Reverted to duration-500 and the custom cubic-bezier easing to get the original placement animation
+      className={`absolute w-full h-full rounded-[30px] lg:rounded-[40px] p-6 lg:p-8.75 flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${card.bgClass} ${placementClass}`}
+    >
+      <div className="shrink-0 flex flex-col gap-3.75">
+        <div className="flex flex-col gap-6.25">
+          <div
+            className={`h-[40px] md:h-[50px] w-40 border rounded-full text-[13px] lg:text-[13px] ${card.tagClass} flex justify-center items-center text-center bg-[#B77145]`}
+          >
+            <p className="font-medium">{card.tag}</p>
+          </div>
+          <h2
+            className={`text-[18px] lg:text-[24px] font-normal leading-tight ${card.titleClass} w-full lg:w-2/3`}
+          >
+            {card.title}
+          </h2>
+        </div>
+        <div className="flex justify-between items-center text-xs lg:text-[14px] font-medium pb-2">
+          <span>{card.author}</span>
+          <span>{card.time}</span>
+        </div>
+      </div>
+
+      <div className="relative flex-1 min-h-0 mt-6.25">
+        <div
+          ref={textRef}
+          className="h-full overflow-y-auto pr-1 scrollbar-none"
+        >
+          <p
+            className={`text-[13px] lg:text-[14px] leading-relaxed lg:leading-[1.6] font-medium ${card.descClass}`}
+          >
+            {card.desc}
+          </p>
+        </div>
+
+        {/* Only renders if text is longer than the container, and matches background color */}
+        {isOverflowing && (
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 right-0 h-10"
+            style={{
+              background: `linear-gradient(to top, ${getShadowColor(card.bgClass)} 10%, transparent)`,
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+};

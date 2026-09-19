@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
@@ -5,6 +6,8 @@ import bg from "../assets/Ai/bg.svg";
 import Logo from "../assets/form/LogoBrown.svg";
 import google from "../assets/form/google.svg";
 import hide from "../assets/form/hide.svg";
+import show from "../assets/form/show.svg";
+
 import or from "../assets/form/or.svg";
 
 export default function Auth() {
@@ -68,7 +71,8 @@ export default function Auth() {
     if (data.user && !data.session) {
       setIsSubmitted(true);
     } else {
-      navigate("/profile");
+      // navigate("/profile");
+      window.location.href = `${window.location.origin}/profile`;
     }
   }
 
@@ -90,7 +94,8 @@ export default function Auth() {
       return;
     }
 
-    navigate("/profile");
+    // navigate("/profile");
+    window.location.href = `${window.location.origin}/profile`;
   }
 
   async function handleForgotPassword(e) {
@@ -143,12 +148,11 @@ export default function Auth() {
 
   return (
     <main
-      className="flex justify-center items-center min-h-dvh w-full text-black manrope bg-cover bg-center bg-no-repeat p-4 md:p-0"
+      className="flex justify-center items-center min-h-dvh w-full text-black manrope bg-cover bg-center bg-no-repeat p-4 md:p-4"
       style={{ backgroundImage: `url("${bg}")` }}
     >
       {/* Outer White Card */}
-      <section className="bg-white min-h-[600px] w-[330px] md:w-[890px] md:h-[600px] rounded-[30px] md:rounded-[40px] flex flex-col md:flex-row justify-between items-center p-[12px] md:p-[15px] gap-3 md:gap-0">
-        
+      <section className="bg-white min-h-[600px] py-[20px] px-[15px] md:w-[890px] md:h-[600px] rounded-[30px] md:rounded-[40px] flex flex-col md:flex-row justify-between items-center p-[12px] md:p-[15px] gap-3 md:gap-0">
         {/* Mobile Top Branding / Desktop Left Side Branding */}
         <div className="w-full md:flex-1 h-auto md:h-full flex flex-col justify-between p-2 md:p-8">
           <div>
@@ -158,7 +162,7 @@ export default function Auth() {
             <p className="text-[15px] text-[#68270B] font-normal">
               Begin your journey
             </p>
-            <h1 className="text-[24px] font-medium text-[#68270B] tracking-[-2%]">
+            <h1 className="text-[24px] md:text-[16px] lg:text-[24px] font-medium text-[#68270B] tracking-[-2%]">
               Discover your brain. <br />
               Unlock your potential.
             </h1>
@@ -166,7 +170,7 @@ export default function Auth() {
         </div>
 
         {/* Right Side Inner Beige Card */}
-        <div className="w-full md:w-[500px] h-[440px] md:h-[570px] bg-[#FAF4E8] rounded-[30px] md:rounded-[40px] p-5 md:px-10 flex flex-col justify-between">
+        <div className="w-full md:w-[500px] md:h-[570px] bg-[#FAF4E8] rounded-[30px] md:rounded-[40px] p-5 md:px-10 flex flex-col justify-between">
           {isSubmitted ? (
             /* VERIFY EMAIL VIEW */
             <div className="flex flex-col justify-between h-full">
@@ -210,7 +214,7 @@ export default function Auth() {
                 <button
                   onClick={resendVerificationEmail}
                   disabled={resending}
-                  className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[24px] md:rounded-[34px] text-[15px] md:text-[16px] hover:scale-[1.02] transition-all"
+                  className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[20px] md:rounded-[34px] text-[15px] md:text-[16px] hover:scale-[1.02] transition-all"
                 >
                   {resending ? "Resending..." : "Resend Email"}
                 </button>
@@ -224,7 +228,8 @@ export default function Auth() {
                   Forgot password?
                 </h1>
                 <p className="text-[13px] md:text-[16px] font-normal text-[#68270B] leading-snug">
-                  Don't worry! It happens. Please enter the email associated with your account.
+                  Don't worry! It happens. Please enter the email associated
+                  with your account.
                 </p>
               </div>
 
@@ -236,7 +241,7 @@ export default function Auth() {
                   </label>
                   <input
                     type="email"
-                    className={`w-full poppin h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
+                    className={`w-full poppin h-[50px] md:h-[60px] bg-white rounded-[20px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
                       emailError
                         ? "border border-[#ED0000]"
                         : "border border-transparent"
@@ -247,7 +252,6 @@ export default function Auth() {
                       setEmailError("");
                     }}
                   />
-                 
                 </div>
               </div>
 
@@ -270,7 +274,8 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[24px] md:rounded-[34px] text-[16px]"
+                  disabled={!email}
+                  className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[20px] md:rounded-[34px] text-[16px]"
                 >
                   Send Code
                 </button>
@@ -284,14 +289,16 @@ export default function Auth() {
                   {authMode === "login" ? "Welcome Back!" : "Create Account"}
                 </h1>
                 <p className="text-[14px] md:text-[16px] font-normal text-[#68270B]">
-                  {authMode === "login" ? "Need an account. " : "Already have an account? "}
+                  {authMode === "login"
+                    ? "Need an account. "
+                    : "Already have an account? "}
                   <button
                     type="button"
                     onClick={() => {
                       setAuthMode(authMode === "login" ? "signup" : "login");
                       resetErrors();
                     }}
-                    className="text-[14px] md:text-[16px] font-normal text-[#68270B] hover:underline cursor-pointer"
+                    className="text-[14px] md:text-[16px] font-normal text-[#2e1004] hover:underline cursor-pointer"
                   >
                     {authMode === "login" ? "Sign up" : "Login"}
                   </button>
@@ -308,7 +315,7 @@ export default function Auth() {
                       </label>
                       <input
                         type="text"
-                        className="poppin w-full h-[50px] md:h-[60px] bg-white border border-transparent rounded-[24px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none"
+                        className="poppin w-full h-[50px] md:h-[60px] bg-white border border-transparent rounded-[20px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                       />
@@ -322,7 +329,7 @@ export default function Auth() {
                     </label>
                     <input
                       type="email"
-                      className={`w-full poppin h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-5 py-5 my-[5px] text-sm focus:outline-none transition-all ${
+                      className={`w-full poppin h-[50px] md:h-[60px] bg-white rounded-[20px] md:rounded-[34px] px-5 py-5 my-[5px] text-sm focus:outline-none transition-all ${
                         emailError
                           ? "border border-[#ED0000]"
                           : "border border-transparent"
@@ -333,7 +340,6 @@ export default function Auth() {
                         setEmailError("");
                       }}
                     />
-                    
                   </div>
 
                   {/* Password Field */}
@@ -346,7 +352,8 @@ export default function Auth() {
                         className="flex justify-center items-center gap-[5px] cursor-pointer"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        <img src={hide} alt="hide" />
+                        {showPassword ? <img src={show} alt="show" /> : <img src={hide} alt="hide" />}
+                        
                         <p className="hidden md:block text-[14px] md:text-[16px] font-normal text-[#68270B]">
                           {showPassword ? "Hide" : "Show"}
                         </p>
@@ -354,7 +361,7 @@ export default function Auth() {
                     </div>
                     <input
                       type={showPassword ? "text" : "password"}
-                      className={`poppin w-full h-[50px] md:h-[60px] bg-white rounded-[24px] md:rounded-[34px] px-5 py-5 my-[5px] text-sm focus:outline-none transition-all ${
+                      className={`poppin w-full h-[50px] md:h-[60px] bg-white rounded-[20px] md:rounded-[34px] px-5 py-5 my-[5px] text-sm focus:outline-none transition-all ${
                         passwordError
                           ? "border border-[#ED0000]"
                           : "border border-transparent"
@@ -390,10 +397,15 @@ export default function Auth() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col gap-[7px]">
+              <div className="flex flex-col">
                 <button
                   onClick={authMode === "login" ? login : signup}
-                  className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[24px] md:rounded-[34px] text-[16px]"
+                  disabled={
+                    authMode === "login"
+                      ? !email || !password
+                      : !name || !email || !password
+                  }
+                  className="w-full h-[50px] md:h-[70px] bg-[#B77145] text-white font-medium rounded-[20px] md:rounded-[34px] text-[16px] disabled:opacity-60 disabled:cursor-not-allowed hover:bg-[#A65827] hover:scale-[1.02] transition-all"
                 >
                   {authMode === "login" ? "Login" : "Save & Continue"}
                 </button>
@@ -402,7 +414,7 @@ export default function Auth() {
                     <img src={or} alt="OR" className="my-1" />
                     <button
                       onClick={googleLogin}
-                      className="w-full h-[50px] md:h-[70px] font-medium text-[16px] md:text-[18px] bg-white text-[#232323] rounded-[24px] md:rounded-[34px] flex justify-center items-center gap-[10px]"
+                      className="w-full h-[50px] md:h-[70px] font-medium text-[16px] md:text-[18px] bg-white text-[#232323] rounded-[20px] md:rounded-[34px] flex justify-center items-center gap-[10px] hover:scale-[1.02] transition-all"
                     >
                       <p>Continue with Google</p>
                       <img

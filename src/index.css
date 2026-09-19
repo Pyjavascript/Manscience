@@ -5,11 +5,9 @@
 }
 body::-webkit-scrollbar {
   display: none;
-
 }
 .mainBox::-webkit-scrollbar {
   display: none;
-
 }
 .mainBox {
   overflow-y: scroll;
@@ -24,6 +22,17 @@ body::-webkit-scrollbar {
 }
 .translate {
   transform: translate(-50%, -50%);
+}
+.password-toggle-btn {
+  position: absolute;
+  right: 16px; /* Equivalent to right-4 (16px) */
+  top: 50%;
+  transform: translateY(-50%); /* Centers it perfectly vertically */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px; /* Equivalent to p-1 (4px) */
+  cursor: pointer;
 }
 
 @keyframes spin-infinite {
@@ -47,6 +56,72 @@ body::-webkit-scrollbar {
   );
 }
 
-.ai{
-  background: linear-gradient(-160deg, #FFFFFF 5%, #B05A38 46%, #3C2015 86%, #1F1F1F 98%);
+.ai {
+  background: linear-gradient(
+    -160deg,
+    #ffffff 5%,
+    #b05a38 46%,
+    #3c2015 86%,
+    #1f1f1f 98%
+  );
 }
+
+.bottom-fade-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+
+  background-image: linear-gradient(to top, #faf4e8, transparent);
+
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+
+  z-index: 10;
+}
+
+/* Base Mobile Styles */
+.custom-popup {
+  position: absolute;
+  z-index: 50;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 16px; /* mt-4 */
+  width: 288px; /* w-72 */
+  padding: 20px; /* p-5 */
+  border-radius: 20px;
+  background-color: #FAF4E8;
+  color: #B77145;
+  font-size: 12px;
+  text-align: left;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); /* shadow-xl */
+  transition: all 200ms ease;
+  display: none; /* hidden by default */
+}
+
+/* Class to toggle visibility via Webflow Interactions or JS */
+.custom-popup.is-open {
+  display: block;
+}
+
+/* Desktop Styles (Tailwind's 'lg' breakpoint is 1024px) */
+@media (min-width: 1024px) {
+  .custom-popup {
+    width: 380px;
+    left: 50%;
+    transform: translateX(20%);
+    bottom: -60px;
+    top: auto;
+    margin-bottom: 16px; /* mb-4 */
+    margin-top: 0; /* Resetting mt-4 since top is auto */
+  }
+
+  /* Replicates lg:group-hover:block */
+  /* Add the class 'group' to the parent wrapper div in Webflow */
+  .group:hover .custom-popup {
+    display: block;
+  }
+}
+
