@@ -37,6 +37,32 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf, FaClipboardList } from "react-icons/fa";
 
+import CmsItemFormModal from "../components/cms/CmsItemFormModal";
+import CmsItemViewModal from "../components/cms/CmsItemViewModal";
+import CelebritiesPanel, {
+  celebritiesForCondition,
+} from "../components/cms/CelebritiesPanel";
+import {
+  CELEBRITY_COLLECTION_ID,
+  CONDITION_COLLECTION_ID,
+  CONDITION_SECTIONS,
+  CONDITION_VIEW_HEADER,
+  THERAPY_CATEGORY_COLLECTION_ID,
+  THERAPY_COLLECTION_ID,
+  THERAPY_SECTIONS,
+  THERAPY_VIEW_HEADER,
+} from "../components/cms/cmsCollections";
+import {
+  deleteCmsItem,
+  fetchCmsItems,
+  publishCmsItems,
+  saveCmsItem,
+} from "../components/cms/cmsApi";
+import { hasUnpublishedChanges, toFormState } from "../components/cms/cmsFields";
+
+const CONDITION_FIELDS = CONDITION_SECTIONS.flatMap((section) => section.fields);
+const THERAPY_FIELDS = THERAPY_SECTIONS.flatMap((section) => section.fields);
+
 const Dashboard = () => {
   // System Metrics & Global States
   const [totalUsers, setTotalUsers] = useState("...");
@@ -682,32 +708,29 @@ const Dashboard = () => {
   const [therapiesList, setTherapiesList] = useState([]);
   const [therapiesLoading, setTherapiesLoading] = useState(false);
   const [selectedTherapyDetail, setSelectedTherapyDetail] = useState(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [therapyForm, setTherapyForm] = useState({});
+  const [isTherapyFormOpen, setIsTherapyFormOpen] = useState(false);
+  // Item being edited in the therapy form; null means the form creates a new item
+  const [editingTherapy, setEditingTherapy] = useState(null);
+  const [therapySaving, setTherapySaving] = useState(false);
+  // Options for the therapy "main-categories" Reference field
+  const [therapyCategoryOptions, setTherapyCategoryOptions] = useState([]);
 
-  // Reference Collection Dropdown States
-  const [conditionsOptions, setConditionsOptions] = useState([]);
-  const [deliveriesOptions, setDeliveriesOptions] = useState([]);
-  const [formatsOptions, setFormatsOptions] = useState([]);
-  const [mainFiltersOptions, setMainFiltersOptions] = useState([]);
-
-  const [newTherapyForm, setNewTherapyForm] = useState({
-    name: "",
-    targetArea: "",
-    postSummary: "",
-    postBody: "",
-    imageUrl: "",
-    thumbnailUrl: "",
-    conditionId: "",
-    deliveryId: "",
-    formatId: "",
-    mainCategoryId: "",
-  });
+  // Shared by the condition and therapy editors
+  const [publishOnSave, setPublishOnSave] = useState(true);
 
   // --- CONDITION MANAGEMENT TAB STATES ---
   const [conditionsList, setConditionsList] = useState([]);
   const [conditionsLoading, setConditionsLoading] = useState(false);
-  const [newConditionName, setNewConditionName] = useState("");
-  const CONDITION_COLLECTION_ID = "6a2153b39dd6cbc89e2cd831";
+  const [newConditionForm, setNewConditionForm] = useState({});
+  const [selectedConditionDetail, setSelectedConditionDetail] = useState(null);
+  const [isCreateConditionModalOpen, setIsCreateConditionModalOpen] =
+    useState(false);
+  // Item being edited in the condition form; null means the form creates a new item
+  const [editingCondition, setEditingCondition] = useState(null);
+  // Every celebrity; the condition editor shows the ones tagged with that condition
+  const [celebritiesList, setCelebritiesList] = useState([]);
+  const [celebritiesLoading, setCelebritiesLoading] = useState(false);
 
   // --- RESEARCH DIGEST (BLOGS) MANAGEMENT STATES ---
   const [blogsList, setBlogsList] = useState([]);
@@ -843,30 +866,17 @@ const Dashboard = () => {
     }
   };
 
-  const lookupTable = useMemo(() => {
-    const map = new Map();
-    const arrays = [
-      conditionsOptions,
-      deliveriesOptions,
-      formatsOptions,
-      mainFiltersOptions,
-    ];
-    arrays.forEach((arr) => {
-      if (Array.isArray(arr)) {
-        arr.forEach((item) => {
-          if (item?.id && item?.fieldData?.name) {
-            map.set(item.id, item.fieldData.name);
-          }
-        });
-      }
-    });
-    return map;
-  }, [
-    conditionsOptions,
-    deliveriesOptions,
-    formatsOptions,
-    mainFiltersOptions,
-  ]);
+  // Category id -> name, for showing the therapy "main-categories" reference
+  const therapyCategoryLabels = useMemo(
+    () =>
+      new Map(
+        therapyCategoryOptions.map((item) => [
+          item.id,
+          item.fieldData?.name || item.id,
+        ]),
+      ),
+    [therapyCategoryOptions],
+  );
   const uploadImageToSupabase = async (file) => {
     if (!file) return null;
 
@@ -896,53 +906,20 @@ const Dashboard = () => {
     }
   };
 
-  const fetchFormDropdownOptions = async () => {
+  const fetchTherapyCategoryOptions = async () => {
     try {
-      const fetchItems = async (collectionId) => {
-        const res = await fetch(
-          `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${collectionId}`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-        if (!res.ok) return [];
-        const data = await res.json();
-        return data?.items || [];
-      };
-
-      const [cond, deliv, form, mainF] = await Promise.all([
-        fetchItems("6a2153b39dd6cbc89e2cd831"),
-        fetchItems("6a21538114f11fc132b07488"),
-        fetchItems("6a21534a0abca22da70d9c92"),
-        fetchItems("6a1c7c260e4017306f072008"),
-      ]);
-
-      setConditionsOptions(cond);
-      setDeliveriesOptions(deliv);
-      setFormatsOptions(form);
-      setMainFiltersOptions(mainF);
+      const data = await fetchCmsItems(THERAPY_CATEGORY_COLLECTION_ID);
+      setTherapyCategoryOptions(data?.items || []);
     } catch (err) {
-      console.error("Error gathering relational option parameters:", err);
+      console.error("Error loading therapy categories:", err);
     }
   };
 
   const fetchTherapiesFromCms = async () => {
     try {
       setTherapiesLoading(true);
-      const response = await fetch(
-        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-      const data = await response.json();
-
-      if (data?.items) {
-        setTherapiesList(data.items);
-      }
+      const data = await fetchCmsItems(THERAPY_COLLECTION_ID);
+      setTherapiesList(data?.items || []);
       if (data?.pagination?.total !== undefined) {
         setTherapyCount(data.pagination.total);
       }
@@ -956,17 +933,8 @@ const Dashboard = () => {
   const fetchConditionsTabCms = async () => {
     try {
       setConditionsLoading(true);
-      const res = await fetch(
-        `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${CONDITION_COLLECTION_ID}`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      if (!res.ok) throw new Error("Failed fetching system conditions layout.");
-      const data = await res.json();
+      const data = await fetchCmsItems(CONDITION_COLLECTION_ID);
       setConditionsList(data?.items || []);
-      setConditionsOptions(data?.items || []);
     } catch (err) {
       console.error("Error parsing clinical condition records:", err);
     } finally {
@@ -974,47 +942,73 @@ const Dashboard = () => {
     }
   };
 
-  const handleCreateCondition = async (e) => {
-    e.preventDefault();
-    if (!newConditionName.trim()) return;
+  const fetchCelebritiesFromCms = async () => {
+    try {
+      setCelebritiesLoading(true);
+      const data = await fetchCmsItems(CELEBRITY_COLLECTION_ID);
+      setCelebritiesList(data?.items || []);
+    } catch (err) {
+      console.error("Error loading celebrities:", err);
+    } finally {
+      setCelebritiesLoading(false);
+    }
+  };
 
-    const inferredSlug = newConditionName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-");
+  // --- CONDITION EDITOR ---
+  const openCreateCondition = () => {
+    // Keep an unsaved create draft, but don't carry over values from an edit
+    if (editingCondition) setNewConditionForm({});
+    setEditingCondition(null);
+    setIsCreateConditionModalOpen(true);
+  };
 
-    const payload = {
-      isArchived: false,
-      isDraft: false,
-      fieldData: {
-        name: newConditionName,
-        slug: inferredSlug,
-      },
-    };
+  const openEditCondition = (item) => {
+    setNewConditionForm(toFormState(item.fieldData || {}, CONDITION_FIELDS));
+    setEditingCondition(item);
+    setSelectedConditionDetail(null);
+    setIsCreateConditionModalOpen(true);
+    fetchCelebritiesFromCms();
+  };
 
+  const handlePublishCondition = async (item) => {
     try {
       setConditionsLoading(true);
-      const response = await fetch(
-        `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${CONDITION_COLLECTION_ID}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
+      await publishCmsItems(CONDITION_COLLECTION_ID, [item.id]);
+      alert("Condition published to the live website.");
+      setSelectedConditionDetail((prev) =>
+        prev?.id === item.id
+          ? { ...prev, lastPublished: new Date().toISOString() }
+          : prev,
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData?.error || "Schema entry save validation rejected.",
-        );
-      }
-
-      alert("Clinical condition uploaded to Webflow successfully!");
-      setNewConditionName("");
       fetchConditionsTabCms();
     } catch (err) {
-      alert(`Failed writing condition entry: ${err.message}`);
+      alert(`Failed publishing condition: ${err.message}`);
+    } finally {
+      setConditionsLoading(false);
+    }
+  };
+
+  const handleSaveCondition = async () => {
+    try {
+      setConditionsLoading(true);
+      const result = await saveCmsItem({
+        collectionId: CONDITION_COLLECTION_ID,
+        fields: CONDITION_FIELDS,
+        form: newConditionForm,
+        editingItem: editingCondition,
+        publish: publishOnSave,
+      });
+      if (result.unchanged) {
+        alert("No changes to save.");
+        return;
+      }
+      alert(result.message);
+      setNewConditionForm({});
+      setEditingCondition(null);
+      setIsCreateConditionModalOpen(false);
+      fetchConditionsTabCms();
+    } catch (err) {
+      alert(`Failed saving condition: ${err.message}`);
     } finally {
       setConditionsLoading(false);
     }
@@ -1023,7 +1017,7 @@ const Dashboard = () => {
   const handleDeleteCondition = async (id) => {
     if (
       !window.confirm(
-        "Are you sure you want to delete this condition? This operation is permanent.",
+        "Are you sure you want to delete this condition? It will also be removed from the website. This operation is permanent.",
       )
     )
       return;
@@ -1031,125 +1025,80 @@ const Dashboard = () => {
     try {
       setConditionsLoading(true);
       setConditionsList((prev) => prev.filter((item) => item.id !== id));
-
-      const response = await fetch(
-        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "delete",
-            itemId: id,
-            collectionId: CONDITION_COLLECTION_ID,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.error || "Server rejected deletion endpoint request.",
-        );
-      }
-
-      alert("Condition completely deleted.");
+      await deleteCmsItem(CONDITION_COLLECTION_ID, id);
+      alert("Condition deleted and removed from the website.");
     } catch (err) {
       console.error("Delete handler error details:", err);
-      alert(`Error deleting record: ${err.message}`);
+      alert(`Error deleting condition: ${err.message}`);
     } finally {
       setConditionsLoading(false);
       fetchConditionsTabCms();
     }
   };
 
-  const handleOpenCreateModal = async () => {
-    setIsCreateModalOpen(true);
-    await fetchFormDropdownOptions();
+  // --- THERAPY EDITOR ---
+  const openCreateTherapy = () => {
+    // Keep an unsaved create draft, but don't carry over values from an edit
+    if (editingTherapy) setTherapyForm({});
+    setEditingTherapy(null);
+    setIsTherapyFormOpen(true);
   };
 
-  const handleCreateTherapy = async (e) => {
-    e.preventDefault();
+  const openEditTherapy = (item) => {
+    setTherapyForm(toFormState(item.fieldData || {}, THERAPY_FIELDS));
+    setEditingTherapy(item);
+    setSelectedTherapyDetail(null);
+    setIsTherapyFormOpen(true);
+  };
 
-    const inferredSlug = newTherapyForm.name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-");
-
-    if (
-      newTherapyForm.imageUrl === "Uploading..." ||
-      newTherapyForm.thumbnailUrl === "Uploading..."
-    ) {
-      alert(
-        "Please wait for your images to finish uploading to Supabase before committing.",
-      );
-      return;
-    }
-    const payload = {
-      isArchived: false,
-      isDraft: false,
-      fieldData: {
-        name: newTherapyForm.name,
-        slug: inferredSlug,
-        "target-area": newTherapyForm.targetArea,
-        "title-name": newTherapyForm.titleName,
-        "post-summary": newTherapyForm.postSummary || null,
-        "post-body": newTherapyForm.postBody || null,
-        "main-image": newTherapyForm.imageUrl
-          ? { url: newTherapyForm.imageUrl, alt: newTherapyForm.name }
-          : null,
-        "thumbnail-image": newTherapyForm.thumbnailUrl
-          ? { url: newTherapyForm.thumbnailUrl, alt: newTherapyForm.name }
-          : null,
-        "main-categories": newTherapyForm.mainCategoryId || null,
-        conditions: newTherapyForm.conditionId || null,
-        deliveries: newTherapyForm.deliveryId || null,
-        formats: newTherapyForm.formatId || null,
-        featured: false,
-      },
-    };
-
+  const handlePublishTherapy = async (item) => {
     try {
-      const response = await fetch(
-        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
+      setTherapySaving(true);
+      await publishCmsItems(THERAPY_COLLECTION_ID, [item.id]);
+      alert("Therapy published to the live website.");
+      setSelectedTherapyDetail((prev) =>
+        prev?.id === item.id
+          ? { ...prev, lastPublished: new Date().toISOString() }
+          : prev,
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData?.error || "Schema block save validation rejected.",
-        );
-      }
-
-      alert("Therapy record synced successfully to Webflow CMS!");
-      setIsCreateModalOpen(false);
-      setNewTherapyForm({
-        name: "",
-        targetArea: "",
-        titleName: "",
-        postSummary: "",
-        postBody: "",
-        imageUrl: "",
-        thumbnailUrl: "",
-        conditionId: "",
-        deliveryId: "",
-        formatId: "",
-        mainCategoryId: "",
-      });
       fetchTherapiesFromCms();
     } catch (err) {
-      alert(`Failed writing entry row: ${err.message}`);
+      alert(`Failed publishing therapy: ${err.message}`);
+    } finally {
+      setTherapySaving(false);
+    }
+  };
+
+  const handleSaveTherapy = async () => {
+    try {
+      setTherapySaving(true);
+      const result = await saveCmsItem({
+        collectionId: THERAPY_COLLECTION_ID,
+        fields: THERAPY_FIELDS,
+        form: therapyForm,
+        editingItem: editingTherapy,
+        publish: publishOnSave,
+      });
+      if (result.unchanged) {
+        alert("No changes to save.");
+        return;
+      }
+      alert(result.message);
+      setTherapyForm({});
+      setEditingTherapy(null);
+      setIsTherapyFormOpen(false);
+      fetchTherapiesFromCms();
+    } catch (err) {
+      alert(`Failed saving therapy: ${err.message}`);
+    } finally {
+      setTherapySaving(false);
     }
   };
 
   const handleDeleteTherapy = async (id) => {
     if (
       !window.confirm(
-        "Are you sure you want to delete this therapy? This operation is permanent.",
+        "Are you sure you want to delete this therapy? It will also be removed from the website. This operation is permanent.",
       )
     )
       return;
@@ -1157,20 +1106,12 @@ const Dashboard = () => {
     try {
       setTherapiesList((prev) => prev.filter((item) => item.id !== id));
       setTherapyCount((prev) => Math.max(0, prev - 1));
-
-      const response = await fetch(
-        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "delete", itemId: id }),
-        },
-      );
-
-      if (!response.ok)
-        throw new Error("Server rejected deletion routing handler request.");
+      await deleteCmsItem(THERAPY_COLLECTION_ID, id);
+      alert("Therapy deleted and removed from the website.");
     } catch (err) {
       console.error("Delete handler error details:", err);
+      alert(`Error deleting therapy: ${err.message}`);
+    } finally {
       fetchTherapiesFromCms();
     }
   };
@@ -1436,7 +1377,7 @@ const Dashboard = () => {
     try {
       await Promise.all([
         fetchTherapiesFromCms(),
-        fetchFormDropdownOptions(),
+        fetchTherapyCategoryOptions(),
         fetchBlogLength(),
         loadDashboard(),
         fetchSubscriptions(),
@@ -1487,6 +1428,7 @@ const Dashboard = () => {
     }
     if (activeTab === "TherapiesManagement") {
       fetchTherapiesFromCms();
+      fetchTherapyCategoryOptions();
     }
     if (activeTab === "ConditionManagement") {
       fetchConditionsTabCms();
@@ -2451,23 +2393,21 @@ const Dashboard = () => {
         {activeTab === "TherapiesManagement" && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-gray-200">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
-                  Therapies Collection
-                </h2>
-              </div>
+              <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
+                Therapies
+              </h2>
               <button
-                onClick={handleOpenCreateModal}
+                onClick={openCreateTherapy}
                 className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm self-stretch sm:self-auto justify-center"
               >
-                Create New Therapy
+                <FaPlus size={12} /> Create New Therapy
               </button>
             </div>
 
             <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                  Live Repository Indexes
+                  Therapies ({therapiesList.length})
                 </span>
                 <button
                   onClick={fetchTherapiesFromCms}
@@ -2477,27 +2417,26 @@ const Dashboard = () => {
                     size={10}
                     className={therapiesLoading ? "animate-spin" : ""}
                   />{" "}
-                  Force Sync Cache
+                  Refresh
                 </button>
               </div>
 
-              {therapiesLoading ? (
+              {therapiesLoading && therapiesList.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 italic text-sm space-y-2">
                   <div className="w-8 h-8 border-4 border-[#5932EA] border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p>Syncing live Webflow Collection variables...</p>
+                  <p>Loading therapies from Webflow...</p>
                 </div>
               ) : therapiesList.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 italic text-sm">
-                  No clinical therapy models found matching your schema.
+                  No therapies found.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                        <th className="py-4 px-6">Therapy Model</th>
+                        <th className="py-4 px-6">Therapy</th>
                         <th className="py-4 px-6">Main Category</th>
-                        <th className="py-4 px-6">Condition</th>
                         <th className="py-4 px-6 text-center">Status</th>
                         <th className="py-4 px-6 text-center">Actions</th>
                       </tr>
@@ -2505,6 +2444,10 @@ const Dashboard = () => {
                     <tbody className="divide-y divide-gray-100 text-sm">
                       {therapiesList.map((item) => {
                         const data = item.fieldData || {};
+                        const thumb =
+                          data["hero-image"]?.url ||
+                          data["image-hero-desktop"]?.url;
+                        const unpublished = hasUnpublishedChanges(item);
                         return (
                           <tr
                             key={item.id}
@@ -2512,59 +2455,71 @@ const Dashboard = () => {
                           >
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-3">
-                                {data["main-image"]?.url ? (
+                                {thumb ? (
                                   <img
-                                    src={data["main-image"].url}
+                                    src={thumb}
                                     alt=""
-                                    className="w-10 h-10 object-cover rounded-xl border border-gray-100 shrink-0"
+                                    className="w-12 h-12 object-cover rounded-lg border border-gray-200 shrink-0"
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-100">
-                                    Tx
-                                  </div>
+                                  <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 shrink-0" />
                                 )}
-                                <div>
-                                  <div className="font-semibold text-gray-900 tracking-tight">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-gray-900 tracking-tight">
                                     {data.name || "Untitled"}
-                                  </div>
-                                  <div className="text-xs text-gray-400 font-mono max-w-xs truncate select-all">
-                                    {item.id}
-                                  </div>
+                                    {data.featured && (
+                                      <span className="ml-2 align-middle px-2 py-0.5 text-[11px] font-medium rounded-full bg-indigo-50 text-[#5932EA] border border-indigo-100">
+                                        Featured
+                                      </span>
+                                    )}
+                                  </p>
+                                  {data["therapy-subtitle"] && (
+                                    <p className="text-xs text-gray-400 truncate max-w-xs">
+                                      {data["therapy-subtitle"]}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                             </td>
                             <td className="py-4 px-6 font-medium text-gray-600">
-                              {lookupTable.get(data["main-categories"]) || (
+                              {therapyCategoryLabels.get(
+                                data["main-categories"],
+                              ) || (
                                 <span className="text-gray-300 italic">
                                   None
                                 </span>
                               )}
                             </td>
-                            <td className="py-4 px-6">
-                              <span className="px-2.5 py-1 text-xs font-semibold bg-indigo-50 border border-indigo-100 rounded-md text-[#5932EA]">
-                                {lookupTable.get(data["conditions"]) ||
-                                  "General"}
-                              </span>
-                            </td>
                             <td className="py-4 px-6 text-center whitespace-nowrap">
                               <span
-                                className={`inline-block px-2.5 py-1 border font-semibold rounded-full text-xs uppercase ${item.isDraft ? "text-amber-700 bg-amber-50 border-amber-200" : "text-green-700 bg-green-50 border-green-200"}`}
+                                className={`inline-block px-2.5 py-1 border font-medium rounded-full text-xs ${unpublished ? "text-amber-700 bg-amber-50 border-amber-200" : "text-green-700 bg-green-50 border-green-200"}`}
                               >
-                                {item.isDraft ? "Draft" : "Live"}
+                                {!item.lastPublished
+                                  ? "Not published"
+                                  : unpublished
+                                    ? "Unpublished changes"
+                                    : "Live"}
                               </span>
                             </td>
                             <td className="py-4 px-6 text-center">
-                              <div className="flex justify-center items-center gap-2">
+                              <div className="inline-flex items-center gap-1">
                                 <button
                                   onClick={() => setSelectedTherapyDetail(item)}
-                                  className="p-2.5 text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition"
-                                  title="view therapy"
+                                  className="p-2 text-[#5932EA] hover:bg-indigo-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  title="View Therapy"
                                 >
                                   <FaEye size={14} />
                                 </button>
                                 <button
+                                  onClick={() => openEditTherapy(item)}
+                                  className="p-2 text-gray-600 hover:bg-gray-100 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  title="Edit Therapy"
+                                >
+                                  <FaEdit size={14} />
+                                </button>
+                                <button
                                   onClick={() => handleDeleteTherapy(item.id)}
-                                  className="p-2.5 text-red-500 hover:bg-red-50 border border-gray-200 rounded-xl transition"
+                                  className="p-2 text-red-500 hover:bg-red-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
                                   title="Delete Therapy"
                                 >
                                   <FaTrash size={14} />
@@ -2585,30 +2540,16 @@ const Dashboard = () => {
         {/* CONDITION MANAGEMENT TAB CONTAINER VIEW */}
         {activeTab === "ConditionManagement" && (
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-3xl border border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 tracking-tight">
-                Add New Clinical Condition
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
+                Clinical Conditions
               </h2>
-              <form
-                onSubmit={handleCreateCondition}
-                className="flex flex-col sm:flex-row gap-3 max-w-xl"
+              <button
+                onClick={openCreateCondition}
+                className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm"
               >
-                <input
-                  type="text"
-                  required
-                  value={newConditionName}
-                  onChange={(e) => setNewConditionName(e.target.value)}
-                  placeholder="e.g., Depression, Autism, Anxiety"
-                  className="flex-1 bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA] text-sm text-gray-800"
-                />
-                <button
-                  type="submit"
-                  disabled={conditionsLoading}
-                  className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                >
-                  Create Condition
-                </button>
-              </form>
+                <FaPlus size={12} /> Create New Condition
+              </button>
             </div>
 
             <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
@@ -2662,7 +2603,25 @@ const Dashboard = () => {
                             className="hover:bg-slate-50 transition"
                           >
                             <td className="py-4 px-6 font-semibold text-gray-900 tracking-tight">
-                              {data.name || "Untitled Row Entry"}
+                              <div className="flex items-center gap-3">
+                                {data["hero-image-desktop"]?.url ? (
+                                  <img
+                                    src={data["hero-image-desktop"].url}
+                                    alt={data.name || ""}
+                                    className="w-12 h-12 rounded-lg object-cover border border-gray-200 shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 shrink-0" />
+                                )}
+                                <div className="min-w-0">
+                                  <p>{data.name || "Untitled Row Entry"}</p>
+                                  {data["modal-1-badge"] && (
+                                    <p className="text-xs font-normal text-gray-400 truncate max-w-xs">
+                                      {data["modal-1-badge"]}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
                             </td>
                             <td className="py-4 px-6 text-gray-500 font-mono text-xs">
                               {data.slug || "-"}
@@ -2671,13 +2630,29 @@ const Dashboard = () => {
                               {item.id}
                             </td>
                             <td className="py-4 px-6 text-center">
-                              <button
-                                onClick={() => handleDeleteCondition(item.id)}
-                                className="p-2 text-red-500 hover:bg-red-50 border border-transparent hover:border-gray-200 rounded-xl transition mx-auto inline-flex items-center"
-                                title="Delete Condition Mapping Model"
-                              >
-                                <FaTrash size={14} />
-                              </button>
+                              <div className="inline-flex items-center gap-1">
+                                <button
+                                  onClick={() => setSelectedConditionDetail(item)}
+                                  className="p-2 text-[#5932EA] hover:bg-indigo-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  title="View Condition"
+                                >
+                                  <FaEye size={14} />
+                                </button>
+                                <button
+                                  onClick={() => openEditCondition(item)}
+                                  className="p-2 text-gray-600 hover:bg-gray-100 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  title="Edit Condition"
+                                >
+                                  <FaEdit size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCondition(item.id)}
+                                  className="p-2 text-red-500 hover:bg-red-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  title="Delete Condition Mapping Model"
+                                >
+                                  <FaTrash size={14} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -3920,402 +3895,40 @@ const Dashboard = () => {
       )}
 
       {selectedTherapyDetail && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
-          <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[85vh] rounded-3xl">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
-                Therapy Sheet Inspector
-              </h3>
-              <button
-                onClick={() => setSelectedTherapyDetail(null)}
-                className="text-gray-400 hover:text-gray-600 p-1"
-              >
-                <FaTimes size={18} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto space-y-6 text-sm text-[#222]">
-              <div className="flex gap-4 items-center pb-4">
-                <div className="p-3 bg-purple-50 text-[#5932EA] rounded-2xl">
-                  <FaBookMedical size={24} />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-gray-900 tracking-tight">
-                    {selectedTherapyDetail.fieldData?.name}
-                  </h4>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Slug Reference: {selectedTherapyDetail.fieldData?.slug}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 border border-gray-100 rounded-xl">
-                <div>
-                  <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
-                    Main Category
-                  </span>
-                  <span className="font-semibold text-gray-800">
-                    {lookupTable.get(
-                      selectedTherapyDetail.fieldData?.["main-categories"],
-                    ) || "N/A"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
-                    Assigned Condition
-                  </span>
-                  <span className="font-semibold text-gray-800">
-                    {lookupTable.get(
-                      selectedTherapyDetail.fieldData?.["conditions"],
-                    ) || "N/A"}
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
-                    Delivery Channel
-                  </span>
-                  <span className="font-semibold text-gray-800">
-                    {lookupTable.get(
-                      selectedTherapyDetail.fieldData?.["deliveries"],
-                    ) || "N/A"}
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase block mb-0.5">
-                    Structural Format
-                  </span>
-                  <span className="font-semibold text-gray-800">
-                    {lookupTable.get(
-                      selectedTherapyDetail.fieldData?.["formats"],
-                    ) || "N/A"}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <span className="text-xs font-bold text-gray-400 uppercase block mb-1">
-                  Summary Abstract Description
-                </span>
-                <p className="p-3 bg-gray-50 border rounded-xl text-gray-600 italic leading-relaxed">
-                  {selectedTherapyDetail.fieldData?.["post-summary"] ||
-                    "No text abstract summary written."}
-                </p>
-              </div>
-              <div>
-                <span className="text-xs font-bold text-gray-400 uppercase block mb-1">
-                  Structured Body (HTML Payload)
-                </span>
-                {selectedTherapyDetail.fieldData?.["post-body"] ? (
-                  <div
-                    className="p-4 bg-gray-50 border rounded-xl text-gray-700 prose prose-sm max-w-none overflow-y-auto max-h-48 border-dashed"
-                    dangerouslySetInnerHTML={{
-                      __html: selectedTherapyDetail.fieldData["post-body"],
-                    }}
-                  />
-                ) : (
-                  <p className="p-3 bg-gray-50 border border-dashed rounded-xl text-gray-400 italic">
-                    No HTML description payload provided.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <CmsItemViewModal
+          item={selectedTherapyDetail}
+          sections={THERAPY_SECTIONS}
+          header={THERAPY_VIEW_HEADER}
+          itemLabel="therapy"
+          selectLabels={{ "main-categories": therapyCategoryLabels }}
+          publishing={therapySaving}
+          onPublish={handlePublishTherapy}
+          onEdit={openEditTherapy}
+          onClose={() => setSelectedTherapyDetail(null)}
+        />
       )}
 
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
-          <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh] rounded-3xl">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
-                Publish New Therapy Model
-              </h3>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1"
-              >
-                <FaTimes size={18} />
-              </button>
-            </div>
-            <form
-              onSubmit={handleCreateTherapy}
-              className="p-6 overflow-y-auto space-y-5 text-sm flex-1 text-[#222]"
-            >
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Therapy System Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newTherapyForm.name}
-                    onChange={(e) =>
-                      setNewTherapyForm({
-                        ...newTherapyForm,
-                        name: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Tomatis Auditory Integration"
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Target Focus Area *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newTherapyForm.targetArea}
-                    onChange={(e) =>
-                      setNewTherapyForm({
-                        ...newTherapyForm,
-                        targetArea: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Auditory / Neuro Care"
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newTherapyForm.titleName}
-                    onChange={(e) =>
-                      setNewTherapyForm({
-                        ...newTherapyForm,
-                        titleName: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Auditory / Neuro Care"
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 border border-gray-200 rounded-2xl">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Main Category Mapping *
-                  </label>
-                  <select
-                    required
-                    value={newTherapyForm.mainCategoryId}
-                    onChange={(e) =>
-                      setNewTherapyForm({
-                        ...newTherapyForm,
-                        mainCategoryId: e.target.value,
-                      })
-                    }
-                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
-                  >
-                    <option value="">-- Choose Category --</option>
-                    {mainFiltersOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.fieldData?.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Clinical Condition Link *
-                  </label>
-                  <select
-                    required
-                    value={newTherapyForm.conditionId}
-                    onChange={(e) =>
-                      setNewTherapyForm({
-                        ...newTherapyForm,
-                        conditionId: e.target.value,
-                      })
-                    }
-                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
-                  >
-                    <option value="">-- Choose Condition --</option>
-                    {conditionsOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.fieldData?.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mt-1">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Delivery Channel Link *
-                  </label>
-                  <select
-                    required
-                    value={newTherapyForm.deliveryId}
-                    onChange={(e) =>
-                      setNewTherapyForm({
-                        ...newTherapyForm,
-                        deliveryId: e.target.value,
-                      })
-                    }
-                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
-                  >
-                    <option value="">-- Choose Delivery --</option>
-                    {deliveriesOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.fieldData?.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mt-1">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Format Type Link *
-                  </label>
-                  <select
-                    required
-                    value={newTherapyForm.formatId}
-                    onChange={(e) =>
-                      setNewTherapyForm({
-                        ...newTherapyForm,
-                        formatId: e.target.value,
-                      })
-                    }
-                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
-                  >
-                    <option value="">-- Choose Format --</option>
-                    {formatsOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.fieldData?.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Main Hero Image Asset *
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        setNewTherapyForm((prev) => ({
-                          ...prev,
-                          imageUrl: "Uploading...",
-                        }));
-                        const uploadedUrl = await uploadImageToSupabase(file);
-                        setNewTherapyForm((prev) => ({
-                          ...prev,
-                          imageUrl: uploadedUrl || "",
-                        }));
-                      }
-                    }}
-                    className="w-full bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA] hover:file:bg-indigo-100"
-                  />
-                  {newTherapyForm.imageUrl && (
-                    <p className="mt-1.5 text-xs text-gray-500 truncate max-w-xs">
-                      {newTherapyForm.imageUrl === "Uploading..." ? (
-                        <span className="text-amber-600 animate-pulse font-medium">
-                          Uploading file to Supabase...
-                        </span>
-                      ) : (
-                        <span className="text-green-600 font-medium">
-                          ✓ Uploaded: {newTherapyForm.imageUrl}
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Thumbnail Preview Image *
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        setNewTherapyForm((prev) => ({
-                          ...prev,
-                          thumbnailUrl: "Uploading...",
-                        }));
-                        const uploadedUrl = await uploadImageToSupabase(file);
-                        setNewTherapyForm((prev) => ({
-                          ...prev,
-                          thumbnailUrl: uploadedUrl || "",
-                        }));
-                      }
-                    }}
-                    className="w-full bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA] hover:file:bg-indigo-100"
-                  />
-                  {newTherapyForm.thumbnailUrl && (
-                    <p className="mt-1.5 text-xs text-gray-500 truncate max-w-xs">
-                      {newTherapyForm.thumbnailUrl === "Uploading..." ? (
-                        <span className="text-amber-600 animate-pulse font-medium">
-                          Uploading file to Supabase...
-                        </span>
-                      ) : (
-                        <span className="text-green-600 font-medium">
-                          ✓ Uploaded: {newTherapyForm.thumbnailUrl}
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                  Brief Abstract Summary Text
-                </label>
-                <textarea
-                  rows="2"
-                  value={newTherapyForm.postSummary}
-                  onChange={(e) =>
-                    setNewTherapyForm({
-                      ...newTherapyForm,
-                      postSummary: e.target.value,
-                    })
-                  }
-                  placeholder="Write summary description details..."
-                  className="w-full border border-gray-200 p-4 rounded-xl focus:outline-none focus:border-[#5932EA]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                  Structured Body Guidelines (HTML supported)
-                </label>
-                <textarea
-                  rows="3"
-                  value={newTherapyForm.postBody}
-                  onChange={(e) =>
-                    setNewTherapyForm({
-                      ...newTherapyForm,
-                      postBody: e.target.value,
-                    })
-                  }
-                  placeholder="<p>Write standard paragraph content blocks here...</p>"
-                  className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-[#5932EA]"
-                />
-              </div>
-              <div className="pt-4 border-t border-gray-100 flex justify-end gap-3 bg-white sticky bottom-0">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-5 py-2.5 border rounded-xl font-semibold text-gray-500 hover:bg-gray-50"
-                >
-                  Dismiss
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-[#5932EA] text-white font-semibold rounded-xl transition"
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {isTherapyFormOpen && (
+        <CmsItemFormModal
+          sections={THERAPY_SECTIONS}
+          form={therapyForm}
+          setForm={setTherapyForm}
+          editingItem={editingTherapy}
+          itemLabel="therapy"
+          thumbKey="image-hero-desktop"
+          selectOptions={{
+            "main-categories": therapyCategoryOptions.map((item) => ({
+              value: item.id,
+              label: item.fieldData?.name || item.id,
+            })),
+          }}
+          uploadImage={uploadImageToSupabase}
+          publishOnSave={publishOnSave}
+          setPublishOnSave={setPublishOnSave}
+          saving={therapySaving}
+          onSave={handleSaveTherapy}
+          onClose={() => setIsTherapyFormOpen(false)}
+        />
       )}
 
       {isCreateBlogModalOpen && (
@@ -4602,6 +4215,55 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedConditionDetail && (
+        <CmsItemViewModal
+          item={selectedConditionDetail}
+          sections={CONDITION_SECTIONS}
+          header={CONDITION_VIEW_HEADER}
+          itemLabel="condition"
+          publishing={conditionsLoading}
+          onPublish={handlePublishCondition}
+          onEdit={openEditCondition}
+          onClose={() => setSelectedConditionDetail(null)}
+        />
+      )}
+
+      {isCreateConditionModalOpen && (
+        <CmsItemFormModal
+          sections={CONDITION_SECTIONS}
+          extraPanels={[
+            {
+              key: "celebrities",
+              title: "Celebrities",
+              subtitle: editingCondition
+                ? `${celebritiesForCondition(celebritiesList, editingCondition.fieldData?.name).length} in the carousel`
+                : "Meet the Changemakers",
+              content: (
+                <CelebritiesPanel
+                  conditionName={editingCondition?.fieldData?.name}
+                  celebrities={celebritiesList}
+                  loading={celebritiesLoading}
+                  uploadImage={uploadImageToSupabase}
+                  publishOnSave={publishOnSave}
+                  onChanged={fetchCelebritiesFromCms}
+                />
+              ),
+            },
+          ]}
+          form={newConditionForm}
+          setForm={setNewConditionForm}
+          editingItem={editingCondition}
+          itemLabel="condition"
+          thumbKey="hero-image-desktop"
+          uploadImage={uploadImageToSupabase}
+          publishOnSave={publishOnSave}
+          setPublishOnSave={setPublishOnSave}
+          saving={conditionsLoading}
+          onSave={handleSaveCondition}
+          onClose={() => setIsCreateConditionModalOpen(false)}
+        />
       )}
     </main>
   );

@@ -241,6 +241,7 @@ export default function Auth() {
                   </label>
                   <input
                     type="email"
+                    placeholder="example@example.com"
                     className={`w-full poppin h-[50px] md:h-[60px] bg-white rounded-[20px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none transition-all ${
                       emailError
                         ? "border border-[#ED0000]"
@@ -315,6 +316,7 @@ export default function Auth() {
                       </label>
                       <input
                         type="text"
+                        placeholder="Enter your name"
                         className="poppin w-full h-[50px] md:h-[60px] bg-white border border-transparent rounded-[20px] md:rounded-[34px] px-4 py-3 text-sm focus:outline-none"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -329,6 +331,7 @@ export default function Auth() {
                     </label>
                     <input
                       type="email"
+                      placeholder="example@example.com"
                       className={`w-full poppin h-[50px] md:h-[60px] bg-white rounded-[20px] md:rounded-[34px] px-5 py-5 my-[5px] text-sm focus:outline-none transition-all ${
                         emailError
                           ? "border border-[#ED0000]"
@@ -361,6 +364,7 @@ export default function Auth() {
                     </div>
                     <input
                       type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
                       className={`poppin w-full h-[50px] md:h-[60px] bg-white rounded-[20px] md:rounded-[34px] px-5 py-5 my-[5px] text-sm focus:outline-none transition-all ${
                         passwordError
                           ? "border border-[#ED0000]"

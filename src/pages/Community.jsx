@@ -295,7 +295,7 @@ const Community = () => {
   }
 
   return (
-    <main className="lg:pt-0 lg:p-10 manrope w-full max-w-full overflow-x-hidden">
+    <main className="lg:pt-0 lg:pt-10 manrope w-full max-w-full overflow-x-hidden">
       <section
         className={`text-center text-[#B77145] px-4 ${
           isModalOpen ? "hidden" : "block"
@@ -304,7 +304,7 @@ const Community = () => {
         {/* Title Block */}
       </section>
 
-      <section className="flex flex-col mt-11.25 px-[26.25px] gap-6">
+      <section className="flex flex-col mt-11.25  gap-6">
         {/* Top Controls Row */}
         <div className="flex justify-between items-center w-full ">
           {/* Left Side: Filter Trigger Toggle (+ button & text) */}
@@ -409,7 +409,7 @@ const Community = () => {
 
       {/* Conditional Layout Injection Section */}
       {enabled ? (
-        <section className="w-full px-[26.25px] pt-[30px] flex flex-col items-center">
+        <section className="w-full  pt-[30px] flex flex-col items-center">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2.5 w-full max-w-350">
             {communityPosts
               .filter(
