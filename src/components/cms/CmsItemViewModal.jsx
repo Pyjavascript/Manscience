@@ -39,7 +39,7 @@ const CmsItemViewModal = ({
     if (field.type === "select") return selectLabels[field.key]?.get(value) || value;
     if (field.type === "url")
       return (
-        <a href={value} target="_blank" rel="noreferrer" className="text-[#5932EA] underline break-all">
+        <a href={value} target="_blank" rel="noreferrer" className="text-brand underline break-all">
           {value}
         </a>
       );
@@ -67,7 +67,7 @@ const CmsItemViewModal = ({
             )}
             <button
               onClick={() => onEdit(item)}
-              className="px-4 py-2 bg-[#5932EA] hover:bg-[#4826c9] text-white text-sm font-medium rounded-xl transition flex items-center gap-2"
+              className="px-4 py-2 bg-brand hover:bg-brand-600 text-white text-sm font-medium rounded-xl transition flex items-center gap-2"
             >
               <FaEdit size={13} /> Edit
             </button>
@@ -107,7 +107,7 @@ const CmsItemViewModal = ({
               )}
             </div>
             {header.kickerKey && data[header.kickerKey] && (
-              <p className="text-sm font-semibold uppercase tracking-wider text-[#5932EA]">
+              <p className="text-sm font-semibold uppercase tracking-wider text-brand">
                 {data[header.kickerKey]}
               </p>
             )}
@@ -141,7 +141,7 @@ const CmsItemViewModal = ({
 
             return (
               <section key={section.title} className="px-6 sm:px-8 py-7 border-t border-gray-100 space-y-6">
-                <h2 className="text-sm font-semibold text-[#5932EA]">
+                <h2 className="text-sm font-semibold text-brand">
                   {section.title}
                   <span className="text-gray-400 font-normal">
                     {" "}
@@ -167,7 +167,7 @@ const CmsItemViewModal = ({
                     <p className="text-xs text-gray-400 mb-1.5">{field.label}</p>
                     {field.type === "richtext" ? (
                       <div
-                        className="max-w-prose text-[15px] leading-7 text-gray-700 [&_p]:mb-3 [&_a]:text-[#5932EA] [&_a]:underline"
+                        className="max-w-prose text-[15px] leading-7 text-gray-700 [&_p]:mb-3 [&_a]:text-brand [&_a]:underline"
                         dangerouslySetInnerHTML={{ __html: data[field.key] }}
                       />
                     ) : (
@@ -216,7 +216,7 @@ const CmsItemViewModal = ({
                   <div key={key}>
                     <p className="text-xs text-gray-400 font-mono mb-1">{key}</p>
                     {typeof value === "object" && value.url ? (
-                      <a href={value.url} target="_blank" rel="noreferrer" className="text-[#5932EA] underline break-all">
+                      <a href={value.url} target="_blank" rel="noreferrer" className="text-brand underline break-all">
                         {value.url}
                       </a>
                     ) : (

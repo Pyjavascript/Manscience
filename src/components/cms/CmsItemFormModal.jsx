@@ -174,7 +174,7 @@ const CmsItemFormModal = ({
           {thumb && thumb !== UPLOADING ? (
             <img src={thumb} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0" />
           ) : (
-            <div className="w-11 h-11 rounded-xl bg-indigo-50 text-[#5932EA] flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-brand-50 text-brand flex items-center justify-center shrink-0">
               <FaHandHoldingMedical size={18} />
             </div>
           )}
@@ -226,13 +226,13 @@ const CmsItemFormModal = ({
                       type="button"
                       onClick={() => !active && setActiveStep(nav.stepIndexes[0])}
                       className={`shrink-0 md:w-full text-left px-3 py-2.5 md:py-3 rounded-xl border flex items-center md:items-start gap-3 transition ${
-                        active ? "bg-white border-[#5932EA]/30" : "border-transparent hover:bg-white hover:border-gray-200"
+                        active ? "bg-white border-brand/30" : "border-transparent hover:bg-white hover:border-gray-200"
                       }`}
                     >
                       <span
                         className={`w-7 h-7 rounded-full text-xs font-semibold flex items-center justify-center shrink-0 ${
                           active
-                            ? "bg-[#5932EA] text-white"
+                            ? "bg-brand text-white"
                             : complete
                               ? "bg-green-100 text-green-700"
                               : "bg-gray-200/80 text-gray-500"
@@ -242,7 +242,7 @@ const CmsItemFormModal = ({
                       </span>
                       <span className="min-w-0">
                         <span
-                          className={`block text-sm font-semibold whitespace-nowrap ${active ? "text-[#5932EA]" : "text-gray-800"}`}
+                          className={`block text-sm font-semibold whitespace-nowrap ${active ? "text-brand" : "text-gray-800"}`}
                         >
                           {nav.group || first.title}
                         </span>
@@ -283,7 +283,7 @@ const CmsItemFormModal = ({
                           title={tab.subtitle}
                           className={`shrink-0 px-4 pt-2 pb-3 -mb-px border-b-2 text-sm font-semibold flex items-center gap-2 transition ${
                             selected
-                              ? "border-[#5932EA] text-[#5932EA]"
+                              ? "border-brand text-brand"
                               : "border-transparent text-gray-500 hover:text-gray-800"
                           }`}
                         >
@@ -301,7 +301,7 @@ const CmsItemFormModal = ({
               )}
 
               <div className="max-w-2xl mx-auto px-6 sm:px-10 py-8">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#5932EA]">
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand">
                   Step {activeNavIndex + 1} of {navItems.length}
                   {activeNav.group && ` · ${step.title}`}
                 </p>
@@ -310,7 +310,7 @@ const CmsItemFormModal = ({
                   {step.subtitle && <span className="text-gray-400 font-normal"> · {step.subtitle}</span>}
                 </h4>
                 {step.note && (
-                  <p className="mt-4 text-sm text-[#5932EA] bg-indigo-50/70 border border-indigo-100 rounded-xl px-4 py-3">
+                  <p className="mt-4 text-sm text-brand bg-brand-50/70 border border-brand-100 rounded-xl px-4 py-3">
                     {step.note}
                   </p>
                 )}
@@ -327,7 +327,7 @@ const CmsItemFormModal = ({
                           {!isLastGroup && (
                             <span className="absolute left-[15px] top-9 bottom-1 w-px bg-gray-200" />
                           )}
-                          <span className="absolute left-0 top-0 w-8 h-8 rounded-full border border-[#5932EA]/25 bg-indigo-50 text-[#5932EA] text-sm font-semibold flex items-center justify-center">
+                          <span className="absolute left-0 top-0 w-8 h-8 rounded-full border border-brand/25 bg-brand-50 text-brand text-sm font-semibold flex items-center justify-center">
                             {gi + 1}
                           </span>
                           <div className="pt-1 mb-5">
@@ -362,7 +362,7 @@ const CmsItemFormModal = ({
                     <button
                       type="button"
                       onClick={() => setActiveStep(activeStep + 1)}
-                      className="px-5 py-2.5 rounded-xl border border-[#5932EA]/30 bg-indigo-50 text-sm font-semibold text-[#5932EA] hover:bg-indigo-100 transition"
+                      className="px-5 py-2.5 rounded-xl border border-brand/30 bg-brand-50 text-sm font-semibold text-brand hover:bg-brand-100 transition"
                     >
                       Next: {nextStep.title}
                       {nextStep.subtitle && ` · ${nextStep.subtitle}`} →
@@ -398,7 +398,7 @@ const CmsItemFormModal = ({
               <button
                 type="submit"
                 disabled={saving || isUploading || (editingItem && editedCount === 0)}
-                className="px-6 py-2.5 bg-[#5932EA] hover:bg-[#4826c9] text-white text-sm font-semibold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 bg-brand hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {saving ? "Saving..." : editingItem ? "Save changes" : `Create ${itemLabel}`}
               </button>

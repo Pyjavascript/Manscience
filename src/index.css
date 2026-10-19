@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+/* ManaScience brand palette (from manascience.webflow.io) */
+@theme {
+  --color-brand: #b77145;
+  --color-brand-50: #fbf5f0;
+  --color-brand-100: #f5e6da;
+  --color-brand-200: #ebcdb6;
+  --color-brand-300: #d8b39b;
+  --color-brand-400: #c98d66;
+  --color-brand-500: #b77145;
+  --color-brand-600: #b05a36;
+  --color-brand-700: #8c4626;
+  --color-brand-800: #68270b;
+  --color-brand-900: #3c2015;
+  --color-brand-muted: #8a7366;
+
+  --color-cocoa-50: #f7efea;
+  --color-cocoa-100: #eedcd2;
+  --color-cocoa-200: #dcb9a6;
+  --color-cocoa-300: #c4917a;
+  --color-cocoa-400: #a3633f;
+  --color-cocoa-500: #8a4524;
+  --color-cocoa-600: #7d3412;
+  --color-cocoa-700: #68270b;
+  --color-cocoa-800: #4d1f0d;
+  --color-cocoa-900: #3c2015;
+
+  --color-cream: #faf4e8;
+  --color-paper: #fdf9f3;
+}
+
 * {
   box-sizing: border-box;
 }

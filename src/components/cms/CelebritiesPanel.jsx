@@ -131,7 +131,7 @@ const CelebritiesPanel = ({
           <h5 className="text-lg font-semibold text-gray-900">
             {editing.item ? String(editing.item.fieldData?.name).trim() : "New celebrity"}
           </h5>
-          <span className="text-xs font-medium text-[#5932EA] bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
+          <span className="text-xs font-medium text-brand bg-brand-50 border border-brand-100 px-2.5 py-0.5 rounded-full">
             Shows on: {conditionName}
           </span>
         </div>
@@ -189,7 +189,7 @@ const CelebritiesPanel = ({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2.5 bg-[#5932EA] hover:bg-[#4826c9] text-white text-sm font-semibold rounded-xl transition disabled:opacity-40"
+            className="px-6 py-2.5 bg-brand hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition disabled:opacity-40"
           >
             {saving
               ? "Saving..."
@@ -212,7 +212,7 @@ const CelebritiesPanel = ({
           type="button"
           onClick={() => openEditor(null)}
           disabled={saving}
-          className="px-4 py-2 bg-[#5932EA] hover:bg-[#4826c9] text-white text-sm font-medium rounded-xl transition flex items-center gap-2 shrink-0 disabled:opacity-40"
+          className="px-4 py-2 bg-brand hover:bg-brand-600 text-white text-sm font-medium rounded-xl transition flex items-center gap-2 shrink-0 disabled:opacity-40"
         >
           <FaPlus size={11} /> Add celebrity
         </button>
@@ -262,7 +262,7 @@ const CelebritiesPanel = ({
                   type="button"
                   onClick={() => openEditor(item)}
                   disabled={saving}
-                  className="p-2 text-[#5932EA] hover:bg-indigo-50 rounded-lg transition"
+                  className="p-2 text-brand hover:bg-brand-50 rounded-lg transition"
                   title="Edit"
                 >
                   <FaEdit size={14} />

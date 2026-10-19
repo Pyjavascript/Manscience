@@ -33,6 +33,7 @@ import {
   Cell,
 } from "recharts";
 import { supabase } from "../supabase";
+import logo from "../assets/logo-cropped.png";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf, FaClipboardList } from "react-icons/fa";
@@ -229,7 +230,7 @@ const Dashboard = () => {
     const doc = new jsPDF();
 
     // Header Accent Banner Configuration
-    doc.setFillColor(89, 50, 234); // #5932EA Purple
+    doc.setFillColor(183, 113, 69); // #B77145 ManaScience brand
     doc.rect(0, 0, 210, 40, "F");
 
     doc.setFont("helvetica", "bold");
@@ -487,7 +488,7 @@ const Dashboard = () => {
   };
 
   const [tagsList, setTagsList] = useState([]);
-  const [newTagColor, setNewTagColor] = useState("#5932EA");
+  const [newTagColor, setNewTagColor] = useState("#B77145");
   const [tagsLoading, setTagsLoading] = useState(false);
   const [newTagName, setNewConditionTagName] = useState("");
   const [communitySubView, setCommunitySubTabFilter] = useState("posts"); // "posts" | "tags"
@@ -541,7 +542,7 @@ const Dashboard = () => {
       if (error) throw error;
       alert("New tag added successfully!");
       setNewConditionTagName("");
-      setNewTagColor("#5932EA");
+      setNewTagColor("#B77145");
       fetchCommunityTags();
     } catch (err) {
       alert(`Tag generation failed: ${err.message}`);
@@ -1456,67 +1457,67 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <main className="h-screen manrope bg-gray-100 flex font-sans text-gray-800 overflow-hidden">
+    <main className="h-screen manrope bg-cream flex font-sans text-gray-800 overflow-hidden">
       {/* SIDEBAR NAVIGATION */}
-      <aside className="w-72 bg-white border-r border-gray-200 flex flex-col p-2 shrink-0 h-full">
-        <div className="p-6 text-2xl font-semibold text-black tracking-tight">
-          Dashboard
+      <aside className="w-72 bg-white border-r border-brand-100 flex flex-col p-2 shrink-0 h-full">
+        <div className="px-6 pt-7 pb-2">
+          <img src={logo} alt="ManaScience" className="h-8 w-auto" />
         </div>
         <nav className="flex-1 flex flex-col gap-2 mt-4">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "overview" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "overview" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaKey /> Overview
           </button>
           <button
             onClick={() => setActiveTab("Usermanagement")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "Usermanagement" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "Usermanagement" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaUsers /> User Management
           </button>
           <button
             onClick={() => setActiveTab("practitioners")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "practitioners" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "practitioners" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaUserMd /> Practitioners{" "}
-            <span className="text-white bg-[#5932EA] p-2.5 py-1 rounded-full text-sm">
+            <span className="text-white bg-brand-800 p-2.5 py-1 rounded-full text-sm">
               {pendingCount}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("CommunityHub")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "CommunityHub" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "CommunityHub" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaComments /> Community Hub
           </button>
           <button
             onClick={() => setActiveTab("AiRoadmap")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "AiRoadmap" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "AiRoadmap" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaBrain /> Ai Roadmap
           </button>
           <button
             onClick={() => setActiveTab("TherapiesManagement")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "TherapiesManagement" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "TherapiesManagement" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaBookMedical /> Therapies Management
           </button>
           <button
             onClick={() => setActiveTab("ConditionManagement")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "ConditionManagement" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "ConditionManagement" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaHandHoldingMedical /> Condition Management
           </button>
           <button
             onClick={() => setActiveTab("LearningHub")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "LearningHub" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "LearningHub" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaBookOpen /> Learning Hub
           </button>
           <button
             onClick={() => setActiveTab("ResearchDigest")}
-            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "ResearchDigest" ? "bg-[#5932EA] text-white" : "text-[#9197B3] hover:bg-slate-200"}`}
+            className={`w-full font-medium text-left px-6 py-3 transition rounded-xl text-md flex items-center gap-3 ${activeTab === "ResearchDigest" ? "bg-brand text-white" : "text-brand-muted hover:bg-brand-50 hover:text-brand-700"}`}
           >
             <FaRegNewspaper /> Research Digest
           </button>
@@ -1565,11 +1566,11 @@ const Dashboard = () => {
                   fetchUserManagementData();
                 }
               }}
-              className="p-2 text-gray-400 hover:text-[#5932EA] hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
+              className="p-2 text-gray-400 hover:text-brand hover:bg-white rounded-xl border border-transparent hover:border-gray-200 transition-all"
             >
               <FaSync
                 className={
-                  isCurrentlyRefreshing ? "animate-spin text-[#5932EA]" : ""
+                  isCurrentlyRefreshing ? "animate-spin text-brand" : ""
                 }
                 size={16}
               />
@@ -1610,7 +1611,7 @@ const Dashboard = () => {
               </div>
 
               <div className="bg-white p-6 rounded-3xl border border-gray-200 flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                <div className="w-20 h-20 rounded-full bg-cocoa-100 flex items-center justify-center text-cocoa-600">
                   <FaBookMedical size={24} />
                 </div>
                 <div>
@@ -1624,7 +1625,7 @@ const Dashboard = () => {
               </div>
 
               <div className="bg-white p-6 rounded-3xl border border-gray-200 flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                <div className="w-20 h-20 rounded-full bg-cocoa-100 flex items-center justify-center text-cocoa-600">
                   <FaBlog size={24} />
                 </div>
                 <div>
@@ -1729,7 +1730,7 @@ const Dashboard = () => {
                         User Registration Growth
                       </h2>
                     </div>
-                    <span className="text-xs font-semibold bg-indigo-50 text-[#5932EA] px-3 py-1 rounded-full border border-indigo-100">
+                    <span className="text-xs font-semibold bg-brand-50 text-brand px-3 py-1 rounded-full border border-brand-100">
                       Monthly Total
                     </span>
                   </div>
@@ -1758,13 +1759,13 @@ const Dashboard = () => {
                         />
                         <XAxis
                           dataKey="name"
-                          stroke="#9197B3"
+                          stroke="#8a7366"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                         />
                         <YAxis
-                          stroke="#9197B3"
+                          stroke="#8a7366"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
@@ -1780,7 +1781,7 @@ const Dashboard = () => {
                         />
                         <Bar dataKey="Users" radius={[8, 8, 0, 0]}>
                           {monthlyGrowthData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill="#5932EA" />
+                            <Cell key={`cell-${index}`} fill="#b77145" />
                           ))}
                         </Bar>
                       </BarChart>
@@ -1830,18 +1831,18 @@ const Dashboard = () => {
               <div className="flex flex-col gap-4 justify-between">
                 <div
                   onClick={() => setUserFilter("all")}
-                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "all" ? "bg-[#5932EA] text-white border-transparent" : "bg-white border-gray-200 hover:border-indigo-300 text-gray-900"}`}
+                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "all" ? "bg-brand text-white border-transparent" : "bg-white border-gray-200 hover:border-brand-300 text-gray-900"}`}
                 >
                   <div className="flex justify-between items-center">
                     <h3
-                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "all" ? "text-indigo-100" : "text-gray-400"}`}
+                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "all" ? "text-brand-100" : "text-gray-400"}`}
                     >
                       Total Registrations
                     </h3>
                     <FaUsers
                       size={20}
                       className={
-                        userFilter === "all" ? "text-white" : "text-indigo-500"
+                        userFilter === "all" ? "text-white" : "text-brand-500"
                       }
                     />
                   </div>
@@ -1852,11 +1853,11 @@ const Dashboard = () => {
 
                 <div
                   onClick={() => setUserFilter("subscribed")}
-                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "subscribed" ? "bg-[#5932EA] text-white border-transparent" : "bg-white border-gray-200 hover:border-indigo-300 text-gray-900"}`}
+                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "subscribed" ? "bg-brand text-white border-transparent" : "bg-white border-gray-200 hover:border-brand-300 text-gray-900"}`}
                 >
                   <div className="flex justify-between items-center">
                     <h3
-                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "subscribed" ? "text-indigo-100" : "text-gray-400"}`}
+                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "subscribed" ? "text-brand-100" : "text-gray-400"}`}
                     >
                       Subscribed Users
                     </h3>
@@ -1876,11 +1877,11 @@ const Dashboard = () => {
 
                 <div
                   onClick={() => setUserFilter("unsubscribed")}
-                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "unsubscribed" ? "bg-[#5932EA] text-white border-transparent" : "bg-white border-gray-200 hover:border-indigo-300 text-gray-900"}`}
+                  className={`p-5 flex-1 rounded-3xl border transition-all cursor-pointer flex flex-col justify-center ${userFilter === "unsubscribed" ? "bg-brand text-white border-transparent" : "bg-white border-gray-200 hover:border-brand-300 text-gray-900"}`}
                 >
                   <div className="flex justify-between items-center">
                     <h3
-                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "unsubscribed" ? "text-indigo-100" : "text-gray-400"}`}
+                      className={`text-xs font-medium uppercase tracking-wider ${userFilter === "unsubscribed" ? "text-brand-100" : "text-gray-400"}`}
                     >
                       Unsubscribed Users
                     </h3>
@@ -1904,19 +1905,19 @@ const Dashboard = () => {
               <div className="flex border-b border-gray-200 mb-6 gap-6">
                 <button
                   onClick={() => setUserFilter("all")}
-                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "all" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "all" ? "border-brand text-brand" : "border-transparent text-gray-400 hover:text-gray-600"}`}
                 >
                   All Users ({computedTotalUsersCount})
                 </button>
                 <button
                   onClick={() => setUserFilter("subscribed")}
-                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "subscribed" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "subscribed" ? "border-brand text-brand" : "border-transparent text-gray-400 hover:text-gray-600"}`}
                 >
                   Subscribed Accounts ({computedSubscribedCount})
                 </button>
                 <button
                   onClick={() => setUserFilter("unsubscribed")}
-                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "unsubscribed" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                  className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${userFilter === "unsubscribed" ? "border-brand text-brand" : "border-transparent text-gray-400 hover:text-gray-600"}`}
                 >
                   Unsubscribed Accounts ({computedUnsubscribedCount})
                 </button>
@@ -1995,13 +1996,13 @@ const Dashboard = () => {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => setCommunitySubTabFilter("posts")}
-                  className={`px-6 py-2 text-sm font-semibold rounded-xl transition ${communitySubView === "posts" ? "bg-[#5932EA] text-white" : "text-gray-400 hover:text-gray-600 hover:bg-slate-50"}`}
+                  className={`px-6 py-2 text-sm font-semibold rounded-xl transition ${communitySubView === "posts" ? "bg-brand text-white" : "text-gray-400 hover:text-gray-600 hover:bg-slate-50"}`}
                 >
                   Manage Content & Reviews
                 </button>
                 <button
                   onClick={() => setCommunitySubTabFilter("tags")}
-                  className={`px-6 py-2 text-sm font-semibold rounded-xl transition ${communitySubView === "tags" ? "bg-[#5932EA] text-white" : "text-gray-400 hover:text-gray-600 hover:bg-slate-50"}`}
+                  className={`px-6 py-2 text-sm font-semibold rounded-xl transition ${communitySubView === "tags" ? "bg-brand text-white" : "text-gray-400 hover:text-gray-600 hover:bg-slate-50"}`}
                 >
                   Pre-defined Tags Pipeline
                 </button>
@@ -2009,7 +2010,7 @@ const Dashboard = () => {
               {communitySubView === "posts" && (
                 <button
                   onClick={() => setIsTestimonialModalOpen(true)}
-                  className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center justify-center gap-2 text-sm sm:w-auto w-full"
+                  className="bg-brand hover:bg-brand-600 text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center justify-center gap-2 text-sm sm:w-auto w-full"
                 >
                   <FaPlus size={12} /> Create Testimonial
                 </button>
@@ -2021,7 +2022,7 @@ const Dashboard = () => {
                 <div className="flex border-b border-gray-200 mb-6 gap-6">
                   <button
                     onClick={() => setCommunityFilter("pending")}
-                    className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${communityFilter === "pending" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                    className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${communityFilter === "pending" ? "border-brand text-brand" : "border-transparent text-gray-400 hover:text-gray-600"}`}
                   >
                     Pending Approvals (
                     {
@@ -2032,7 +2033,7 @@ const Dashboard = () => {
                   </button>
                   <button
                     onClick={() => setCommunityFilter("approved")}
-                    className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${communityFilter === "approved" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                    className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${communityFilter === "approved" ? "border-brand text-brand" : "border-transparent text-gray-400 hover:text-gray-600"}`}
                   >
                     Live Directory (
                     {
@@ -2078,7 +2079,7 @@ const Dashboard = () => {
                                 )}
                               </div>
                               {post.community_tags?.name && (
-                                <span className="inline-block bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded text-xs text-[#5932EA] font-semibold mt-1">
+                                <span className="inline-block bg-brand-50 border border-brand-100 px-2 py-0.5 rounded text-xs text-brand font-semibold mt-1">
                                   {post.community_tags.name}
                                 </span>
                               )}
@@ -2093,7 +2094,7 @@ const Dashboard = () => {
 
                                   {/* Metadata / Direct Link Option */}
                                   <div className="flex flex-col text-xs">
-                                    <span className="font-semibold text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded w-fit mb-1">
+                                    <span className="font-semibold text-cocoa-700 bg-cocoa-50 border border-cocoa-100 px-2 py-0.5 rounded w-fit mb-1">
                                       Video Post
                                     </span>
                                     <a
@@ -2199,7 +2200,7 @@ const Dashboard = () => {
                         value={newTagName}
                         onChange={(e) => setNewConditionTagName(e.target.value)}
                         placeholder="e.g., Success Story, Feedback"
-                        className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-[#5932EA]"
+                        className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-brand"
                       />
                     </div>
 
@@ -2219,15 +2220,15 @@ const Dashboard = () => {
                           type="text"
                           value={newTagColor}
                           onChange={(e) => setNewTagColor(e.target.value)}
-                          placeholder="#5932EA"
-                          className="flex-1 bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm font-mono focus:outline-none focus:border-[#5932EA]"
+                          placeholder="#B77145"
+                          className="flex-1 bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm font-mono focus:outline-none focus:border-brand"
                         />
                       </div>
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-[#5932EA] text-white font-semibold py-2.5 rounded-xl transition text-sm hover:bg-[#4826c9]"
+                      className="w-full bg-brand text-white font-semibold py-2.5 rounded-xl transition text-sm hover:bg-brand-600"
                     >
                       Add Tag
                     </button>
@@ -2267,7 +2268,7 @@ const Dashboard = () => {
                               className="hover:bg-slate-50 transition"
                             >
                               <td className="py-3.5 px-6 font-semibold text-gray-800">
-                                <span className="bg-indigo-50 border border-indigo-100 text-[#5932EA] px-3 py-1 rounded-lg font-bold text-xs uppercase tracking-wide">
+                                <span className="bg-brand-50 border border-brand-100 text-brand px-3 py-1 rounded-lg font-bold text-xs uppercase tracking-wide">
                                   {tag.name}
                                 </span>
                               </td>
@@ -2301,13 +2302,13 @@ const Dashboard = () => {
             <div className="flex border-b border-gray-200 mb-6 gap-6">
               <button
                 onClick={() => setPractitionerSubTab("pending")}
-                className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${practitionerSubTab === "pending" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${practitionerSubTab === "pending" ? "border-brand text-brand" : "border-transparent text-gray-400 hover:text-gray-600"}`}
               >
                 Pending Applications ({pendingCount})
               </button>
               <button
                 onClick={() => setPractitionerSubTab("live")}
-                className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${practitionerSubTab === "live" ? "border-[#5932EA] text-[#5932EA]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+                className={`pb-3 font-semibold text-base transition-all border-b-2 px-2 ${practitionerSubTab === "live" ? "border-brand text-brand" : "border-transparent text-gray-400 hover:text-gray-600"}`}
               >
                 Live Directory ({liveCount})
               </button>
@@ -2398,7 +2399,7 @@ const Dashboard = () => {
               </h2>
               <button
                 onClick={openCreateTherapy}
-                className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm self-stretch sm:self-auto justify-center"
+                className="bg-brand hover:bg-brand-600 text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm self-stretch sm:self-auto justify-center"
               >
                 <FaPlus size={12} /> Create New Therapy
               </button>
@@ -2411,7 +2412,7 @@ const Dashboard = () => {
                 </span>
                 <button
                   onClick={fetchTherapiesFromCms}
-                  className="text-xs text-[#5932EA] font-semibold hover:underline flex items-center gap-1"
+                  className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
                 >
                   <FaSync
                     size={10}
@@ -2423,7 +2424,7 @@ const Dashboard = () => {
 
               {therapiesLoading && therapiesList.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 italic text-sm space-y-2">
-                  <div className="w-8 h-8 border-4 border-[#5932EA] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div>
                   <p>Loading therapies from Webflow...</p>
                 </div>
               ) : therapiesList.length === 0 ? (
@@ -2468,7 +2469,7 @@ const Dashboard = () => {
                                   <p className="font-semibold text-gray-900 tracking-tight">
                                     {data.name || "Untitled"}
                                     {data.featured && (
-                                      <span className="ml-2 align-middle px-2 py-0.5 text-[11px] font-medium rounded-full bg-indigo-50 text-[#5932EA] border border-indigo-100">
+                                      <span className="ml-2 align-middle px-2 py-0.5 text-[11px] font-medium rounded-full bg-brand-50 text-brand border border-brand-100">
                                         Featured
                                       </span>
                                     )}
@@ -2505,7 +2506,7 @@ const Dashboard = () => {
                               <div className="inline-flex items-center gap-1">
                                 <button
                                   onClick={() => setSelectedTherapyDetail(item)}
-                                  className="p-2 text-[#5932EA] hover:bg-indigo-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  className="p-2 text-brand hover:bg-brand-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
                                   title="View Therapy"
                                 >
                                   <FaEye size={14} />
@@ -2546,7 +2547,7 @@ const Dashboard = () => {
               </h2>
               <button
                 onClick={openCreateCondition}
-                className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm"
+                className="bg-brand hover:bg-brand-600 text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm"
               >
                 <FaPlus size={12} /> Create New Condition
               </button>
@@ -2559,7 +2560,7 @@ const Dashboard = () => {
                 </span>
                 <button
                   onClick={fetchConditionsTabCms}
-                  className="text-xs text-[#5932EA] font-semibold hover:underline flex items-center gap-1"
+                  className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
                 >
                   <FaSync
                     size={10}
@@ -2571,7 +2572,7 @@ const Dashboard = () => {
 
               {conditionsLoading && conditionsList.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 italic text-sm space-y-2">
-                  <div className="w-8 h-8 border-4 border-[#5932EA] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div>
                   <p>Parsing active Webflow schemas variables...</p>
                 </div>
               ) : conditionsList.length === 0 ? (
@@ -2633,7 +2634,7 @@ const Dashboard = () => {
                               <div className="inline-flex items-center gap-1">
                                 <button
                                   onClick={() => setSelectedConditionDetail(item)}
-                                  className="p-2 text-[#5932EA] hover:bg-indigo-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  className="p-2 text-brand hover:bg-brand-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
                                   title="View Condition"
                                 >
                                   <FaEye size={14} />
@@ -2676,7 +2677,7 @@ const Dashboard = () => {
               </div>
               <button
                 onClick={() => setIsCreateBlogModalOpen(true)}
-                className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm"
+                className="bg-brand hover:bg-brand-600 text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm"
               >
                 Create New Entry
               </button>
@@ -2689,7 +2690,7 @@ const Dashboard = () => {
                 </span>
                 <button
                   onClick={fetchBlogsFromCms}
-                  className="text-xs text-[#5932EA] font-semibold hover:underline flex items-center gap-1"
+                  className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
                 >
                   <FaSync
                     size={10}
@@ -2701,7 +2702,7 @@ const Dashboard = () => {
 
               {blogsLoading ? (
                 <div className="text-center py-16 text-gray-400 italic text-sm space-y-2">
-                  <div className="w-8 h-8 border-4 border-[#5932EA] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div>
                   <p>Syncing continuous entries lists variables...</p>
                 </div>
               ) : blogsList.length === 0 ? (
@@ -2739,7 +2740,7 @@ const Dashboard = () => {
                                     className="w-10 h-10 object-cover rounded-xl border shrink-0"
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#5932EA] flex items-center justify-center font-bold text-xs shrink-0 border">
+                                  <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand flex items-center justify-center font-bold text-xs shrink-0 border">
                                     Doc
                                   </div>
                                 )}
@@ -2757,7 +2758,7 @@ const Dashboard = () => {
                               {data["authors-name"] || "System Admin"}
                             </td>
                             <td className="py-4 px-6">
-                              <span className="px-2.5 py-1 text-xs font-semibold bg-purple-50 border border-purple-100 rounded-md text-purple-600">
+                              <span className="px-2.5 py-1 text-xs font-semibold bg-cocoa-50 border border-cocoa-100 rounded-md text-cocoa-600">
                                 {matchedTag
                                   ? matchedTag.fieldData?.name
                                   : "Standard Abstract"}
@@ -2853,7 +2854,7 @@ const Dashboard = () => {
                                     profile: matchUser,
                                   })
                                 }
-                                className="bg-indigo-50 border border-indigo-100 text-[#5932EA] py-1.5 px-4 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 hover:bg-indigo-100 transition"
+                                className="bg-brand-50 border border-brand-100 text-brand py-1.5 px-4 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 hover:bg-brand-100 transition"
                               >
                                 <FaClipboardList size={12} /> Recommendation
                               </button>
@@ -2893,7 +2894,7 @@ const Dashboard = () => {
                             roadmapModalUser.mapData,
                           )
                         }
-                        className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-[#5932EA] font-semibold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        className="bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand font-semibold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
                         title="Export Report to Local PDF File"
                       >
                         <FaDownload size={12} />
@@ -2909,7 +2910,7 @@ const Dashboard = () => {
                             roadmapModalUser.mapData,
                           )
                         }
-                        className="bg-[#5932EA] hover:bg-[#4826c9] text-white font-semibold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+                        className="bg-brand hover:bg-brand-600 text-white font-semibold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
                         title="Send PDF Report directly to user via email"
                       >
                         <FaFilePdf size={12} />
@@ -2945,7 +2946,7 @@ const Dashboard = () => {
                           <span className="text-xs font-bold text-gray-400 uppercase block tracking-wider">
                             Classification Profile
                           </span>
-                          <span className="font-extrabold text-[#5932EA] text-sm">
+                          <span className="font-extrabold text-brand text-sm">
                             {getClassificationText(
                               roadmapModalUser.mapData?.classification,
                             )}
@@ -3000,7 +3001,7 @@ const Dashboard = () => {
                                   <span
                                     className={`inline-block font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wide ${
                                       item.severity === "High"
-                                        ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                        ? "bg-cocoa-100 text-cocoa-700 border border-cocoa-200"
                                         : item.severity === "Moderate"
                                           ? "bg-amber-50 text-amber-700 border border-amber-200"
                                           : "bg-green-50 text-green-700 border border-green-100"
@@ -3056,10 +3057,10 @@ const Dashboard = () => {
                                             key={rIdx}
                                             className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider ${
                                               rel === "Primary"
-                                                ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                                ? "bg-brand-50 text-brand-700 border border-brand-200"
                                                 : rel === "Secondary"
                                                   ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                                  : "bg-purple-50 text-purple-700 border border-purple-200"
+                                                  : "bg-cocoa-50 text-cocoa-700 border border-cocoa-200"
                                             }`}
                                           >
                                             {rel}
@@ -3115,7 +3116,7 @@ const Dashboard = () => {
                             (roadmapModalUser.targetCtxPractitionerId =
                               e.target.value)
                           }
-                          className="flex-1 bg-white border border-gray-200 px-3 py-2 rounded-xl text-xs focus:outline-none focus:border-[#5932EA] text-gray-700 font-medium h-10"
+                          className="flex-1 bg-white border border-gray-200 px-3 py-2 rounded-xl text-xs focus:outline-none focus:border-brand text-gray-700 font-medium h-10"
                         >
                           <option value="">
                             -- Select Active Practitioner Target to Share Data
@@ -3180,7 +3181,7 @@ const Dashboard = () => {
                   onChange={(e) =>
                     setEditingPost({ ...editingPost, username: e.target.value })
                   }
-                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-brand focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -3195,7 +3196,7 @@ const Dashboard = () => {
                       setEditingPost({ ...editingPost, header: e.target.value })
                     }
                     placeholder="Set descriptive header"
-                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-brand focus:outline-none"
                   />
                 </div>
                 <div>
@@ -3210,7 +3211,7 @@ const Dashboard = () => {
                         tag_id: e.target.value || null,
                       })
                     }
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-[#5932EA] focus:outline-none text-sm text-gray-800"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-brand focus:outline-none text-sm text-gray-800"
                   >
                     <option value="">-- No Tag (Clear) --</option>
                     {tagsList.map((t) => (
@@ -3232,7 +3233,7 @@ const Dashboard = () => {
                   onChange={(e) =>
                     setEditingPost({ ...editingPost, content: e.target.value })
                   }
-                  className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                  className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-brand focus:outline-none"
                 />
               </div>
               <div className="pt-4 flex justify-end gap-3">
@@ -3245,7 +3246,7 @@ const Dashboard = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-[#5932EA] text-white rounded-xl"
+                  className="px-6 py-2 bg-brand text-white rounded-xl"
                 >
                   Save & Sync
                 </button>
@@ -3281,7 +3282,7 @@ const Dashboard = () => {
                   onChange={(e) =>
                     setEditingPost({ ...editingPost, username: e.target.value })
                   }
-                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-brand focus:outline-none"
                 />
               </div>
 
@@ -3297,7 +3298,7 @@ const Dashboard = () => {
                       setEditingPost({ ...editingPost, header: e.target.value })
                     }
                     placeholder="Set descriptive header"
-                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-brand focus:outline-none"
                   />
                 </div>
                 <div>
@@ -3312,7 +3313,7 @@ const Dashboard = () => {
                         tag_id: e.target.value || null,
                       })
                     }
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-[#5932EA] focus:outline-none text-sm text-gray-800"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-brand focus:outline-none text-sm text-gray-800"
                   >
                     <option value="">-- No Tag (Clear) --</option>
                     {tagsList.map((t) => (
@@ -3326,12 +3327,12 @@ const Dashboard = () => {
 
               {/* 🎬 CONDITIONAL RENDER: VIDEO PREVIEW OR TEXT BODY */}
               {editingPost.video_url ? (
-                <div className="space-y-3 bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
+                <div className="space-y-3 bg-cocoa-50/50 p-4 rounded-2xl border border-cocoa-100">
                   <div className="flex justify-between items-center">
-                    <label className="block text-xs font-bold text-purple-900 uppercase tracking-wider">
+                    <label className="block text-xs font-bold text-cocoa-900 uppercase tracking-wider">
                       Video Asset Preview
                     </label>
-                    <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-bold uppercase">
+                    <span className="text-[10px] bg-cocoa-100 text-cocoa-700 px-2 py-0.5 rounded font-bold uppercase">
                       Video Post
                     </span>
                   </div>
@@ -3373,7 +3374,7 @@ const Dashboard = () => {
                         content: e.target.value,
                       })
                     }
-                    className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-brand focus:outline-none"
                   />
                 </div>
               )}
@@ -3388,7 +3389,7 @@ const Dashboard = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-[#5932EA] text-white rounded-xl"
+                  className="px-6 py-2 bg-brand text-white rounded-xl"
                 >
                   Save & Sync
                 </button>
@@ -3435,7 +3436,7 @@ const Dashboard = () => {
                     }
                     className={`py-2 text-xs font-bold rounded-lg transition ${
                       newTestimonialForm.post_type === "text"
-                        ? "bg-white text-[#5932EA] shadow-xs"
+                        ? "bg-white text-brand shadow-xs"
                         : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
@@ -3451,7 +3452,7 @@ const Dashboard = () => {
                     }
                     className={`py-2 text-xs font-bold rounded-lg transition ${
                       newTestimonialForm.post_type === "video"
-                        ? "bg-white text-[#5932EA] shadow-xs"
+                        ? "bg-white text-brand shadow-xs"
                         : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
@@ -3476,7 +3477,7 @@ const Dashboard = () => {
                       username: e.target.value,
                     })
                   }
-                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                  className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-brand focus:outline-none"
                 />
               </div>
 
@@ -3497,7 +3498,7 @@ const Dashboard = () => {
                         header: e.target.value,
                       })
                     }
-                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl focus:border-brand focus:outline-none"
                   />
                 </div>
                 <div>
@@ -3512,7 +3513,7 @@ const Dashboard = () => {
                         tag_id: e.target.value,
                       })
                     }
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-[#5932EA] focus:outline-none text-sm text-gray-800"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:border-brand focus:outline-none text-sm text-gray-800"
                   >
                     <option value="">-- Choose Assigned Tag --</option>
                     {tagsList.map((t) => (
@@ -3541,16 +3542,16 @@ const Dashboard = () => {
                         content: e.target.value,
                       })
                     }
-                    className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-[#5932EA] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 p-4 rounded-xl focus:border-brand focus:outline-none"
                   />
                 </div>
               )}
 
               {/* VIDEO POST TYPE: VIDEO FILE & THUMBNAIL UPLOAD */}
               {newTestimonialForm.post_type === "video" && (
-                <div className="space-y-4 bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
+                <div className="space-y-4 bg-cocoa-50/50 p-4 rounded-2xl border border-cocoa-100">
                   <div>
-                    <label className="block text-xs font-bold text-purple-900 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-cocoa-900 uppercase tracking-wider mb-1">
                       Video Media Asset *
                     </label>
                     <input
@@ -3574,7 +3575,7 @@ const Dashboard = () => {
                       className="w-full bg-white border border-gray-200 px-3 py-2 rounded-xl text-xs"
                     />
                     {newTestimonialForm.video_url && (
-                      <p className="text-xs text-indigo-600 mt-1 truncate font-medium">
+                      <p className="text-xs text-brand-600 mt-1 truncate font-medium">
                         {newTestimonialForm.video_url === "Uploading..."
                           ? "Uploading video asset..."
                           : `✓ Uploaded: ${newTestimonialForm.video_url}`}
@@ -3583,7 +3584,7 @@ const Dashboard = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-purple-900 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-cocoa-900 uppercase tracking-wider mb-1">
                       Thumbnail Cover Image (Optional)
                     </label>
                     <input
@@ -3631,7 +3632,7 @@ const Dashboard = () => {
                     newTestimonialForm.video_url === "Uploading..." ||
                     newTestimonialForm.thumbnail_url === "Uploading..."
                   }
-                  className="px-6 py-2 bg-[#5932EA] text-white font-medium rounded-xl hover:bg-[#4826c9] transition disabled:opacity-50"
+                  className="px-6 py-2 bg-brand text-white font-medium rounded-xl hover:bg-brand-600 transition disabled:opacity-50"
                 >
                   Publish Live
                 </button>
@@ -3704,7 +3705,7 @@ const Dashboard = () => {
                       <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">
                         Plan Name Tier:
                       </span>
-                      <span className="font-bold text-indigo-600 capitalize text-xs">
+                      <span className="font-bold text-brand-600 capitalize text-xs">
                         {selectedUser.subscription.plan}
                       </span>
                     </div>
@@ -3768,7 +3769,7 @@ const Dashboard = () => {
                   <img
                     src={selectedPractitioner.image.url}
                     alt="Profile"
-                    className="w-24 h-24 object-cover rounded-full border-2 border-indigo-100 shadow-sm"
+                    className="w-24 h-24 object-cover rounded-full border-2 border-brand-100 shadow-sm"
                   />
                 ) : (
                   <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center text-gray-400">
@@ -3779,7 +3780,7 @@ const Dashboard = () => {
                   <h3 className="text-2xl font-bold text-gray-900">
                     {selectedPractitioner.name}
                   </h3>
-                  <p className="text-indigo-600 font-medium">
+                  <p className="text-brand-600 font-medium">
                     {selectedPractitioner.specialization}
                   </p>
                   <p className="text-gray-500 text-xs mt-1 font-mono">
@@ -3961,7 +3962,7 @@ const Dashboard = () => {
                     setNewBlogForm({ ...newBlogForm, name: e.target.value })
                   }
                   placeholder="e.g., Breakthrough CBT Methodologies"
-                  className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                  className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-brand"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -4002,7 +4003,7 @@ const Dashboard = () => {
                       })
                     }
                     placeholder="e.g., Sarah M."
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>
@@ -4061,7 +4062,7 @@ const Dashboard = () => {
                         }));
                       }
                     }}
-                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-[#5932EA]"
+                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand"
                   />
                   {newBlogForm.image && (
                     <p className="mt-1 text-xs font-mono text-gray-500 truncate">
@@ -4087,7 +4088,7 @@ const Dashboard = () => {
                       })
                     }
                     placeholder="e.g., Overwhelmed to well informed."
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-brand"
                   />
                 </div>
                 <div>
@@ -4104,7 +4105,7 @@ const Dashboard = () => {
                       })
                     }
                     placeholder="e.g., 5 min read"
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#5932EA]"
+                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>
@@ -4122,7 +4123,7 @@ const Dashboard = () => {
                     })
                   }
                   placeholder="<h2>Heading</h2><p>Core message block text strings...</p>"
-                  className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-[#5932EA]"
+                  className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-brand"
                 />
               </div>
               <div className="pt-4 border-t flex justify-end gap-3 bg-white sticky bottom-0">
@@ -4139,7 +4140,7 @@ const Dashboard = () => {
                     newBlogForm.image === "Uploading..." ||
                     newBlogForm.podcastVideoUrl === "Uploading..."
                   }
-                  className="px-6 py-2.5 bg-[#5932EA] text-white font-semibold rounded-xl disabled:opacity-50"
+                  className="px-6 py-2.5 bg-brand text-white font-semibold rounded-xl disabled:opacity-50"
                 >
                   Publish Live
                 </button>
