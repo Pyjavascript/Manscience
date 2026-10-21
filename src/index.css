@@ -30,6 +30,43 @@
   --color-paper: #fdf9f3;
 }
 
+/* Webflow renders code components in a shadow root, where browsers ignore Tailwind's @property
+   defaults. Without them `border` resolves to border-style: none and shadows/rings/gradients
+   break, so set the same defaults as ordinary variables. */
+@layer base {
+  *, ::before, ::after, ::backdrop {
+    --tw-translate-x: 0;
+    --tw-translate-y: 0;
+    --tw-translate-z: 0;
+    --tw-scale-x: 1;
+    --tw-scale-y: 1;
+    --tw-scale-z: 1;
+    --tw-scroll-snap-strictness: proximity;
+    --tw-space-x-reverse: 0;
+    --tw-space-y-reverse: 0;
+    --tw-divide-x-reverse: 0;
+    --tw-divide-y-reverse: 0;
+    --tw-border-style: solid;
+    --tw-outline-style: solid;
+    --tw-gradient-from: #0000;
+    --tw-gradient-via: #0000;
+    --tw-gradient-to: #0000;
+    --tw-gradient-from-position: 0%;
+    --tw-gradient-via-position: 50%;
+    --tw-gradient-to-position: 100%;
+    --tw-shadow: 0 0 #0000;
+    --tw-shadow-alpha: 100%;
+    --tw-inset-shadow: 0 0 #0000;
+    --tw-inset-shadow-alpha: 100%;
+    --tw-ring-shadow: 0 0 #0000;
+    --tw-inset-ring-shadow: 0 0 #0000;
+    --tw-ring-offset-width: 0px;
+    --tw-ring-offset-color: #fff;
+    --tw-ring-offset-shadow: 0 0 #0000;
+    --tw-drop-shadow-alpha: 100%;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

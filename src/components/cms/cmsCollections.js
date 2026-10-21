@@ -391,3 +391,101 @@ export const THERAPY_VIEW_HEADER = {
   titleKey: "title-name",
   descriptionKey: "therapy-type-description",
 };
+
+// ---------------------------------------------------------------------------------------------
+// Research Digest — the blog and podcast cards. Each card links out to `redireciton-links`.
+// The dashboard reads the collection schema to find which collections the Reference fields
+// point to; the ids below are used when the schema can't be loaded.
+// ---------------------------------------------------------------------------------------------
+export const BLOG_COLLECTION_ID = "6a23cdf5d3cdf3ce98515784";
+// Options for "filter-tag": Podcast, Research paper, Latest News, Blogs, Socials
+export const BLOG_FILTER_COLLECTION_ID = "6a4aa84d077e14e002702657";
+// Options for the card style ("Blogs" or "Podcast"), stored in both "cta-image" and "gradient-image"
+export const BLOG_STYLE_COLLECTION_ID = "6a4a29998a1508d3ea0976f9";
+
+export const BLOG_SECTIONS = withFields([
+  {
+    title: "Card",
+    labelKey: "name",
+    fallbackSubtitle: "Title, author and link",
+    groups: [
+      {
+        title: "Text",
+        fields: [
+          { key: "name", label: "Title", type: "text", required: true, placeholder: "e.g., Handwriting Disorders in School-Aged Children", hint: "Also used to create the item's URL" },
+          { key: "hero-text", label: "Hero text", type: "textarea", rows: 2, display: "heading", placeholder: "Handwriting Disorders in School-Aged Children" },
+          { key: "therapy-name", label: "Condition / therapy", type: "text", placeholder: "e.g., Dysgraphia", hint: "Small label on the card" },
+          { key: "authors-name", label: "Author", type: "text", placeholder: "e.g., Clémence Lopez, et al." },
+          { key: "time-to-read-2", label: "Date", type: "text", placeholder: "e.g., Sep 6, 2023", hint: "Shown exactly as typed" },
+        ],
+      },
+      {
+        title: "Link",
+        fields: [
+          { key: "redireciton-links", label: "Link", type: "url", placeholder: "https://…", hint: "Article, paper or YouTube video the card opens" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Filter & Style",
+    fallbackSubtitle: "Where it's listed and how it looks",
+    groups: [
+      {
+        title: "Filter",
+        fields: [
+          { key: "filter-tag", label: "Filter tag", type: "select", placeholder: "No filter", hint: "The filter this card shows under" },
+        ],
+      },
+      {
+        title: "Card style",
+        fields: [
+          { key: "cta-image", label: "Card style", type: "select", placeholder: "No style", hint: "Pick Podcast for videos and Blogs for articles" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Images",
+    fallbackSubtitle: "Card images",
+    groups: [
+      {
+        title: "Images",
+        fields: [
+          { key: "image", label: "Image — desktop", type: "image" },
+          { key: "blogs-mobile", label: "Image — mobile", type: "image" },
+          { key: "image-thumbnail-mobile", label: "Thumbnail — mobile", type: "image" },
+          { key: "podcast-cta-main", label: "Podcast thumbnail", type: "image", hint: "Cover image for podcast and video cards" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Body",
+    fallbackSubtitle: "Optional long text",
+    groups: [
+      {
+        title: "Text",
+        fields: [
+          { key: "rich-text-1", label: "Body — part 1", type: "richtext", rows: 8, hint: "Leave a blank line between paragraphs" },
+          { key: "rich-text-2-2", label: "Body — part 2", type: "richtext", rows: 8, hint: "Leave a blank line between paragraphs" },
+        ],
+      },
+    ],
+  },
+]);
+
+// Mirrors "cta-image"; saved alongside it rather than edited on its own
+export const BLOG_GRADIENT_FIELD = { key: "gradient-image", label: "Card gradient", type: "select" };
+
+export const BLOG_VIEW_HEADER = {
+  imageKey: "image",
+  kickerKey: "therapy-name",
+  titleKey: "name",
+};
+
+// Used for the filter editor when the filter collection's schema can't be loaded
+export const BLOG_FILTER_FALLBACK_FIELDS = [
+  { key: "name", label: "Filter name", type: "text", required: true, placeholder: "e.g., Podcast" },
+  { key: "representation-color", label: "Dot color", type: "color", hint: "Colored dot shown on the blog cards" },
+];

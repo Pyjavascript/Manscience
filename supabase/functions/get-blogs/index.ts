@@ -84,13 +84,39 @@ const corsHeaders = {
 }
 
 // 1. Standalone Function to Handle Fetching Items (GET)
+// Webflow returns at most 100 items per request, so keep paging until every item is loaded
 async function handleGetItems(collectionId: string, token: string) {
   const baseUrl = `https://api.webflow.com/v2/collections/${collectionId}/items`;
-  
-  const response = await fetch(baseUrl, {
+  const items: unknown[] = [];
+  let total = 0;
+
+  do {
+    const response = await fetch(`${baseUrl}?limit=100&offset=${items.length}`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'accept': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return new Response(JSON.stringify(data), { headers: corsHeaders, status: response.status });
+    }
+
+    const page = Array.isArray(data.items) ? data.items : [];
+    items.push(...page);
+    total = data.pagination?.total ?? items.length;
+    if (page.length === 0) break;
+  } while (items.length < total);
+
+  return new Response(
+    JSON.stringify({ items, pagination: { limit: items.length, offset: 0, total } }),
+    { headers: corsHeaders, status: 200 }
+  );
+}
+
+// 1b. Standalone Function to Handle Fetching a Collection's field definitions (GET ?schema=1)
+async function handleGetSchema(collectionId: string, token: string) {
+  const response = await fetch(`https://api.webflow.com/v2/collections/${collectionId}`, {
     headers: { 'Authorization': `Bearer ${token}`, 'accept': 'application/json' }
   });
-  
+
   const data = await response.json();
   return new Response(JSON.stringify(data), { headers: corsHeaders, status: response.status });
 }
@@ -202,6 +228,9 @@ serve(async (req) => {
     // Route GET requests
     if (req.method === 'GET') {
       const collectionId = targetCollectionUrl || defaultCollectionId;
+      if (requestUrl.searchParams.get("schema")) {
+        return await handleGetSchema(collectionId, token);
+      }
       return await handleGetItems(collectionId, token);
     }
 

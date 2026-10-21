@@ -33,6 +33,19 @@ export const fetchCmsItems = async (collectionId) => {
   return response.json();
 };
 
+// The collection's field definitions, or null when the proxy can't provide them (a proxy deployed
+// before `?schema=1` existed answers with the item list instead)
+export const fetchCmsSchema = async (collectionId) => {
+  try {
+    const response = await fetch(`${CMS_PROXY_URL}?collection=${collectionId}&schema=1`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return Array.isArray(data?.fields) ? data : null;
+  } catch {
+    return null;
+  }
+};
+
 // Webflow API writes only change the staged item; publishing pushes it to the live site
 export const publishCmsItems = async (collectionId, itemIds) => {
   const response = await postToProxy(collectionId, { action: "publish", itemIds });

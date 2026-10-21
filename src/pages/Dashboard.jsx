@@ -33,17 +33,25 @@ import {
   Cell,
 } from "recharts";
 import { supabase } from "../supabase";
-import logo from "../assets/logo-cropped.png";
+import logo from "../assets/form/LogoBrown.svg";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf, FaClipboardList } from "react-icons/fa";
 
 import CmsItemFormModal from "../components/cms/CmsItemFormModal";
 import CmsItemViewModal from "../components/cms/CmsItemViewModal";
+import BlogFiltersPanel from "../components/cms/BlogFiltersPanel";
 import CelebritiesPanel, {
   celebritiesForCondition,
 } from "../components/cms/CelebritiesPanel";
 import {
+  BLOG_COLLECTION_ID,
+  BLOG_FILTER_COLLECTION_ID,
+  BLOG_FILTER_FALLBACK_FIELDS,
+  BLOG_GRADIENT_FIELD,
+  BLOG_SECTIONS,
+  BLOG_STYLE_COLLECTION_ID,
+  BLOG_VIEW_HEADER,
   CELEBRITY_COLLECTION_ID,
   CONDITION_COLLECTION_ID,
   CONDITION_SECTIONS,
@@ -56,13 +64,27 @@ import {
 import {
   deleteCmsItem,
   fetchCmsItems,
+  fetchCmsSchema,
   publishCmsItems,
   saveCmsItem,
 } from "../components/cms/cmsApi";
-import { hasUnpublishedChanges, toFormState } from "../components/cms/cmsFields";
+import {
+  fieldsFromSchema,
+  hasUnpublishedChanges,
+  isFieldEdited,
+  referenceCollections,
+  toFormState,
+  uniqueSlug,
+} from "../components/cms/cmsFields";
 
 const CONDITION_FIELDS = CONDITION_SECTIONS.flatMap((section) => section.fields);
 const THERAPY_FIELDS = THERAPY_SECTIONS.flatMap((section) => section.fields);
+const BLOG_FIELDS = BLOG_SECTIONS.flatMap((section) => section.fields);
+const BLOG_STYLE_FIELD = BLOG_FIELDS.find((field) => field.key === "cta-image");
+
+// Item id -> trimmed name, for showing Reference field values
+const labelsById = (items) =>
+  new Map(items.map((item) => [item.id, String(item.fieldData?.name ?? "").trim() || item.id]));
 
 const Dashboard = () => {
   // System Metrics & Global States
@@ -736,134 +758,210 @@ const Dashboard = () => {
   // --- RESEARCH DIGEST (BLOGS) MANAGEMENT STATES ---
   const [blogsList, setBlogsList] = useState([]);
   const [blogsLoading, setBlogsLoading] = useState(false);
-  const [blogTagsOptions, setBlogTagsOptions] = useState([]);
+  const [blogSaving, setBlogSaving] = useState(false);
   const [selectedBlogDetail, setSelectedBlogDetail] = useState(null);
-  const [isCreateBlogModalOpen, setIsCreateBlogModalOpen] = useState(false);
+  const [blogForm, setBlogForm] = useState({});
+  const [isBlogFormOpen, setIsBlogFormOpen] = useState(false);
+  // Item being edited in the blog form; null means the form creates a new item
+  const [editingBlog, setEditingBlog] = useState(null);
+  // Filter tags and card styles, from the collections the blog schema says they live in
+  const [blogFilters, setBlogFilters] = useState([]);
+  const [blogFilterFields, setBlogFilterFields] = useState(BLOG_FILTER_FALLBACK_FIELDS);
+  const [blogFilterCollectionId, setBlogFilterCollectionId] = useState(BLOG_FILTER_COLLECTION_ID);
+  const [blogStyles, setBlogStyles] = useState([]);
+  const [blogOptionsLoading, setBlogOptionsLoading] = useState(false);
+  // "all", "unlinked" (tag missing from the filter list) or a filter item id
+  const [blogFilterView, setBlogFilterView] = useState("all");
+  const [blogSearch, setBlogSearch] = useState("");
+  // Ids of blogs ticked as "needs fixing" (e.g. missing link). Dashboard-only, kept in Supabase.
+  const [blogFixFlags, setBlogFixFlags] = useState(() => new Set());
 
-  const [newBlogForm, setNewBlogForm] = useState({
-    name: "",
-    heroText: "",
-    image: "",
-    thisIsTheMainParagraph: "",
-    filterTag: "",
-    thisTheFirstPlainText: "",
-    tagTitle: "",
-    timeToRead: "",
-    authorsName: "",
-    podcastVideoUrl: "",
-  });
-
-  const BLOGS_COLLECTION_ID = "6a23cdf5d3cdf3ce98515784";
-  const TAGS_COLLECTION_ID = "6a4a29998a1508d3ea0976f9";
+  const fetchBlogFixFlags = async () => {
+    const { data, error } = await supabase.from("blog_fix_flags").select("blog_id");
+    if (error) {
+      console.error("Error loading blog fix flags:", error);
+      return;
+    }
+    setBlogFixFlags(new Set(data.map((row) => row.blog_id)));
+  };
 
   const fetchBlogsFromCms = async () => {
     try {
       setBlogsLoading(true);
-      const res = await fetch(
-        `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${BLOGS_COLLECTION_ID}`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      if (!res.ok) throw new Error("Failed fetching blogs mapping archive");
-      const data = await res.json();
+      const [data] = await Promise.all([
+        fetchCmsItems(BLOG_COLLECTION_ID),
+        fetchBlogFixFlags(),
+      ]);
       setBlogsList(data?.items || []);
     } catch (err) {
-      console.error("Error reading blogs collection:", err);
+      console.error("Error loading blogs:", err);
     } finally {
       setBlogsLoading(false);
     }
   };
 
-  const fetchBlogTagsFromCms = async () => {
-    try {
-      const res = await fetch(
-        `https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs?collection=${TAGS_COLLECTION_ID}`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      if (!res.ok) throw new Error("Failed fetching tags metadata options");
-      const data = await res.json();
-      setBlogTagsOptions(data?.items || []);
-    } catch (err) {
-      console.error("Error gathering blog tags parameters:", err);
+  const toggleBlogFixFlag = async (blogId) => {
+    const flagged = blogFixFlags.has(blogId);
+    const update = (add) =>
+      setBlogFixFlags((prev) => {
+        const next = new Set(prev);
+        if (add) next.add(blogId);
+        else next.delete(blogId);
+        return next;
+      });
+    update(!flagged);
+    const { error } = flagged
+      ? await supabase.from("blog_fix_flags").delete().eq("blog_id", blogId)
+      : await supabase.from("blog_fix_flags").upsert({ blog_id: blogId });
+    if (error) {
+      update(flagged);
+      alert(`Couldn't save the checkbox: ${error.message}`);
     }
   };
 
-  const handleCreateBlogSubmit = async (e) => {
-    e.preventDefault();
-
-    const inferredSlug = newBlogForm.name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-");
-
-    if (
-      newBlogForm.image === "Uploading..." ||
-      newBlogForm.podcastVideoUrl === "Uploading..."
-    ) {
-      alert("Please wait for your active media pipeline uploads to finish.");
-      return;
-    }
-
-    const payload = {
-      collectionId: BLOGS_COLLECTION_ID,
-      isArchived: false,
-      isDraft: false,
-      fieldData: {
-        name: newBlogForm.name,
-        slug: inferredSlug,
-        "hero-text": newBlogForm.heroText || null,
-        image: newBlogForm.image
-          ? { url: newBlogForm.image, alt: newBlogForm.name }
-          : null,
-        "this-is-the-main-paragraph":
-          newBlogForm.thisIsTheMainParagraph || null,
-        "filter-tag": newBlogForm.filterTag || null,
-        "this-the-first-plain-text": newBlogForm.thisTheFirstPlainText || null,
-        "tag-title": newBlogForm.tagTitle || null,
-        "time-to-read": newBlogForm.timeToRead || null,
-        "authors-name": newBlogForm.authorsName || null,
-        "cta-image": newBlogForm.tagTitle || null,
-        "podcast-cta-main": newBlogForm.podcastVideoUrl
-          ? { url: newBlogForm.podcastVideoUrl, alt: newBlogForm.name }
-          : null,
-      },
-    };
-
+  const fetchBlogOptionsFromCms = async () => {
     try {
-      const response = await fetch(
-        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/get-blogs",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
+      setBlogOptionsLoading(true);
+      const refs = referenceCollections(await fetchCmsSchema(BLOG_COLLECTION_ID));
+      const filterCollectionId = refs["filter-tag"] || BLOG_FILTER_COLLECTION_ID;
+      const styleCollectionId = refs["cta-image"] || BLOG_STYLE_COLLECTION_ID;
+      const [filterSchema, filterData, styleData] = await Promise.all([
+        fetchCmsSchema(filterCollectionId),
+        fetchCmsItems(filterCollectionId),
+        fetchCmsItems(styleCollectionId),
+      ]);
+      setBlogFilterCollectionId(filterCollectionId);
+      setBlogFilterFields(fieldsFromSchema(filterSchema) || BLOG_FILTER_FALLBACK_FIELDS);
+      setBlogFilters(filterData?.items || []);
+      setBlogStyles(styleData?.items || []);
+    } catch (err) {
+      console.error("Error loading blog filters:", err);
+    } finally {
+      setBlogOptionsLoading(false);
+    }
+  };
+
+  const blogFilterLabels = useMemo(() => labelsById(blogFilters), [blogFilters]);
+  const blogStyleLabels = useMemo(() => labelsById(blogStyles), [blogStyles]);
+  const blogFilterColorKey = blogFilterFields.find((f) => f.type === "color")?.key;
+
+  const blogFilterCounts = useMemo(() => {
+    const counts = new Map();
+    blogsList.forEach((blog) => {
+      const tag = blog.fieldData?.["filter-tag"];
+      if (tag) counts.set(tag, (counts.get(tag) || 0) + 1);
+    });
+    return counts;
+  }, [blogsList]);
+
+  const unlinkedBlogCount = blogsList.filter(
+    (blog) => !blogFilterLabels.has(blog.fieldData?.["filter-tag"]),
+  ).length;
+
+  const visibleBlogs = useMemo(() => {
+    const query = blogSearch.trim().toLowerCase();
+    const matches = blogsList.filter((blog) => {
+      const data = blog.fieldData || {};
+      const tag = data["filter-tag"];
+      if (blogFilterView === "unlinked" && blogFilterLabels.has(tag)) return false;
+      if (!["all", "unlinked"].includes(blogFilterView) && tag !== blogFilterView) return false;
+      return (
+        !query ||
+        [data.name, data["authors-name"], data["therapy-name"]].some((v) =>
+          String(v ?? "").toLowerCase().includes(query),
+        )
       );
+    });
+    // Blogs ticked as needing a fix go first; sort is stable, so CMS order is kept otherwise
+    return matches.sort(
+      (a, b) => blogFixFlags.has(b.id) - blogFixFlags.has(a.id),
+    );
+  }, [blogsList, blogFilterView, blogSearch, blogFilterLabels, blogFixFlags]);
 
-      if (!response.ok)
-        throw new Error("Server edge routing failed validation checks");
+  // --- BLOG EDITOR ---
+  const openCreateBlog = () => {
+    // Keep an unsaved create draft, but don't carry over values from an edit
+    if (editingBlog || Object.keys(blogForm).length === 0) {
+      const articleStyle = blogStyles.find((s) => s.fieldData?.slug === "blogs");
+      setBlogForm({ "cta-image": articleStyle?.id || "" });
+    }
+    setEditingBlog(null);
+    setIsBlogFormOpen(true);
+  };
 
-      alert("Content entry successfully written to Webflow CMS Repository!");
-      setIsCreateBlogModalOpen(false);
-      setNewBlogForm({
-        name: "",
-        heroText: "",
-        image: "",
-        thisIsTheMainParagraph: "",
-        filterTag: "",
-        thisTheFirstPlainText: "",
-        tagTitle: "",
-        timeToRead: "",
-        authorsName: "",
-        podcastVideoUrl: "",
-      });
+  const openEditBlog = (item) => {
+    setBlogForm(toFormState(item.fieldData || {}, BLOG_FIELDS));
+    setEditingBlog(item);
+    setSelectedBlogDetail(null);
+    setIsBlogFormOpen(true);
+  };
+
+  const handlePublishBlog = async (item) => {
+    try {
+      setBlogSaving(true);
+      await publishCmsItems(BLOG_COLLECTION_ID, [item.id]);
+      alert("Blog published to the live website.");
+      setSelectedBlogDetail((prev) =>
+        prev?.id === item.id
+          ? { ...prev, lastPublished: new Date().toISOString() }
+          : prev,
+      );
       fetchBlogsFromCms();
     } catch (err) {
-      alert(`Publish entry aborted: ${err.message}`);
+      alert(`Failed publishing blog: ${err.message}`);
+    } finally {
+      setBlogSaving(false);
+    }
+  };
+
+  const handleSaveBlog = async () => {
+    // The card's gradient follows its style, so save it whenever the style is set or changed
+    const styleChanged =
+      !editingBlog ||
+      isFieldEdited(blogForm, editingBlog.fieldData || {}, BLOG_STYLE_FIELD);
+    try {
+      setBlogSaving(true);
+      const result = await saveCmsItem({
+        collectionId: BLOG_COLLECTION_ID,
+        fields: styleChanged ? [...BLOG_FIELDS, BLOG_GRADIENT_FIELD] : BLOG_FIELDS,
+        form: { ...blogForm, "gradient-image": blogForm["cta-image"] },
+        editingItem: editingBlog,
+        publish: publishOnSave,
+        slug: editingBlog ? undefined : uniqueSlug(blogForm.name, blogsList, "blog"),
+      });
+      if (result.unchanged) {
+        alert("No changes to save.");
+        return;
+      }
+      alert(result.message);
+      setBlogForm({});
+      setEditingBlog(null);
+      setIsBlogFormOpen(false);
+      fetchBlogsFromCms();
+    } catch (err) {
+      alert(`Failed saving blog: ${err.message}`);
+    } finally {
+      setBlogSaving(false);
+    }
+  };
+
+  const handleDeleteBlog = async (item) => {
+    if (
+      !window.confirm(
+        `Delete "${String(item.fieldData?.name ?? "").trim()}"? It will also be removed from the website. This operation is permanent.`,
+      )
+    )
+      return;
+
+    try {
+      setBlogsList((prev) => prev.filter((blog) => blog.id !== item.id));
+      await deleteCmsItem(BLOG_COLLECTION_ID, item.id);
+      alert("Blog deleted and removed from the website.");
+    } catch (err) {
+      console.error("Delete handler error details:", err);
+      alert(`Error deleting blog: ${err.message}`);
+    } finally {
+      fetchBlogsFromCms();
     }
   };
 
@@ -1403,7 +1501,7 @@ const Dashboard = () => {
     if (activeTab === "TherapiesManagement") return therapiesLoading;
     if (activeTab === "CommunityHub") return communityLoading || tagsLoading;
     if (activeTab === "ConditionManagement") return conditionsLoading;
-    if (activeTab === "ResearchDigest") return blogsLoading;
+    if (activeTab === "ResearchDigest") return blogsLoading || blogOptionsLoading;
     if (activeTab === "AiRoadmap")
       return roadmapLoading || userManagementLoading;
     return false;
@@ -1417,6 +1515,7 @@ const Dashboard = () => {
     tagsLoading,
     conditionsLoading,
     blogsLoading,
+    blogOptionsLoading,
     roadmapLoading,
   ]);
 
@@ -1440,7 +1539,7 @@ const Dashboard = () => {
     }
     if (activeTab === "ResearchDigest") {
       fetchBlogsFromCms();
-      fetchBlogTagsFromCms();
+      fetchBlogOptionsFromCms();
     }
     if (activeTab === "AiRoadmap") {
       fetchRoadmapsFromDb();
@@ -1559,7 +1658,7 @@ const Dashboard = () => {
                   fetchConditionsTabCms();
                 if (activeTab === "ResearchDigest") {
                   fetchBlogsFromCms();
-                  fetchBlogTagsFromCms();
+                  fetchBlogOptionsFromCms();
                 }
                 if (activeTab === "AiRoadmap") {
                   fetchRoadmapsFromDb();
@@ -2674,104 +2773,230 @@ const Dashboard = () => {
                 <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
                   Research Digest & Podcasts
                 </h2>
+                <p className="text-sm text-gray-500">
+                  Blog and podcast cards on the Research Digest page.
+                </p>
               </div>
               <button
-                onClick={() => setIsCreateBlogModalOpen(true)}
-                className="bg-brand hover:bg-brand-600 text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm"
+                onClick={openCreateBlog}
+                className="bg-brand hover:bg-brand-600 text-white font-medium py-2.5 px-6 rounded-xl transition flex items-center gap-2 text-sm self-stretch sm:self-auto justify-center"
               >
-                Create New Entry
+                <FaPlus size={12} /> Create New Blog
               </button>
             </div>
 
+            <BlogFiltersPanel
+              filters={blogFilters}
+              fields={blogFilterFields}
+              collectionId={blogFilterCollectionId}
+              loading={blogOptionsLoading}
+              countsByFilter={blogFilterCounts}
+              totalCount={blogsList.length}
+              unlinkedCount={blogsLoading ? 0 : unlinkedBlogCount}
+              activeFilter={blogFilterView}
+              onSelect={setBlogFilterView}
+              sharedWithTherapies={
+                blogFilterCollectionId === THERAPY_CATEGORY_COLLECTION_ID
+              }
+              uploadImage={uploadImageToSupabase}
+              publishOnSave={publishOnSave}
+              onChanged={fetchBlogOptionsFromCms}
+            />
+
             <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <div className="p-6 border-b border-gray-100 flex flex-wrap gap-3 justify-between items-center bg-gray-50/50">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                  Live Digest Registries
+                  {blogFilterView === "all"
+                    ? `Blogs (${blogsList.length})`
+                    : `Showing ${visibleBlogs.length} of ${blogsList.length}`}
                 </span>
-                <button
-                  onClick={fetchBlogsFromCms}
-                  className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
-                >
-                  <FaSync
-                    size={10}
-                    className={blogsLoading ? "animate-spin" : ""}
-                  />{" "}
-                  Force Sync Repository
-                </button>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="search"
+                    value={blogSearch}
+                    onChange={(e) => setBlogSearch(e.target.value)}
+                    placeholder="Search title, author or condition"
+                    className="w-64 max-w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm focus:outline-none focus:border-brand"
+                  />
+                  <button
+                    onClick={fetchBlogsFromCms}
+                    className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <FaSync
+                      size={10}
+                      className={blogsLoading ? "animate-spin" : ""}
+                    />{" "}
+                    Refresh
+                  </button>
+                </div>
               </div>
 
-              {blogsLoading ? (
+              {blogsLoading && blogsList.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 italic text-sm space-y-2">
                   <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p>Syncing continuous entries lists variables...</p>
+                  <p>Loading blogs from Webflow...</p>
                 </div>
-              ) : blogsList.length === 0 ? (
+              ) : visibleBlogs.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 italic text-sm">
-                  No blog parameters match current repository configurations.
+                  {blogsList.length === 0
+                    ? "No blogs found."
+                    : "No blogs match this filter or search."}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  {/* Fixed layout: the Blog column takes the leftover width so the table never scrolls sideways */}
+                  <table className="w-full table-fixed text-left border-collapse">
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                        <th className="py-4 px-6">Entry Item</th>
-                        <th className="py-4 px-6">Author</th>
-                        <th className="py-4 px-6">Assigned Tag</th>
-                        <th className="py-4 px-6 text-center">Actions</th>
+                        <th className="py-4 pl-6 pr-0 w-14">#</th>
+                        <th className="py-4 px-3">Blog</th>
+                        <th className="py-4 px-3 w-40">Filter</th>
+                        <th className="py-4 px-3 w-44">Author & Date</th>
+                        <th className="py-4 px-2 w-32 text-center">Status</th>
+                        <th className="py-4 px-2 w-36 text-center">Actions</th>
+                        <th className="py-4 pl-2 pr-6 w-20 text-center">Fix</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
-                      {blogsList.map((blog) => {
+                      {visibleBlogs.map((blog, index) => {
                         const data = blog.fieldData || {};
-                        const matchedTag = blogTagsOptions.find(
-                          (t) => t.id === data["tag-title"],
-                        );
+                        const thumb =
+                          data.image?.url ||
+                          data["podcast-cta-main"]?.url ||
+                          data["blogs-mobile"]?.url ||
+                          data["image-thumbnail-mobile"]?.url;
+                        const tag = data["filter-tag"];
+                        const filterItem = blogFilters.find((f) => f.id === tag);
+                        const style = blogStyleLabels.get(data["cta-image"]);
+                        const unpublished = hasUnpublishedChanges(blog);
+                        const needsFix = blogFixFlags.has(blog.id);
                         return (
                           <tr
                             key={blog.id}
-                            className="hover:bg-slate-50 transition"
+                            className={`transition ${needsFix ? "bg-amber-50/60 hover:bg-amber-50" : "hover:bg-slate-50"}`}
                           >
-                            <td className="py-4 px-6">
-                              <div className="flex items-center gap-3">
-                                {data.image?.url ? (
+                            <td className="py-4 pl-6 pr-0 text-gray-400 text-xs font-medium tabular-nums">
+                              {index + 1}
+                            </td>
+                            <td className="py-4 px-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                {thumb ? (
                                   <img
-                                    src={data.image.url}
+                                    src={thumb}
                                     alt=""
-                                    className="w-10 h-10 object-cover rounded-xl border shrink-0"
+                                    className="w-11 h-11 object-cover rounded-lg border border-gray-200 shrink-0"
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand flex items-center justify-center font-bold text-xs shrink-0 border">
-                                    Doc
+                                  <div className="w-11 h-11 rounded-lg bg-brand-50 text-brand flex items-center justify-center shrink-0 border border-brand-100">
+                                    <FaRegNewspaper size={16} />
                                   </div>
                                 )}
-                                <div>
-                                  <div className="font-semibold text-gray-900 tracking-tight">
-                                    {data.name || "Untitled"}
-                                  </div>
-                                  <div className="text-xs text-gray-400 font-mono select-all truncate max-w-xs">
-                                    {blog.id}
-                                  </div>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className="font-semibold text-gray-900 tracking-tight truncate"
+                                    title={String(data.name ?? "").trim() || undefined}
+                                  >
+                                    {String(data.name ?? "").trim() || "Untitled"}
+                                  </p>
+                                  <p className="text-xs text-gray-400 truncate">
+                                    {[data["therapy-name"], style]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </p>
                                 </div>
                               </div>
                             </td>
-                            <td className="py-4 px-6 text-gray-600 font-medium">
-                              {data["authors-name"] || "System Admin"}
+                            <td className="py-4 px-3">
+                              {filterItem ? (
+                                <span className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 text-xs font-medium bg-gray-50 border border-gray-200 rounded-full text-gray-700 whitespace-nowrap overflow-hidden">
+                                  {blogFilterColorKey && (
+                                    <span
+                                      className="w-2 h-2 rounded-full shrink-0"
+                                      style={{
+                                        backgroundColor:
+                                          filterItem.fieldData?.[blogFilterColorKey] ||
+                                          "transparent",
+                                      }}
+                                    />
+                                  )}
+                                  <span className="truncate">{blogFilterLabels.get(tag)}</span>
+                                </span>
+                              ) : (
+                                <span
+                                  className="text-gray-300 italic text-xs whitespace-nowrap"
+                                  title={tag || undefined}
+                                >
+                                  {tag ? "Not in filter list" : "None"}
+                                </span>
+                              )}
                             </td>
-                            <td className="py-4 px-6">
-                              <span className="px-2.5 py-1 text-xs font-semibold bg-cocoa-50 border border-cocoa-100 rounded-md text-cocoa-600">
-                                {matchedTag
-                                  ? matchedTag.fieldData?.name
-                                  : "Standard Abstract"}
+                            <td className="py-4 px-3 text-gray-600">
+                              <p
+                                className="font-medium truncate"
+                                title={String(data["authors-name"] ?? "").trim() || undefined}
+                              >
+                                {String(data["authors-name"] ?? "").trim() || "—"}
+                              </p>
+                              <p className="text-xs text-gray-400 truncate">
+                                {data["time-to-read-2"] || ""}
+                              </p>
+                            </td>
+                            <td className="py-4 px-2 text-center whitespace-nowrap">
+                              <span
+                                className={`inline-block px-2.5 py-1 border font-medium rounded-full text-xs ${unpublished ? "text-amber-700 bg-amber-50 border-amber-200" : "text-green-700 bg-green-50 border-green-200"}`}
+                                title={unpublished && blog.lastPublished ? "Unpublished changes" : undefined}
+                              >
+                                {!blog.lastPublished
+                                  ? "Not published"
+                                  : unpublished
+                                    ? "Unpublished"
+                                    : "Live"}
                               </span>
                             </td>
-                            <td className="py-4 px-6 text-center">
-                              <button
-                                onClick={() => setSelectedBlogDetail(blog)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition"
-                                title="Inspect Entry"
-                              >
-                                <FaEye size={14} />
-                              </button>
+                            <td className="py-4 px-2 text-center">
+                              <div className="inline-flex items-center gap-0.5">
+                                <button
+                                  onClick={() => setSelectedBlogDetail(blog)}
+                                  className="p-1.5 text-brand hover:bg-brand-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  title="View Blog"
+                                >
+                                  <FaEye size={14} />
+                                </button>
+                                <button
+                                  onClick={() => openEditBlog(blog)}
+                                  className="p-1.5 text-gray-600 hover:bg-gray-100 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  title="Edit Blog"
+                                >
+                                  <FaEdit size={14} />
+                                </button>
+                                {data["redireciton-links"] && (
+                                  <a
+                                    href={data["redireciton-links"]}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1.5 text-gray-600 hover:bg-gray-100 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                    title="Open Link"
+                                  >
+                                    <FaGlobe size={14} />
+                                  </a>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteBlog(blog)}
+                                  className="p-1.5 text-red-500 hover:bg-red-50 border border-transparent hover:border-gray-200 rounded-xl transition inline-flex items-center"
+                                  title="Delete Blog"
+                                >
+                                  <FaTrash size={14} />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-4 pl-2 pr-6 text-center">
+                              <input
+                                type="checkbox"
+                                checked={needsFix}
+                                onChange={() => toggleBlogFixFlag(blog.id)}
+                                className="w-4 h-4 accent-amber-600 cursor-pointer"
+                                title={needsFix ? "Needs fixing — untick when fixed" : "Tick if this blog needs fixing"}
+                              />
                             </td>
                           </tr>
                         );
@@ -3932,290 +4157,48 @@ const Dashboard = () => {
         />
       )}
 
-      {isCreateBlogModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
-          <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh] rounded-3xl shadow-xl">
-            <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
-                Publish Research Hub Content
-              </h3>
-              <button
-                onClick={() => setIsCreateBlogModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <FaTimes size={18} />
-              </button>
-            </div>
-            <form
-              onSubmit={handleCreateBlogSubmit}
-              className="p-6 overflow-y-auto space-y-4 text-sm flex-1 text-[#222]"
-            >
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                  Article Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newBlogForm.name}
-                  onChange={(e) =>
-                    setNewBlogForm({ ...newBlogForm, name: e.target.value })
-                  }
-                  placeholder="e.g., Breakthrough CBT Methodologies"
-                  className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-brand"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Select Content Tag Link *
-                  </label>
-                  <select
-                    required
-                    value={newBlogForm.tagTitle}
-                    onChange={(e) =>
-                      setNewBlogForm({
-                        ...newBlogForm,
-                        tagTitle: e.target.value,
-                      })
-                    }
-                    className="w-full border bg-white border-gray-200 px-3 py-2.5 rounded-xl focus:outline-none select-none"
-                  >
-                    <option value="">-- Choose Assigned Tag --</option>
-                    {blogTagsOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.fieldData?.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Author Label
-                  </label>
-                  <input
-                    type="text"
-                    value={newBlogForm.authorsName}
-                    onChange={(e) =>
-                      setNewBlogForm({
-                        ...newBlogForm,
-                        authorsName: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Sarah M."
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-brand"
-                  />
-                </div>
-              </div>
-              {newBlogForm.tagTitle === "6a4a2abf088ffb1e447f6680" ? (
-                <div className="bg-amber-50/50 p-4 border border-amber-200 border-dashed rounded-2xl">
-                  <label className="block text-xs font-bold text-amber-700 uppercase tracking-wider mb-1.5">
-                    Podcast Video Media Asset *
-                  </label>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        setNewBlogForm((prev) => ({
-                          ...prev,
-                          podcastVideoUrl: "Uploading...",
-                        }));
-                        const url = await uploadVideoToSupabase(file);
-                        setNewBlogForm((prev) => ({
-                          ...prev,
-                          podcastVideoUrl: url || "",
-                        }));
-                      }
-                    }}
-                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800"
-                  />
-                  {newBlogForm.podcastVideoUrl && (
-                    <p className="mt-1 text-xs font-mono text-gray-500 truncate">
-                      {newBlogForm.podcastVideoUrl === "Uploading..."
-                        ? "Uploading to Storage Node..."
-                        : `✓ Ready: ${newBlogForm.podcastVideoUrl}`}
-                    </p>
-                  )}
-                  \
-                </div>
-              ) : (
-                <div className="bg-gray-50 p-4 border border-gray-200 rounded-2xl">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Article Cover Image Banner *
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        setNewBlogForm((prev) => ({
-                          ...prev,
-                          image: "Uploading...",
-                        }));
-                        const url = await uploadImageToSupabase(file);
-                        setNewBlogForm((prev) => ({
-                          ...prev,
-                          image: url || "",
-                        }));
-                      }
-                    }}
-                    className="w-full bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand"
-                  />
-                  {newBlogForm.image && (
-                    <p className="mt-1 text-xs font-mono text-gray-500 truncate">
-                      {newBlogForm.image === "Uploading..."
-                        ? "Syncing storage arrays..."
-                        : `✓ Ready: ${newBlogForm.image}`}
-                    </p>
-                  )}
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Hero/Subtitle Headline
-                  </label>
-                  <input
-                    type="text"
-                    value={newBlogForm.heroText}
-                    onChange={(e) =>
-                      setNewBlogForm({
-                        ...newBlogForm,
-                        heroText: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Overwhelmed to well informed."
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-brand"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Reading Duration Metric
-                  </label>
-                  <input
-                    type="text"
-                    value={newBlogForm.timeToRead}
-                    onChange={(e) =>
-                      setNewBlogForm({
-                        ...newBlogForm,
-                        timeToRead: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., 5 min read"
-                    className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-brand"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                  Article Body Structure (Rich HTML content supported)
-                </label>
-                <textarea
-                  rows="4"
-                  value={newBlogForm.thisIsTheMainParagraph}
-                  onChange={(e) =>
-                    setNewBlogForm({
-                      ...newBlogForm,
-                      thisIsTheMainParagraph: e.target.value,
-                    })
-                  }
-                  placeholder="<h2>Heading</h2><p>Core message block text strings...</p>"
-                  className="w-full border border-gray-200 p-4 rounded-xl font-mono text-xs focus:outline-none focus:border-brand"
-                />
-              </div>
-              <div className="pt-4 border-t flex justify-end gap-3 bg-white sticky bottom-0">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateBlogModalOpen(false)}
-                  className="px-5 py-2.5 border rounded-xl font-semibold text-gray-500 hover:bg-gray-50"
-                >
-                  Dismiss
-                </button>
-                <button
-                  type="submit"
-                  disabled={
-                    newBlogForm.image === "Uploading..." ||
-                    newBlogForm.podcastVideoUrl === "Uploading..."
-                  }
-                  className="px-6 py-2.5 bg-brand text-white font-semibold rounded-xl disabled:opacity-50"
-                >
-                  Publish Live
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {selectedBlogDetail && (
+        <CmsItemViewModal
+          item={selectedBlogDetail}
+          sections={BLOG_SECTIONS}
+          header={BLOG_VIEW_HEADER}
+          itemLabel="blog"
+          selectLabels={{
+            "filter-tag": blogFilterLabels,
+            "cta-image": blogStyleLabels,
+          }}
+          publishing={blogSaving}
+          onPublish={handlePublishBlog}
+          onEdit={openEditBlog}
+          onClose={() => setSelectedBlogDetail(null)}
+        />
       )}
 
-      {selectedBlogDetail && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-[1px]">
-          <div className="bg-white w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[85vh] rounded-3xl">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-800 tracking-tight">
-                Digest Registry Sheet Inspector
-              </h3>
-              <button
-                onClick={() => setSelectedBlogDetail(null)}
-                className="text-gray-400 hover:text-gray-600 p-1"
-              >
-                <FaTimes size={18} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto space-y-4 text-sm text-[#222]">
-              <h4 className="text-2xl font-bold text-gray-900 tracking-tight">
-                {selectedBlogDetail.fieldData?.name}
-              </h4>
-              <p className="text-xs text-gray-400 font-mono">
-                CMS Object Hash Key: {selectedBlogDetail.id}
-              </p>
-              <div className="bg-gray-50 p-4 rounded-xl border space-y-2">
-                <p>
-                  <strong>Subtitle:</strong>{" "}
-                  {selectedBlogDetail.fieldData?.["hero-text"] ||
-                    "None Specified"}
-                </p>
-                <p>
-                  <strong>Author:</strong>{" "}
-                  {selectedBlogDetail.fieldData?.["authors-name"] ||
-                    "System Admin"}
-                </p>
-                <p>
-                  <strong>Reading Info:</strong>{" "}
-                  {selectedBlogDetail.fieldData?.["time-to-read"] || "N/A"}
-                </p>
-              </div>
-              {selectedBlogDetail.fieldData?.["podcast-cta-main"]?.url && (
-                <div className="mt-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">
-                    Attached Podcast Video Content
-                  </span>
-                  <video
-                    controls
-                    src={selectedBlogDetail.fieldData["podcast-cta-main"].url}
-                    className="w-full rounded-xl border bg-black max-h-64"
-                  />
-                </div>
-              )}
-              <div>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">
-                  Body Text Content Block Markup
-                </span>
-                <div
-                  className="p-4 bg-gray-50 border border-dashed rounded-xl prose prose-sm max-h-48 overflow-y-auto"
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      selectedBlogDetail.fieldData?.[
-                        "this-is-the-main-paragraph"
-                      ] || "<i>Empty Body Content</i>",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+      {isBlogFormOpen && (
+        <CmsItemFormModal
+          sections={BLOG_SECTIONS}
+          form={blogForm}
+          setForm={setBlogForm}
+          editingItem={editingBlog}
+          itemLabel="blog"
+          thumbKey="image"
+          selectOptions={{
+            "filter-tag": blogFilters.map((item) => ({
+              value: item.id,
+              label: blogFilterLabels.get(item.id),
+            })),
+            "cta-image": blogStyles.map((item) => ({
+              value: item.id,
+              label: blogStyleLabels.get(item.id),
+            })),
+          }}
+          uploadImage={uploadImageToSupabase}
+          publishOnSave={publishOnSave}
+          setPublishOnSave={setPublishOnSave}
+          saving={blogSaving}
+          onSave={handleSaveBlog}
+          onClose={() => setIsBlogFormOpen(false)}
+        />
       )}
 
       {selectedConditionDetail && (

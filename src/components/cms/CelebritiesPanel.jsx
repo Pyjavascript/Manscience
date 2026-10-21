@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FaEdit, FaPlus, FaTrash, FaUser } from "react-icons/fa";
 import { CELEBRITY_COLLECTION_ID, CELEBRITY_FIELDS } from "./cmsCollections";
 import { deleteCmsItem, saveCmsItem } from "./cmsApi";
-import { UPLOADING, hasUnpublishedChanges, slugify, toFormState } from "./cmsFields";
+import { UPLOADING, hasUnpublishedChanges, toFormState, uniqueSlug } from "./cmsFields";
 import { INPUT_BASE, ImageField } from "./CmsControls";
 
 const normalize = (text) => String(text ?? "").trim().toLowerCase();
@@ -12,15 +12,6 @@ const bySortOrder = (a, b) => {
   const sa = a.fieldData?.["sort-order"] ?? Infinity;
   const sb = b.fieldData?.["sort-order"] ?? Infinity;
   return sa - sb || String(a.fieldData?.name).localeCompare(String(b.fieldData?.name));
-};
-
-// Webflow slugs must be unique, and the same person can appear under several conditions
-const uniqueSlug = (name, items) => {
-  const taken = new Set(items.map((item) => item.fieldData?.slug));
-  const base = slugify(name) || "celebrity";
-  let slug = base;
-  for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
-  return slug;
 };
 
 export const celebritiesForCondition = (celebrities, conditionName) =>
@@ -83,7 +74,8 @@ const CelebritiesPanel = ({
         form,
         editingItem: editing.item,
         publish: publishOnSave,
-        slug: editing.item ? undefined : uniqueSlug(form.name, celebrities),
+        // The same person can appear under several conditions
+        slug: editing.item ? undefined : uniqueSlug(form.name, celebrities, "celebrity"),
       });
       if (result.unchanged) {
         alert("No changes to save.");

@@ -7,8 +7,43 @@
 //   richtext             -> paragraphs separated by blank lines in the form, <p> HTML in Webflow
 //   switch               -> boolean
 //   select               -> referenced item id (single Reference field)
+//   color                -> "#rrggbb" string
 
 export const UPLOADING = "Uploading...";
+
+// Webflow schema field types the editors know how to edit
+const SCHEMA_TYPES = {
+  PlainText: "text",
+  RichText: "richtext",
+  Link: "url",
+  Number: "number",
+  Image: "image",
+  Switch: "switch",
+  Color: "color",
+};
+
+// Reference field slug -> the collection it points to, e.g. { "filter-tag": "6a4a…" }
+export const referenceCollections = (schema) =>
+  Object.fromEntries(
+    (schema?.fields || [])
+      .filter((f) => f.type === "Reference" && f.validations?.collectionId)
+      .map((f) => [f.slug, f.validations.collectionId]),
+  );
+
+// Editor fields for every editable field in a collection schema; null without a schema
+export const fieldsFromSchema = (schema) => {
+  if (!schema?.fields) return null;
+  return schema.fields
+    .filter((f) => f.slug !== "slug" && f.isEditable !== false && SCHEMA_TYPES[f.type])
+    .map((f) => ({
+      key: f.slug,
+      label: f.displayName || f.slug,
+      type: SCHEMA_TYPES[f.type],
+      required: f.slug === "name" || !!f.isRequired,
+      hint: f.helpText || undefined,
+    }))
+    .sort((a, b) => (a.key === "name" ? -1 : b.key === "name" ? 1 : 0));
+};
 
 // Staged edits newer than the last publish aren't visible on the live site yet
 export const hasUnpublishedChanges = (item) =>
@@ -22,6 +57,15 @@ export const slugify = (text) =>
     .trim()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+
+// Webflow slugs must be unique within a collection, and several items can share a name
+export const uniqueSlug = (name, items, fallback = "item") => {
+  const taken = new Set(items.map((item) => item.fieldData?.slug));
+  const base = slugify(name) || fallback;
+  let slug = base;
+  for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+  return slug;
+};
 
 // Paragraph-level conversion only: inline tags such as <strong> or <a> are kept as typed, so
 // editing a rich text field never silently drops its formatting.
