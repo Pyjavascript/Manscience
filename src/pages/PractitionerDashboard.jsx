@@ -17,6 +17,10 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { supabase } from "../supabase";
+import {
+  ROADMAP_RESULTS_TABLE,
+  normalizeRoadmapResult,
+} from "../components/ManasiAi/helpers";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -303,11 +307,12 @@ const PractitionerDashboard = () => {
       if (cases && cases.length > 0) {
         const compiledCases = await Promise.all(
           cases.map(async (c) => {
-            const { data: roadmapDetails } = await supabase
-              .from("user_roadmap_mapped")
+            const { data: roadmapRow } = await supabase
+              .from(ROADMAP_RESULTS_TABLE)
               .select("*")
               .eq("user_id", c.user_id)
               .maybeSingle();
+            const roadmapDetails = normalizeRoadmapResult(roadmapRow);
 
             const { data: userDetails } = await supabase
               .from("users")
@@ -412,22 +417,29 @@ const PractitionerDashboard = () => {
     try {
       setIsSavingTherapies(true);
 
-      // Save both therapies and summary note to Supabase
-      const { error } = await supabase
-        .from("user_roadmap_mapped")
-        .update({
-          aggregated_therapies: editableTherapies,
-          practitioner_summary: practitionerSummary,
-        })
-        .eq("user_id", selectedCase.roadmap.user_id);
+      // Save both therapies and summary note inside the row's result jsonb
+      const updatedResult = {
+        ...(selectedCase.roadmap.result || {}),
+        aggregated_therapies: editableTherapies,
+        practitioner_summary: practitionerSummary,
+      };
+      const { data: savedRows, error } = await supabase
+        .from(ROADMAP_RESULTS_TABLE)
+        .update({ result: updatedResult })
+        .eq("user_id", selectedCase.roadmap.user_id)
+        .select("user_id");
 
       if (error) throw error;
+      if (!savedRows?.length) {
+        throw new Error("No roadmap row was updated (check table permissions).");
+      }
 
       // Update active selected case
       setSelectedCase((prev) => ({
         ...prev,
         roadmap: {
           ...prev.roadmap,
+          result: updatedResult,
           aggregated_therapies: editableTherapies,
           practitioner_summary: practitionerSummary,
         },
@@ -441,6 +453,7 @@ const PractitionerDashboard = () => {
                 ...c,
                 roadmap: {
                   ...c.roadmap,
+                  result: updatedResult,
                   aggregated_therapies: editableTherapies,
                   practitioner_summary: practitionerSummary,
                 },

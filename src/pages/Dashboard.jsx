@@ -33,6 +33,10 @@ import {
   Cell,
 } from "recharts";
 import { supabase } from "../supabase";
+import {
+  ROADMAP_RESULTS_TABLE,
+  normalizeRoadmapResult,
+} from "../components/ManasiAi/helpers";
 import logo from "../assets/form/LogoBrown.svg";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -496,12 +500,12 @@ const Dashboard = () => {
     try {
       setRoadmapLoading(true);
       const { data, error } = await supabase
-        .from("user_roadmap_mapped")
+        .from(ROADMAP_RESULTS_TABLE)
         .select("*")
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      setRoadmapsList(data || []);
+      setRoadmapsList((data || []).map(normalizeRoadmapResult));
     } catch (err) {
       console.error("Error gathering system roadmap parameters:", err.message);
     } finally {

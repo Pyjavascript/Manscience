@@ -10,6 +10,10 @@ export const MAPPED_THERAPIES_ENDPOINT = `${MANASI_API_BASE}/roadmap/mapped-ther
 export const BRAIN_IMAGE_URL =
   "https://res.cloudinary.com/dspwbbjyt/image/upload/v1785586774/brainImg_obpn0v.svg";
 
+// "How to use Manasi AI" video shown in the tutorial pop-up.
+// Must be a direct video file link (e.g. .mp4), not a YouTube page link.
+export const TUTORIAL_VIDEO_URL = "https://res.cloudinary.com/dspwbbjyt/video/upload/v1786289444/SAAS_video_yww5gm.mp4";
+
 // Initial screening questions shown before the domain scoring
 export const QUESTIONNAIRE = [
   {
@@ -37,7 +41,7 @@ export const QUESTIONNAIRE = [
   },
 ];
 
-// Typed messages that start the roadmap quiz instead of hitting the chat API
+// Typed messages that open the roadmap page instead of hitting the chat API
 export const ROADMAP_TRIGGER_PHRASES = [
   "Give me my personalized roadmap",
   "Help me navigate neuroplasticity",
@@ -52,12 +56,6 @@ export const SUGGESTIONS = [
 
 export const RATING_OPTIONS = [1, 2, 3, 4, 5];
 
-export const INITIAL_QUIZ_STATE = {
-  isActive: false,
-  currentStep: 0,
-  answers: [],
-};
-
 export const INITIAL_SCORING_STATE = {
   isActive: false,
   isCompleted: false,
@@ -70,7 +68,5 @@ export const INITIAL_SCORING_STATE = {
 };
 
 export const SCREENING_COMPLETE_MESSAGE = `Great job! We've completed your initial screening. Based on your responses, we'll now build your personalized Brain Roadmap.`;
-export const ROADMAP_SUCCESS_MESSAGE =
-  "Thank you for submitting your assessment! Your cognitive profile roadmap has been securely logged and processed. A practitioner will reach out within 3-5 days.";
 export const ROADMAP_ERROR_MESSAGE =
   "We encountered an issue saving your profile data records. Please try again.";

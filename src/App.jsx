@@ -11,7 +11,8 @@ import ChatbotQuiz from "./pages/ChatbotQuiz";
 import Chatbot from "./pages/Chatbot";
 import Community from "./pages/Community";
 import SmoothExpertSlider from './pages/SmoothExpertSlider'
-import ManasiAi from "./pages/ManasiAi"; 
+import ManasiAi from "./pages/ManasiAi";
+import ManasiRoadmap from "./pages/ManasiRoadmap";
 import FAQSection from "./pages/FAQSection";
 import SubscriptionInput from "./components/SubscriptionInput";
 import TermsAndConditions from "./components/TermsAndConditions";
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/community-hub" element={<Community/>}/>
         <Route path="/slider" element={<SmoothExpertSlider/>}/>
         <Route path="/ai" element={<ManasiAi/>}/>
+        <Route path="/ai/roadmap" element={<ManasiRoadmap/>}/>
         <Route path="/post/mnri" element={<FAQSection/>}/>
         <Route path="/legals" element={<TermsAndConditions/>}/>
         <Route path="/practitioner-dashboard" element={<PractitionerDashboard/>}/>

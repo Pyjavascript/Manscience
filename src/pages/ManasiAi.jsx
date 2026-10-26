@@ -1,44 +1,46 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { FiClock, FiVideo, FiX } from "react-icons/fi";
 import ai from "../assets/Ai/ai.svg";
-import bg from "../assets/Ai/bg.svg";
 import Logo from "../assets/Ai/Logo.svg";
 
 import { supabase } from "../supabase";
-import {
-  QUESTIONNAIRE,
-  ROADMAP_TRIGGER_PHRASES,
-  INITIAL_QUIZ_STATE,
-  INITIAL_SCORING_STATE,
-  SCREENING_COMPLETE_MESSAGE,
-  ROADMAP_SUCCESS_MESSAGE,
-  ROADMAP_ERROR_MESSAGE,
-} from "../components/ManasiAi/constants";
+import { ROADMAP_TRIGGER_PHRASES } from "../components/ManasiAi/constants";
 import {
   generateSessionId,
   createUserMessage,
-  createQuizMessage,
   withActiveCta,
-  classifyScreening,
-  buildRoadmapPayload,
+  getRoadmapUrl,
+  resolveAiReturnPath,
+  historyToMessages,
 } from "../components/ManasiAi/helpers";
 import {
   postChatMessage,
-  saveChatTurn,
   fetchChatHistory,
-  submitRoadmap,
 } from "../components/ManasiAi/api";
 import { useStableCallback } from "../components/ManasiAi/useStableCallback";
 import ChatMessage from "../components/ManasiAi/ChatMessage";
 import WelcomeScreen from "../components/ManasiAi/WelcomeScreen";
-import RoadmapCompleted from "../components/ManasiAi/RoadmapCompleted";
-import DomainScoring from "../components/ManasiAi/DomainScoring";
 import ChatComposer from "../components/ManasiAi/ChatComposer";
+import PageBackground from "../components/ManasiAi/PageBackground";
+import HistoryPanel from "../components/ManasiAi/HistoryPanel";
+import TutorialVideoModal from "../components/ManasiAi/TutorialVideoModal";
 
 const CHAT_FADE_MASK =
   "linear-gradient(to bottom, transparent 0%, black 8%, black 88%, transparent 100%)";
 
+const HEADER_BUTTON_CLASS =
+  "w-10 h-10 text-[#68270B] hover:opacity-70 flex items-center justify-center transition-opacity duration-150 cursor-pointer";
+
+const isSmallScreen = () => window.matchMedia("(max-width: 767px)").matches;
+
 const ManasiAi = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [returnPath] = useState(() =>
+    resolveAiReturnPath(searchParams.get("from")),
+  );
   const [userInput, setUserInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,18 +48,17 @@ const ManasiAi = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Sidebar history state
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // eslint-disable-line no-unused-vars
-  const [sessionsList, setSessionsList] = useState([]); // eslint-disable-line no-unused-vars
+  // History panel state
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [sessionsList, setSessionsList] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Initial screening quiz state
-  const [quizState, setQuizState] = useState(INITIAL_QUIZ_STATE);
-  const [selectedQuizOption, setSelectedQuizOption] = useState(null);
-
-  // Domain scoring state
-  const [scoringState, setScoringState] = useState(INITIAL_SCORING_STATE);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
 
   const scrollRef = useRef(null);
+  // Session a pending reply belongs to, so switching chats mid-reply
+  // doesn't drop the answer into the wrong conversation
+  const activeSessionRef = useRef("");
 
   // ---------- Effects ----------
 
@@ -67,12 +68,7 @@ const ManasiAi = () => {
       scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     });
     return () => cancelAnimationFrame(scrollTimer);
-  }, [
-    messages.length,
-    quizState.currentStep,
-    scoringState.currentDomainIdx,
-    scoringState.isCompleted,
-  ]);
+  }, [messages.length, sessionId]);
 
   // Load the logged-in user and start a fresh session
   useEffect(() => {
@@ -85,7 +81,9 @@ const ManasiAi = () => {
           setCurrentUserId(user.id);
           fetchHistoryRecords(user.id);
         }
-        startNewChatSession();
+        const initialSessionId = generateSessionId();
+        activeSessionRef.current = initialSessionId;
+        setSessionId(initialSessionId);
       } catch (err) {
         console.error("Auth context load failure:", err);
       } finally {
@@ -97,184 +95,56 @@ const ManasiAi = () => {
 
   // ---------- Session & history ----------
 
+  function switchToSession(id, sessionMessages) {
+    activeSessionRef.current = id;
+    setSessionId(id);
+    setMessages(sessionMessages);
+    setIsLoading(false);
+  }
+
   function startNewChatSession() {
-    setSessionId(generateSessionId());
-    setMessages([]);
-    setQuizState(INITIAL_QUIZ_STATE);
-    setScoringState(INITIAL_SCORING_STATE);
+    switchToSession(generateSessionId(), []);
   }
 
   async function fetchHistoryRecords(uid) {
     if (!uid) return;
+    setHistoryLoading(true);
     const records = await fetchChatHistory(uid);
     if (records) setSessionsList(records);
+    setHistoryLoading(false);
   }
 
-  const saveQuizTurnToHistory = async (question, answer) => {
-    try {
-      await saveChatTurn({
-        sessionId,
-        userId: currentUserId,
-        question,
-        answer,
-      });
-      if (currentUserId) fetchHistoryRecords(currentUserId);
-    } catch (err) {
-      console.error("Failed to sync quiz turn to database:", err);
-    }
+  const openHistory = () => {
+    setIsHistoryOpen(true);
+    if (currentUserId) fetchHistoryRecords(currentUserId);
   };
+
+  const closeHistoryOnSmallScreens = () => {
+    if (isSmallScreen()) setIsHistoryOpen(false);
+  };
+
+  const handleSelectConversation = (record) => {
+    switchToSession(record.session_id, historyToMessages(record));
+    setUserInput("");
+    closeHistoryOnSmallScreens();
+  };
+
+  const handleNewChat = () => {
+    startNewChatSession();
+    setUserInput("");
+    setIsHistoryOpen(false);
+  };
+
+  const closeTutorial = useStableCallback(() => setIsTutorialOpen(false));
+
+  // Leave the AI and go back to the page it was opened from
+  const closeAiPage = () => window.location.assign(returnPath);
 
   const addAssistantMessage = (content) =>
     setMessages((prev) => [...prev, { role: "assistant", content }]);
 
-  // ---------- Screening quiz ----------
-
-  const startRoadmapQuiz = (msgIndex = null, ctaText = "Get a Roadmap") => {
-    setSelectedQuizOption(null);
-    setScoringState((prev) => ({
-      ...prev,
-      isActive: false,
-      isCompleted: false,
-    }));
-    setQuizState({ ...INITIAL_QUIZ_STATE, isActive: true });
-
-    // Mark the clicked CTA as used, then push the user's choice + first question
-    setMessages((prev) => [
-      ...withActiveCta(prev, msgIndex, ctaText),
-      createUserMessage(ctaText),
-      createQuizMessage(0),
-    ]);
-  };
-
-  const handleQuizAnswerSubmit = (step, selectedOpt) => {
-    const option = selectedOpt || selectedQuizOption;
-    if (!option) return;
-
-    setSelectedQuizOption(null);
-    saveQuizTurnToHistory(QUESTIONNAIRE[step].question, option);
-
-    // Lock the answered question and echo the answer as a user message
-    setMessages((prev) => [
-      ...prev.map((msg, idx) =>
-        idx === prev.length - 1 ? { ...msg, selectedAnswer: option } : msg,
-      ),
-      createUserMessage(option),
-    ]);
-
-    const updatedAnswers = [...quizState.answers, option];
-    const nextStep = step + 1;
-    setIsLoading(true);
-
-    if (nextStep < QUESTIONNAIRE.length) {
-      setQuizState((prev) => ({
-        ...prev,
-        currentStep: nextStep,
-        answers: updatedAnswers,
-      }));
-
-      setTimeout(() => {
-        setIsLoading(false);
-        setMessages((prev) => [...prev, createQuizMessage(nextStep)]);
-      }, 600);
-    } else {
-      setQuizState(INITIAL_QUIZ_STATE);
-
-      setTimeout(() => {
-        setIsLoading(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: SCREENING_COMPLETE_MESSAGE,
-            cta: {
-              cta_found: true,
-              cta_category: "StartAssessment",
-              dataset: classifyScreening(updatedAnswers),
-            },
-          },
-        ]);
-      }, 800);
-    }
-  };
-
-  // ---------- Domain scoring ----------
-
-  const handleRatingSelect = (rating) => {
-    setScoringState((prev) => ({ ...prev, selectedRating: rating }));
-
-    const { dataset, currentDomainIdx, currentQuestionIdx, answers } =
-      scoringState;
-    const currentDomain = dataset[currentDomainIdx];
-    const domainName = currentDomain.domain;
-    const updatedAnswers = {
-      ...answers,
-      [domainName]: [...(answers[domainName] || []), rating],
-    };
-
-    saveQuizTurnToHistory(
-      `[${domainName}] ${currentDomain.questions[currentQuestionIdx]}`,
-      `Severity Rating: ${rating}/5`,
-    );
-
-    const hasMoreQuestions =
-      currentQuestionIdx + 1 < currentDomain.questions.length;
-    const hasMoreDomains = currentDomainIdx + 1 < dataset.length;
-
-    // Short delay so the selected rating is visible before moving on
-    setTimeout(() => {
-      if (hasMoreQuestions) {
-        setScoringState((prev) => ({
-          ...prev,
-          currentQuestionIdx: prev.currentQuestionIdx + 1,
-          answers: updatedAnswers,
-          selectedRating: null,
-        }));
-      } else if (hasMoreDomains) {
-        setScoringState((prev) => ({
-          ...prev,
-          currentDomainIdx: prev.currentDomainIdx + 1,
-          currentQuestionIdx: 0,
-          answers: updatedAnswers,
-          selectedRating: null,
-        }));
-      } else {
-        setScoringState((prev) => ({
-          ...prev,
-          isActive: false,
-          isCompleted: true,
-          pendingPayload: buildRoadmapPayload(
-            updatedAnswers,
-            dataset,
-            currentUserId || sessionId,
-          ),
-        }));
-      }
-    }, 250);
-  };
-
-  const submitFinalRoadmapPayload = async () => {
-    if (!scoringState.pendingPayload) return;
-
-    setIsLoading(true);
-    try {
-      await submitRoadmap(
-        scoringState.pendingPayload,
-        currentUserId || sessionId,
-      );
-      addAssistantMessage(ROADMAP_SUCCESS_MESSAGE);
-      if (currentUserId) fetchHistoryRecords(currentUserId);
-    } catch (err) {
-      console.error("Pipeline trace error:", err);
-      addAssistantMessage(ROADMAP_ERROR_MESSAGE);
-    } finally {
-      setIsLoading(false);
-      setScoringState((prev) => ({
-        ...prev,
-        isCompleted: false,
-        pendingPayload: null,
-      }));
-    }
-  };
+  // The roadmap lives on its own page and returns here when submitted
+  const openRoadmapPage = () => navigate(getRoadmapUrl());
 
   // ---------- Chat ----------
 
@@ -285,19 +155,25 @@ const ManasiAi = () => {
     setUserInput("");
 
     if (ROADMAP_TRIGGER_PHRASES.includes(text)) {
-      startRoadmapQuiz();
+      openRoadmapPage();
       return;
     }
 
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setIsLoading(true);
+    const requestSessionId = sessionId;
 
     try {
       const data = await postChatMessage({
         message: text,
-        sessionId,
+        sessionId: requestSessionId,
         userId: currentUserId,
       });
+      if (activeSessionRef.current !== requestSessionId) {
+        // The user switched chats while waiting; it's saved in history
+        if (currentUserId) fetchHistoryRecords(currentUserId);
+        return;
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -310,9 +186,11 @@ const ManasiAi = () => {
       if (currentUserId) fetchHistoryRecords(currentUserId);
     } catch (error) {
       console.error("Error:", error);
-      addAssistantMessage("Something went wrong.");
+      if (activeSessionRef.current === requestSessionId) {
+        addAssistantMessage("Something went wrong.");
+      }
     } finally {
-      setIsLoading(false);
+      if (activeSessionRef.current === requestSessionId) setIsLoading(false);
     }
   };
 
@@ -325,11 +203,6 @@ const ManasiAi = () => {
 
   // ---------- Message handlers (stable so ChatMessage stays memoized) ----------
 
-  const onQuizOptionSelect = useStableCallback((step, opt) => {
-    setSelectedQuizOption(opt);
-    handleQuizAnswerSubmit(step, opt);
-  });
-
   const onLinkCtaClick = useStableCallback((index, label, url) => {
     setMessages((prev) => [
       ...withActiveCta(prev, index, label),
@@ -338,71 +211,34 @@ const ManasiAi = () => {
     window.open(url, "_blank", "noopener,noreferrer");
   });
 
-  const onRoadmapCtaClick = useStableCallback((index) =>
-    startRoadmapQuiz(index, "Get a Roadmap"),
-  );
-
-  const onBeginJourneyClick = useStableCallback((index, dataset) => {
-    setMessages((prev) => [
-      ...withActiveCta(prev, index, "Begin My Journey"),
-      createUserMessage("Begin My Journey"),
-    ]);
-    setScoringState({ ...INITIAL_SCORING_STATE, isActive: true, dataset });
-  });
+  const onRoadmapCtaClick = useStableCallback(openRoadmapPage);
 
   // ---------- Render ----------
 
-  const hasConversation =
-    messages.length > 0 || scoringState.isActive || scoringState.isCompleted;
+  const hasConversation = messages.length > 0;
 
   const renderMainContent = () => {
     if (!hasConversation) return <WelcomeScreen />;
-
-    if (scoringState.isCompleted) {
-      return (
-        <RoadmapCompleted
-          isLoading={isLoading}
-          onSubmit={submitFinalRoadmapPayload}
-        />
-      );
-    }
-
-    if (scoringState.isActive) {
-      return (
-        <DomainScoring
-          scoringState={scoringState}
-          onRatingSelect={handleRatingSelect}
-          scrollRef={scrollRef}
-        />
-      );
-    }
 
     return (
       <main
         style={{ WebkitMaskImage: CHAT_FADE_MASK, maskImage: CHAT_FADE_MASK }}
         className="flex-1 md:w-150 overflow-y-auto flex flex-col gap-6 max-w-2xl w-full mx-auto px-3.5 pt-6 pb-4 mainBox will-change-transform transform-gpu"
       >
-        {messages.map((msg, index) => {
-          const isLastMessage = index === messages.length - 1;
-          return (
-            <ChatMessage
-              key={index}
-              msg={msg}
-              index={index}
-              isLastMessage={isLastMessage}
-              selectedQuizOption={isLastMessage ? selectedQuizOption : null}
-              onQuizOptionSelect={onQuizOptionSelect}
-              onLinkCtaClick={onLinkCtaClick}
-              onRoadmapCtaClick={onRoadmapCtaClick}
-              onBeginJourneyClick={onBeginJourneyClick}
-            />
-          );
-        })}
+        {messages.map((msg, index) => (
+          <ChatMessage
+            key={`${sessionId}-${index}`}
+            msg={msg}
+            index={index}
+            onLinkCtaClick={onLinkCtaClick}
+            onRoadmapCtaClick={onRoadmapCtaClick}
+          />
+        ))}
 
         {isLoading && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, transform: "translateY(10px)" }}
+            animate={{ opacity: 1, transform: "translateY(0px)" }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="flex flex-col items-start gap-2 max-w-[85%]"
@@ -417,35 +253,70 @@ const ManasiAi = () => {
   };
 
   return (
-    <div
-      className="flex flex-col h-dvh w-full text-white select-none manrope overflow-hidden overflow-x-visible relative bg-cover bg-center bg-no-repeat pt-6 md:pt-10"
-      style={{ backgroundImage: `url("${bg}")` }}
-    >
+    <div className="flex flex-col h-dvh w-full text-white select-none manrope overflow-hidden overflow-x-visible relative isolate pt-6 md:pt-10">
+      <PageBackground />
       <div className="flex-1 flex flex-col min-h-0 relative">
         <div className="md:absolute pl-5 md:pl-11 pb-2 z-10">
           <img src={Logo} className="w-28.75 md:w-51" alt="Manascience" />
         </div>
 
+        {/* Offset so the 40px buttons are centred on the logo's height */}
+        <div className="absolute -top-3 md:-top-1.5 right-5 md:right-11 z-20 flex items-center gap-2">
+          <button
+            onClick={() => setIsTutorialOpen(true)}
+            aria-label="How to use Manasi AI"
+            title="How to use"
+            className={HEADER_BUTTON_CLASS}
+          >
+            <FiVideo size={19} />
+          </button>
+          <button
+            onClick={openHistory}
+            aria-label="Chat history"
+            title="History"
+            className={HEADER_BUTTON_CLASS}
+          >
+            <FiClock size={18} />
+          </button>
+          <button
+            onClick={closeAiPage}
+            aria-label="Close Manasi AI"
+            title="Close"
+            className={HEADER_BUTTON_CLASS}
+          >
+            <FiX size={20} />
+          </button>
+        </div>
+
         {renderMainContent()}
 
-        {!scoringState.isCompleted && (
-          <ChatComposer
-            showSuggestions={!isLoading && !hasConversation}
-            showInput={!scoringState.isActive}
-            userInput={userInput}
-            onInputChange={setUserInput}
-            onKeyDown={handleKeyDown}
-            onSend={sendMessage}
-            inputDisabled={quizState.isActive || scoringState.isActive}
-            sendDisabled={
-              isLoading ||
-              !userInput.trim() ||
-              quizState.isActive ||
-              scoringState.isActive
-            }
-          />
-        )}
+        <ChatComposer
+          showSuggestions={!isLoading && !hasConversation}
+          showInput
+          userInput={userInput}
+          onInputChange={setUserInput}
+          onKeyDown={handleKeyDown}
+          onSend={sendMessage}
+          inputDisabled={false}
+          sendDisabled={isLoading || !userInput.trim()}
+        />
       </div>
+
+      <HistoryPanel
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        conversations={sessionsList}
+        isLoading={historyLoading}
+        isSignedIn={!!currentUserId}
+        activeSessionId={sessionId}
+        onSelect={handleSelectConversation}
+        onNewChat={handleNewChat}
+      />
+
+      <TutorialVideoModal
+        isOpen={isTutorialOpen}
+        onClose={closeTutorial}
+      />
     </div>
   );
 };

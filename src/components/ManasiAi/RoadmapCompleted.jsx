@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
 import { BRAIN_IMAGE_URL } from "./constants";
 
-const RoadmapCompleted = ({ isLoading, onSubmit }) => (
+const RoadmapCompleted = ({ isLoading, onSubmit, error }) => (
   <main className="flex-1 min-h-0 flex flex-col justify-center items-center text-center max-w-md w-full mx-auto px-4 my-auto">
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, transform: "scale(0.95)" }}
+      animate={{ opacity: 1, transform: "scale(1)" }}
       transition={{ duration: 0.25, ease: "easeOut" }}
       className="w-full bg-[#68270B]/20 rounded-[40px] p-2.5 text-white flex flex-col items-center gap-4.5 overflow-hidden relative"
     >
@@ -39,6 +39,12 @@ const RoadmapCompleted = ({ isLoading, onSubmit }) => (
       >
         {isLoading ? "Submitting" : "Submit"}
       </button>
+
+      {error && (
+        <p className="text-[12px] md:text-[14px] text-white/90 pb-2 px-4">
+          {error}
+        </p>
+      )}
     </motion.div>
   </main>
 );

@@ -6,6 +6,7 @@ import {
   ROADMAP_SUBMIT_ENDPOINT,
   MAPPED_THERAPIES_ENDPOINT,
 } from "./constants.js";
+import { ROADMAP_RESULTS_TABLE } from "./helpers.js";
 
 export const postChatMessage = async ({ message, sessionId, userId }) => {
   const response = await fetch(CHAT_ENDPOINT, {
@@ -67,11 +68,23 @@ export const submitRoadmap = async (payload, userId) => {
   }
   const therapyData = await therapyRes.json();
 
-  const { error } = await supabase.from("user_roadmap_mapped").upsert({
+  // The backend stores scores in user_roadmap_results; merge the therapies
+  // into that same row's result so everything lives in one table
+  const { data: existing, error: readError } = await supabase
+    .from(ROADMAP_RESULTS_TABLE)
+    .select("result, raw")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (readError) throw readError;
+
+  const { error } = await supabase.from(ROADMAP_RESULTS_TABLE).upsert({
     user_id: userId,
-    classification: therapyData.classification,
-    mapped_domains: therapyData.mapped_domains,
-    aggregated_therapies: therapyData.aggregated_therapies || [],
+    classification: therapyData.classification || payload.Classification,
+    result: {
+      ...(existing?.result || {}),
+      aggregated_therapies: therapyData.aggregated_therapies || [],
+    },
+    raw: existing?.raw || payload,
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
