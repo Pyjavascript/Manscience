@@ -5,6 +5,7 @@ import sent from "../../assets/Ai/sent.svg";
 import inparrow from "../../assets/Ai/inparrow.svg";
 import inparrowbrown from "../../assets/Ai/inparrowbrown.svg";
 import { getCurrentTime } from "./helpers";
+import FeedbackButtons from "./FeedbackButtons";
 
 const MessageTime = ({ time }) => (
   <div className="flex gap-2.5 justify-center items-center text-[10px] text-white">
@@ -28,6 +29,7 @@ const AssistantMessage = ({
   msg,
   index,
   time,
+  sessionId,
   onLinkCtaClick,
   onRoadmapCtaClick,
 }) => {
@@ -69,7 +71,14 @@ const AssistantMessage = ({
         </div>
       )}
 
-      <MessageTime time={time} />
+      {/* Feedback needs the response_id the /chat reply came with */}
+      {msg.responseId && sessionId ? (
+        <FeedbackButtons sessionId={sessionId} responseId={msg.responseId}>
+          <MessageTime time={time} />
+        </FeedbackButtons>
+      ) : (
+        <MessageTime time={time} />
+      )}
     </div>
   );
 };

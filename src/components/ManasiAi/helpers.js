@@ -176,16 +176,24 @@ export const historyToMessages = (record) => {
   const time = formatTime(record.updated_at);
   const isRoadmap = record.title === ROADMAP_SESSION_TITLE;
 
-  return (record.history || []).flatMap(({ question, answer, cta }) =>
-    isRoadmap
-      ? [
-          { role: "assistant", content: question, time },
-          { role: "user", content: answer, time },
-        ]
-      : [
-          { role: "user", content: question, time },
-          { role: "assistant", content: answer, cta: cta ?? null, time },
-        ],
+  return (record.history || []).flatMap(
+    ({ question, answer, cta, response_id }) =>
+      isRoadmap
+        ? [
+            { role: "assistant", content: question, time },
+            { role: "user", content: answer, time },
+          ]
+        : [
+            { role: "user", content: question, time },
+            {
+              role: "assistant",
+              content: answer,
+              cta: cta ?? null,
+              // Only present if the history endpoint returns it
+              responseId: response_id ?? null,
+              time,
+            },
+          ],
   );
 };
 

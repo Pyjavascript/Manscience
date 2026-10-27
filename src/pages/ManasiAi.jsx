@@ -44,7 +44,7 @@ const ManasiAi = () => {
   const [userInput, setUserInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState("");
+  const [sessionId, setSessionId] = useState(generateSessionId);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -58,7 +58,7 @@ const ManasiAi = () => {
   const scrollRef = useRef(null);
   // Session a pending reply belongs to, so switching chats mid-reply
   // doesn't drop the answer into the wrong conversation
-  const activeSessionRef = useRef("");
+  const activeSessionRef = useRef(sessionId);
 
   // ---------- Effects ----------
 
@@ -70,27 +70,23 @@ const ManasiAi = () => {
     return () => cancelAnimationFrame(scrollTimer);
   }, [messages.length, sessionId]);
 
-  // Load the logged-in user and start a fresh session
+  // Track the logged-in user. onAuthStateChange fires straight away with
+  // the stored session (no network call, so a slow or failed request can't
+  // log the user out), then again on sign-in, sign-out or token refresh.
   useEffect(() => {
-    const initializeSessionState = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          setCurrentUserId(user.id);
-          fetchHistoryRecords(user.id);
-        }
-        const initialSessionId = generateSessionId();
-        activeSessionRef.current = initialSessionId;
-        setSessionId(initialSessionId);
-      } catch (err) {
-        console.error("Auth context load failure:", err);
-      } finally {
-        setAuthLoading(false);
-      }
-    };
-    initializeSessionState();
+    let lastUserId;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null;
+      setAuthLoading(false);
+      if (uid === lastUserId) return;
+      lastUserId = uid;
+      setCurrentUserId(uid);
+      if (uid) fetchHistoryRecords(uid);
+      else setSessionsList([]);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // ---------- Session & history ----------
@@ -180,6 +176,7 @@ const ManasiAi = () => {
           role: "assistant",
           content: data.answer ?? "Sorry, I couldn't get a response.",
           cta: data.cta ?? null,
+          responseId: data.response_id ?? null,
         },
       ]);
 
@@ -230,6 +227,7 @@ const ManasiAi = () => {
             key={`${sessionId}-${index}`}
             msg={msg}
             index={index}
+            sessionId={sessionId}
             onLinkCtaClick={onLinkCtaClick}
             onRoadmapCtaClick={onRoadmapCtaClick}
           />
@@ -306,7 +304,7 @@ const ManasiAi = () => {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         conversations={sessionsList}
-        isLoading={historyLoading}
+        isLoading={authLoading || historyLoading}
         isSignedIn={!!currentUserId}
         activeSessionId={sessionId}
         onSelect={handleSelectConversation}

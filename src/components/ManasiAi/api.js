@@ -5,6 +5,7 @@ import {
   historyEndpoint,
   ROADMAP_SUBMIT_ENDPOINT,
   MAPPED_THERAPIES_ENDPOINT,
+  FEEDBACK_ENDPOINT,
 } from "./constants.js";
 import { ROADMAP_RESULTS_TABLE } from "./helpers.js";
 
@@ -28,6 +29,36 @@ export const saveChatTurn = ({ sessionId, userId, question, answer }) =>
       answer,
     }),
   });
+
+// Sends a thumbs up/down for one answer. Resolves to "saved" (200),
+// "duplicate" (409, already recorded) or "failed". A thumbs-down always
+// sends reason "other", since the backend requires a reason.
+export const postFeedback = async ({
+  sessionId,
+  responseId,
+  rating,
+  suggestion,
+}) => {
+  const body = { session_id: sessionId, response_id: responseId, rating };
+  if (rating === "dislike") {
+    body.reason = "other";
+    if (suggestion) body.suggestion = suggestion;
+  }
+
+  try {
+    const response = await fetch(FEEDBACK_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (response.ok) return "saved";
+    if (response.status === 409) return "duplicate";
+    return "failed";
+  } catch (e) {
+    console.error("Feedback submission failure:", e);
+    return "failed";
+  }
+};
 
 // Returns the user's history records, or null if the lookup failed
 export const fetchChatHistory = async (uid) => {

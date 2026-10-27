@@ -21,11 +21,12 @@ const HistoryPanel = ({
   onNewChat,
 }) => {
   const renderList = () => {
-    if (!isSignedIn) {
-      return <PanelMessage>Sign in to see your past conversations.</PanelMessage>;
-    }
+    // Checked first so the sign-in prompt doesn't flash while auth loads
     if (isLoading && conversations.length === 0) {
       return <PanelMessage>Loading…</PanelMessage>;
+    }
+    if (!isSignedIn) {
+      return <PanelMessage>Sign in to see your past conversations.</PanelMessage>;
     }
     if (conversations.length === 0) {
       return <PanelMessage>No conversations yet.</PanelMessage>;

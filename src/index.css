@@ -64,6 +64,54 @@
     --tw-ring-offset-color: #fff;
     --tw-ring-offset-shadow: 0 0 #0000;
     --tw-drop-shadow-alpha: 100%;
+
+    /* Properties Tailwind registers with no default. `initial` stops them
+       inheriting, as @property's inherits:false would; otherwise e.g. a
+       gradient child picks up its gradient parent's colour stops. */
+    --tw-rotate-x: initial;
+    --tw-rotate-y: initial;
+    --tw-rotate-z: initial;
+    --tw-skew-x: initial;
+    --tw-skew-y: initial;
+    --tw-gradient-position: initial;
+    --tw-gradient-stops: initial;
+    --tw-gradient-via-stops: initial;
+    --tw-leading: initial;
+    --tw-font-weight: initial;
+    --tw-tracking: initial;
+    --tw-ordinal: initial;
+    --tw-slashed-zero: initial;
+    --tw-numeric-figure: initial;
+    --tw-numeric-spacing: initial;
+    --tw-numeric-fraction: initial;
+    --tw-shadow-color: initial;
+    --tw-inset-shadow-color: initial;
+    --tw-ring-color: initial;
+    --tw-inset-ring-color: initial;
+    --tw-ring-inset: initial;
+    --tw-blur: initial;
+    --tw-brightness: initial;
+    --tw-contrast: initial;
+    --tw-grayscale: initial;
+    --tw-hue-rotate: initial;
+    --tw-invert: initial;
+    --tw-opacity: initial;
+    --tw-saturate: initial;
+    --tw-sepia: initial;
+    --tw-drop-shadow: initial;
+    --tw-drop-shadow-color: initial;
+    --tw-drop-shadow-size: initial;
+    --tw-backdrop-blur: initial;
+    --tw-backdrop-brightness: initial;
+    --tw-backdrop-contrast: initial;
+    --tw-backdrop-grayscale: initial;
+    --tw-backdrop-hue-rotate: initial;
+    --tw-backdrop-invert: initial;
+    --tw-backdrop-opacity: initial;
+    --tw-backdrop-saturate: initial;
+    --tw-backdrop-sepia: initial;
+    --tw-duration: initial;
+    --tw-ease: initial;
   }
 }
 

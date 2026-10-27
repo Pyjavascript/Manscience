@@ -6,6 +6,10 @@ export const historyEndpoint = (uid) =>
   `${MANASI_API_BASE}/chat/user/${uid}/history`;
 export const ROADMAP_SUBMIT_ENDPOINT = `${MANASI_API_BASE}/roadmap/submit`;
 export const MAPPED_THERAPIES_ENDPOINT = `${MANASI_API_BASE}/roadmap/mapped-therapies`;
+export const FEEDBACK_ENDPOINT = `${MANASI_API_BASE}/chat/feedback`;
+
+// Backend limit for the thumbs-down text (FEEDBACK_MAX_SUGGESTION_CHARS)
+export const FEEDBACK_MAX_CHARS = 1000;
 
 export const BRAIN_IMAGE_URL =
   "https://res.cloudinary.com/dspwbbjyt/image/upload/v1785586774/brainImg_obpn0v.svg";
