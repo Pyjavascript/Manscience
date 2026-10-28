@@ -51,13 +51,6 @@ export const ROADMAP_TRIGGER_PHRASES = [
   "Help me navigate neuroplasticity",
 ];
 
-// Quick-start chips on the welcome screen
-export const SUGGESTIONS = [
-  { label: "Explore ADHD", message: "What is ADHD" },
-  { label: "Find Therapies", message: "Help me understand therapies" },
-  { label: "Book Session", message: "Book a session" },
-];
-
 export const RATING_OPTIONS = [1, 2, 3, 4, 5];
 
 export const INITIAL_SCORING_STATE = {

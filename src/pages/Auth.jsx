@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { supabase } from "../supabase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import bg from "../assets/Ai/bg.svg";
 import Logo from "../assets/form/LogoBrown.svg";
 import google from "../assets/form/google.svg";
@@ -10,8 +10,28 @@ import show from "../assets/form/show.svg";
 
 import or from "../assets/form/or.svg";
 
+const DEFAULT_REDIRECT_PATH = "/profile";
+
+// Same-site path from ?redirect=, so the link can't send users off-site
+const toSafeRedirectPath = (value) => {
+  if (!value) return DEFAULT_REDIRECT_PATH;
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin !== window.location.origin) return DEFAULT_REDIRECT_PATH;
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return DEFAULT_REDIRECT_PATH;
+  }
+};
+
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Where to land after signing in: the page that sent the user here
+  // (e.g. Manasi AI), otherwise the profile
+  const redirectUrl = `${window.location.origin}${toSafeRedirectPath(
+    searchParams.get("redirect"),
+  )}`;
   // authMode can be: "login", "signup", or "forgot"
   const [authMode, setAuthMode] = useState("login");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -53,7 +73,7 @@ export default function Auth() {
       password,
       options: {
         data: { name },
-        emailRedirectTo: `${window.location.origin}/profile`,
+        emailRedirectTo: redirectUrl,
       },
     });
 
@@ -72,7 +92,7 @@ export default function Auth() {
       setIsSubmitted(true);
     } else {
       // navigate("/profile");
-      window.location.href = `${window.location.origin}/profile`;
+      window.location.href = redirectUrl;
     }
   }
 
@@ -95,7 +115,7 @@ export default function Auth() {
     }
 
     // navigate("/profile");
-    window.location.href = `${window.location.origin}/profile`;
+    window.location.href = redirectUrl;
   }
 
   async function handleForgotPassword(e) {
@@ -125,7 +145,7 @@ export default function Auth() {
       type: "signup",
       email: email,
       options: {
-        emailRedirectTo: `${window.location.origin}/profile`,
+        emailRedirectTo: redirectUrl,
       },
     });
 
@@ -141,7 +161,7 @@ export default function Auth() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/profile`,
+        redirectTo: redirectUrl,
       },
     });
   }

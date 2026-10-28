@@ -74,6 +74,8 @@ export const buildRoadmapPayload = (answers, dataset, userId) => {
 
 export const AI_PAGE_PATH = "/ai";
 export const ROADMAP_PAGE_PATH = "/ai/roadmap";
+const AUTH_PAGE_PATH = "/auth";
+export const PROFILE_PAGE_PATH = "/profile";
 const DEFAULT_RETURN_PATH = AI_PAGE_PATH;
 const AI_RETURN_STORAGE_KEY = "manasi_ai_return_to";
 
@@ -81,13 +83,15 @@ const isUnderPath = (pathname, base) =>
   pathname === base || pathname.startsWith(`${base}/`);
 
 // Same-origin path for `value`, or null if it points anywhere else
-// or into the `excludedBase` section of the site
-const toSameOriginPath = (value, excludedBase = ROADMAP_PAGE_PATH) => {
+// or into one of the `excludedBases` sections of the site
+const toSameOriginPath = (value, ...excludedBases) => {
   if (!value) return null;
   try {
     const url = new URL(value, window.location.origin);
     if (url.origin !== window.location.origin) return null;
-    if (isUnderPath(url.pathname, excludedBase)) return null;
+    if (excludedBases.some((base) => isUnderPath(url.pathname, base))) {
+      return null;
+    }
     return url.pathname + url.search + url.hash;
   } catch {
     return null;
@@ -95,11 +99,12 @@ const toSameOriginPath = (value, excludedBase = ROADMAP_PAGE_PATH) => {
 };
 
 // Where the AI page's close button goes: the page the user opened the AI
-// from. Remembered for the tab so a roadmap round-trip doesn't lose it.
+// from. Remembered for the tab so a roadmap or login round-trip doesn't
+// lose it.
 export const resolveAiReturnPath = (from) => {
   const fresh =
     toSameOriginPath(from, AI_PAGE_PATH) ||
-    toSameOriginPath(document.referrer, AI_PAGE_PATH);
+    toSameOriginPath(document.referrer, AI_PAGE_PATH, AUTH_PAGE_PATH);
   try {
     if (fresh) sessionStorage.setItem(AI_RETURN_STORAGE_KEY, fresh);
     return fresh || sessionStorage.getItem(AI_RETURN_STORAGE_KEY) || "/";
@@ -113,11 +118,18 @@ export const getRoadmapUrl = (
   returnTo = window.location.pathname + window.location.search,
 ) => `${ROADMAP_PAGE_PATH}?from=${encodeURIComponent(returnTo)}`;
 
+// Login page link that brings the user back to this exact URL afterwards
+export const getAuthUrl = (
+  returnTo = window.location.pathname +
+    window.location.search +
+    window.location.hash,
+) => `${AUTH_PAGE_PATH}?redirect=${encodeURIComponent(returnTo)}`;
+
 // Where to send the user after submitting: ?from=, then the referring
 // page on this site, then the AI chat
 export const resolveRoadmapReturnPath = (from) =>
-  toSameOriginPath(from) ||
-  toSameOriginPath(document.referrer) ||
+  toSameOriginPath(from, ROADMAP_PAGE_PATH) ||
+  toSameOriginPath(document.referrer, ROADMAP_PAGE_PATH) ||
   DEFAULT_RETURN_PATH;
 
 // ---------- Chat history ----------

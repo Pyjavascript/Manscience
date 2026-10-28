@@ -73,6 +73,35 @@ export const fetchChatHistory = async (uid) => {
   }
 };
 
+// Name, email and avatar for the sidebar. Falls back to the auth details
+// if the users row can't be read.
+export const fetchUserProfile = async (authUser) => {
+  let row = null;
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("name, avatar_url")
+      .eq("id", authUser.id)
+      .maybeSingle();
+    if (error) throw error;
+    row = data;
+  } catch (e) {
+    console.error("User profile lookup failure:", e);
+  }
+
+  const meta = authUser.user_metadata || {};
+  return {
+    name:
+      row?.name ||
+      meta.name ||
+      meta.full_name ||
+      authUser.email?.split("@")[0] ||
+      "Member",
+    email: authUser.email || null,
+    avatarUrl: row?.avatar_url || null,
+  };
+};
+
 // Submits the roadmap, fetches mapped therapies and stores them in Supabase.
 // Throws if any step fails.
 export const submitRoadmap = async (payload, userId) => {

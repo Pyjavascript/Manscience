@@ -39,7 +39,7 @@ const AssistantMessage = ({
     <div className="flex flex-col items-start gap-3 w-full transition-all duration-200 md:max-w-full">
       <img src={ai} alt="Manasi" className="w-6 h-6" />
 
-      <div className="text-white bg-[#68270B]/15 font-medium leading-[140%] tracking-[-2%] text-[15px] text-left px-5.25 py-5 rounded-3xl md:rounded-[34px] flex flex-col gap-3 w-full w-150">
+      <div className="text-white bg-[#68270B]/15 font-medium leading-[140%] tracking-normal text-[15px] text-left px-5.25 py-5 rounded-3xl md:rounded-[34px] flex flex-col gap-3 w-full w-150">
         <p className="whitespace-pre-wrap wrap-break-word">
           {msg.content?.trim()}
         </p>

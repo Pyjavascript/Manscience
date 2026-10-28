@@ -11,6 +11,7 @@ import hide from "../assets/form/hide.svg";
 import show from "../assets/form/show.svg";
 import logo from "../assets/Ai/ai.svg";
 import inparrowbrown from "../assets/Ai/inparrowbrown.svg";
+import { ROADMAP_RESULTS_TABLE } from "../components/ManasiAi/helpers";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -43,6 +44,10 @@ export default function Profile() {
 
   const [showPasswords, setShowPasswords] = useState(false);
 
+  // --- ROADMAP & PRACTITIONER STATES ---
+  const [roadmap, setRoadmap] = useState(null);
+  const [assignedPractitioners, setAssignedPractitioners] = useState([]);
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -54,6 +59,7 @@ export default function Profile() {
 
     if (!user) return;
     setUser(user);
+    loadJourney(user.id);
 
     const { data } = await supabase
       .from("subscriptions")
@@ -69,6 +75,54 @@ export default function Profile() {
       .maybeSingle();
     setDbUser(userData);
   }
+
+  // Completed roadmap + practitioners assigned from the admin panel
+  async function loadJourney(userId) {
+    try {
+      const { data: roadmapRow } = await supabase
+        .from(ROADMAP_RESULTS_TABLE)
+        .select("updated_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      setRoadmap(roadmapRow);
+
+      const { data: assignments } = await supabase
+        .from("practitioner_roadmap_assignments")
+        .select("practitioner_id")
+        .eq("user_id", userId)
+        .order("assigned_at", { ascending: false });
+
+      const practitionerIds = [
+        ...new Set((assignments || []).map((a) => a.practitioner_id)),
+      ];
+      if (practitionerIds.length === 0) {
+        setAssignedPractitioners([]);
+        return;
+      }
+
+      const { data: practitioners } = await supabase
+        .from("practitioners")
+        .select("id, name, specialization, profile_image")
+        .in("id", practitionerIds);
+
+      // Keep the most recently assigned practitioner first
+      setAssignedPractitioners(
+        practitionerIds
+          .map((id) => (practitioners || []).find((p) => p.id === id))
+          .filter(Boolean),
+      );
+    } catch (err) {
+      console.error("Error loading roadmap journey:", err.message);
+    }
+  }
+
+  const roadmapCompletedOn = roadmap?.updated_at
+    ? new Date(roadmap.updated_at).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
 
   useEffect(() => {
     if (isEditModalOpen && user) {
@@ -390,7 +444,7 @@ export default function Profile() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center manrope ">
+    <main className="min-h-screen flex flex-col items-center manrope">
       <div className="w-full flex flex-col gap-[10px] md:gap-[20px]">
         {/* Cover Header Banner */}
         <div className="relative w-full h-[500px] md:h-[380px] rounded-[40px] md:rounded-[54px] overflow-hidden flex flex-col">
@@ -627,6 +681,95 @@ export default function Profile() {
             </button>
           </div>
         </div>
+
+        {/* My Journey (Completed Roadmap & Assigned Practitioner) */}
+        {(roadmap || assignedPractitioners.length > 0) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px] md:gap-[20px] w-full">
+            {/* Completed Roadmap */}
+            {roadmap && (
+              <div
+                className={`w-full bg-[#FAF4E8] rounded-[40px] md:rounded-[60px] p-5 md:p-10 flex flex-col justify-between gap-6 min-h-[160px] md:min-h-[260px] ${
+                  assignedPractitioners.length === 0 ? "md:col-span-2" : ""
+                }`}
+              >
+                <span className="self-start inline-flex items-center gap-2 bg-white text-[#B77145] text-[12px] md:text-[14px] font-semibold rounded-full h-9 md:h-11 pl-1.5 pr-4 md:pr-5">
+                  <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#B77145] flex items-center justify-center shrink-0">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-3 h-3 md:w-4 md:h-4"
+                    >
+                      <path d="M5 12.5l4.5 4.5L19 7.5" />
+                    </svg>
+                  </span>
+                  Completed
+                </span>
+
+                <div className="flex flex-col gap-[10px] md:gap-[14px]">
+                  <h3 className="text-[20px] md:text-[28px] lg:text-[30px] font-medium text-[#5F2305] leading-[120%] tracking-[-2%]">
+                    Neurodivergent Roadmap
+                  </h3>
+                  <p className="text-[12px] md:text-[16px] font-medium text-[#B77145] leading-[130%]">
+                    You've completed your roadmap assessment
+                    {roadmapCompletedOn && (
+                      <>
+                        <span className="mx-2 opacity-50">•</span>
+                        <span className="whitespace-nowrap">
+                          {roadmapCompletedOn}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Assigned Practitioner(s) */}
+            {assignedPractitioners.map((practitioner) => (
+              <div
+                key={practitioner.id}
+                className="w-full bg-[#B77145] rounded-[40px] md:rounded-[60px] p-5 md:p-10 flex flex-col justify-between gap-6 min-h-[160px] md:min-h-[260px] relative overflow-hidden"
+                style={{
+                  backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1789386749/profile-bg_zdzkkz.svg)`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                <span className="self-start inline-flex items-center bg-white/20 backdrop-blur-md text-white text-[12px] md:text-[14px] font-semibold rounded-full h-9 md:h-11 px-4 md:px-5">
+                  Your Practitioner
+                </span>
+
+                <div className="flex items-center gap-3 md:gap-5 min-w-0">
+                  <div className="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden bg-white shrink-0 flex items-center justify-center">
+                    {practitioner.profile_image ? (
+                      <img
+                        src={practitioner.profile_image}
+                        alt={practitioner.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[#B77145] text-[22px] md:text-[30px] font-medium">
+                        {practitioner.name?.charAt(0)?.toUpperCase() || "P"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 md:gap-1.5 min-w-0">
+                    <h3 className="text-[20px] md:text-[26px] lg:text-[30px] font-medium text-white leading-[120%] tracking-[-2%] break-words">
+                      {practitioner.name}
+                    </h3>
+                    <p className="text-[12px] md:text-[16px] font-medium text-white/80 leading-[130%] break-words">
+                      {practitioner.specialization || "General Care Specialist"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 0. EDIT PROFILE MODAL */}

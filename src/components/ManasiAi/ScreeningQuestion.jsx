@@ -30,8 +30,9 @@ const ScreeningQuestion = ({ step, selectedOption, onSelect }) => {
             {question}
           </h1>
 
-          {/* Stacked on mobile, one row on desktop; every pill is the same width */}
-          <div className="flex flex-col md:flex-row md:flex-wrap items-center justify-center gap-2 md:gap-3 w-full">
+          {/* Stacked on mobile, one row on desktop. Every pill is the same
+              width, sized to the longest label so none wrap onto two lines */}
+          <div className="flex flex-col items-center gap-2 w-full md:grid md:grid-flow-col md:auto-cols-fr md:w-auto md:gap-3">
             {options.map((opt) => {
               const isSelected = selectedOption === opt;
               return (
@@ -39,7 +40,7 @@ const ScreeningQuestion = ({ step, selectedOption, onSelect }) => {
                   key={opt}
                   disabled={isLocked}
                   onClick={() => onSelect(opt)}
-                  className={`w-full max-w-70 md:w-50 md:max-w-none font-medium text-[15px] md:text-[17px] px-6 py-3.5 rounded-full transition-[background-color,color,transform] duration-200 ${
+                  className={`w-full max-w-70 md:max-w-none md:min-w-50 whitespace-nowrap font-medium text-[15px] md:text-[17px] px-6 py-3.5 rounded-full transition-[background-color,color,transform] duration-200 ${
                     isSelected
                       ? "bg-[#68270B] text-white"
                       : "bg-[#FAF4E8] text-[#68270B] enabled:hover:bg-[#68270B] enabled:hover:text-white"
