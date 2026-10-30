@@ -133,7 +133,9 @@ body::-webkit-scrollbar {
   font-family: "Poppins", sans-serif;
 }
 .manrope {
-  font-family: "Manrope", sans-serif;
+  /* System fonts if Manrope isn't loaded on the Webflow site */
+  font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, Arial, sans-serif;
 }
 .translate {
   transform: translate(-50%, -50%);
@@ -238,5 +240,42 @@ body::-webkit-scrollbar {
   .group:hover .custom-popup {
     display: block;
   }
+}
+
+/* ---------- Webflow fallbacks ----------
+   On Webflow the app runs in a shadow root inside a Webflow page, so the
+   page's text styles are inherited and its navbar can cover our pop-ups. */
+
+/* Show the component as a normal block and stop the Webflow body's font
+   size, weight, letter-spacing etc. leaking in, so it matches local dev */
+:host {
+  display: block;
+  font-size: 16px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+}
+
+/* Pop-ups above the Webflow navbar (.w-nav uses z-index 1000) */
+.fixed.inset-0.z-50 {
+  z-index: 9999;
+}
+
+/* Browsers without dvh (older Safari) would collapse the AI page */
+@supports not (height: 100dvh) {
+  .h-dvh {
+    height: 100vh;
+  }
+}
+
+/* Tutorial video in fullscreen: plain black, whole video visible */
+:fullscreen {
+  border-radius: 0;
+  background: #000;
+}
+:fullscreen > video {
+  object-fit: contain;
 }
 

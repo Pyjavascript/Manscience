@@ -24,7 +24,9 @@ const UserFooter = ({ user, onOpenProfile, onLogout }) => {
   useEffect(() => {
     if (!isMenuOpen) return;
     const closeOnOutsideClick = (e) => {
-      if (!footerRef.current?.contains(e.target)) setIsMenuOpen(false);
+      // composedPath() so clicks inside Webflow's shadow root aren't
+      // mistaken for outside clicks
+      if (!e.composedPath().includes(footerRef.current)) setIsMenuOpen(false);
     };
     const closeOnEscape = (e) => {
       if (e.key === "Escape") setIsMenuOpen(false);

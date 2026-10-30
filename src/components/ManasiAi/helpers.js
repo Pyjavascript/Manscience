@@ -1,4 +1,5 @@
 import { NEUROTYPICAL_SET, NEURODIVERGENT_SET } from "../../data/questionnaires.js";
+import { QUESTIONNAIRE } from "./constants.js";
 
 export const getCurrentTime = () =>
   new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -136,6 +137,51 @@ export const resolveRoadmapReturnPath = (from) =>
 
 const ROADMAP_SESSION_TITLE = "Roadmap Assessment";
 
+export const isRoadmapSession = (record) =>
+  record.title === ROADMAP_SESSION_TITLE;
+
+// The screening answers pick the domain set, which fixes how many
+// questions the roadmap has. Total is null until screening is done.
+export const getRoadmapProgress = (record) => {
+  const turns = record.history || [];
+  const answered = turns.length;
+  if (answered < QUESTIONNAIRE.length) {
+    return { answered, total: null, isComplete: false };
+  }
+
+  const dataset = classifyScreening(
+    turns.slice(0, QUESTIONNAIRE.length).map((turn) => turn.answer),
+  );
+  const total =
+    QUESTIONNAIRE.length +
+    dataset.reduce((sum, domain) => sum + domain.questions.length, 0);
+  return { answered, total, isComplete: answered >= total };
+};
+
+// Every roadmap attempt, newest first. Falls back to the stored result's
+// date when the chat history has no finished attempt for it.
+export const buildRoadmapTimeline = (records, roadmapRow) => {
+  const entries = records.filter(isRoadmapSession).map((record) => ({
+    id: record.session_id,
+    date: record.updated_at,
+    turns: record.history || [],
+    ...getRoadmapProgress(record),
+  }));
+
+  if (roadmapRow?.updated_at && !entries.some((e) => e.isComplete)) {
+    entries.push({
+      id: "saved-roadmap",
+      date: roadmapRow.updated_at,
+      turns: [],
+      answered: null,
+      total: null,
+      isComplete: true,
+    });
+  }
+
+  return entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+};
+
 const formatTime = (iso) =>
   iso
     ? new Date(iso).toLocaleTimeString([], {
@@ -182,30 +228,40 @@ export const groupConversationsByDay = (records, now = new Date()) => {
   return groups;
 };
 
-// Rebuilds chat messages from a stored conversation. Roadmap sessions store
-// Manasi's question as `question` and the user's pick as `answer`.
+const ROADMAP_SUBMITTED_MESSAGE = "Thank you for submitting this roadmap.";
+const ROADMAP_UNFINISHED_MESSAGE =
+  "This roadmap wasn't finished. You can start a new one any time from the chat.";
+
+// Rebuilds chat messages from a stored conversation. Roadmap answers aren't
+// replayed in the chat; the session shows a single closing note instead.
 export const historyToMessages = (record) => {
   const time = formatTime(record.updated_at);
-  const isRoadmap = record.title === ROADMAP_SESSION_TITLE;
+
+  if (isRoadmapSession(record)) {
+    const { isComplete } = getRoadmapProgress(record);
+    return [
+      {
+        role: "assistant",
+        content: isComplete
+          ? ROADMAP_SUBMITTED_MESSAGE
+          : ROADMAP_UNFINISHED_MESSAGE,
+        time,
+      },
+    ];
+  }
 
   return (record.history || []).flatMap(
-    ({ question, answer, cta, response_id }) =>
-      isRoadmap
-        ? [
-            { role: "assistant", content: question, time },
-            { role: "user", content: answer, time },
-          ]
-        : [
-            { role: "user", content: question, time },
-            {
-              role: "assistant",
-              content: answer,
-              cta: cta ?? null,
-              // Only present if the history endpoint returns it
-              responseId: response_id ?? null,
-              time,
-            },
-          ],
+    ({ question, answer, cta, response_id }) => [
+      { role: "user", content: question, time },
+      {
+        role: "assistant",
+        content: answer,
+        cta: cta ?? null,
+        // Only present if the history endpoint returns it
+        responseId: response_id ?? null,
+        time,
+      },
+    ],
   );
 };
 

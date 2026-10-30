@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
 import users from "../assets/share.svg";
@@ -11,7 +11,13 @@ import hide from "../assets/form/hide.svg";
 import show from "../assets/form/show.svg";
 import logo from "../assets/Ai/ai.svg";
 import inparrowbrown from "../assets/Ai/inparrowbrown.svg";
-import { ROADMAP_RESULTS_TABLE } from "../components/ManasiAi/helpers";
+import {
+  ROADMAP_RESULTS_TABLE,
+  normalizeRoadmapResult,
+  buildRoadmapTimeline,
+} from "../components/ManasiAi/helpers";
+import { fetchChatHistory } from "../components/ManasiAi/api";
+import ProfileHistoryModal from "../components/ProfileHistoryModal";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -33,6 +39,19 @@ export default function Profile() {
   const [reviewText, setReviewText] = useState("");
   const [videoFile, setVideoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  // Height of the "selection" step, reused as min-height for the other steps
+  const shareModalRef = useRef(null);
+  const [shareModalHeight, setShareModalHeight] = useState(null);
+
+  useEffect(() => {
+    if (!isShareModalOpen || shareStep !== "selection" || !shareModalRef.current)
+      return;
+    const el = shareModalRef.current;
+    // Observe so the height stays correct after images load / screen resizes
+    const observer = new ResizeObserver(() => setShareModalHeight(el.offsetHeight));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isShareModalOpen, shareStep]);
 
   // --- CHANGE PASSWORD MODAL STATES ---
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -46,7 +65,9 @@ export default function Profile() {
 
   // --- ROADMAP & PRACTITIONER STATES ---
   const [roadmap, setRoadmap] = useState(null);
+  const [roadmapTimeline, setRoadmapTimeline] = useState([]);
   const [assignedPractitioners, setAssignedPractitioners] = useState([]);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -76,15 +97,20 @@ export default function Profile() {
     setDbUser(userData);
   }
 
-  // Completed roadmap + practitioners assigned from the admin panel
+  // Stored roadmap, every roadmap attempt from the AI chat history and
+  // practitioners assigned from the admin panel
   async function loadJourney(userId) {
     try {
-      const { data: roadmapRow } = await supabase
-        .from(ROADMAP_RESULTS_TABLE)
-        .select("updated_at")
-        .eq("user_id", userId)
-        .maybeSingle();
-      setRoadmap(roadmapRow);
+      const [{ data: roadmapRow }, chatRecords] = await Promise.all([
+        supabase
+          .from(ROADMAP_RESULTS_TABLE)
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle(),
+        fetchChatHistory(userId),
+      ]);
+      setRoadmap(normalizeRoadmapResult(roadmapRow));
+      setRoadmapTimeline(buildRoadmapTimeline(chatRecords || [], roadmapRow));
 
       const { data: assignments } = await supabase
         .from("practitioner_roadmap_assignments")
@@ -116,13 +142,6 @@ export default function Profile() {
     }
   }
 
-  const roadmapCompletedOn = roadmap?.updated_at
-    ? new Date(roadmap.updated_at).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : null;
 
   useEffect(() => {
     if (isEditModalOpen && user) {
@@ -140,7 +159,10 @@ export default function Profile() {
 
   useEffect(() => {
     const isAnyModalOpen =
-      isShareModalOpen || isPasswordModalOpen || isEditModalOpen;
+      isShareModalOpen ||
+      isPasswordModalOpen ||
+      isEditModalOpen ||
+      isHistoryModalOpen;
 
     if (isAnyModalOpen) {
       document.body.style.overflow = "hidden";
@@ -150,7 +172,7 @@ export default function Profile() {
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isShareModalOpen, isPasswordModalOpen]);
+  }, [isShareModalOpen, isPasswordModalOpen, isEditModalOpen, isHistoryModalOpen]);
 
   // --- ACCOUNT MANAGEMENT ACTIONS ---
 
@@ -618,6 +640,20 @@ export default function Profile() {
 
         {/* Action Options List */}
         <div className="flex flex-col gap-[10px] md:gap-[20px]">
+
+            {/* My Journey: opens the roadmap & practitioner history pop-up */}
+        <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
+          <span className="text-[16px] md:text-[24px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
+            My Journey
+          </span>
+          <button
+            onClick={() => setIsHistoryModalOpen(true)}
+            className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] transition md:h-20 h-15 w-27.5 md:w-[160px] shrink-0 cursor-pointer"
+          >
+            View
+          </button>
+        </div>
+        
           {/* Manage Subscription */}
           <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between h-20 md:h-35 px-5 md:px-10">
             <span className="text-[16px] md:text-[24px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
@@ -655,6 +691,8 @@ export default function Profile() {
             </button>
           </div>
 
+        
+
           {/* Log Out */}
           <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
             <span className="text-[16px] md:text-[24px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
@@ -667,6 +705,8 @@ export default function Profile() {
               Log Out
             </button>
           </div>
+
+          
 
           {/* Delete Account */}
           <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
@@ -682,95 +722,17 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* My Journey (Completed Roadmap & Assigned Practitioner) */}
-        {(roadmap || assignedPractitioners.length > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px] md:gap-[20px] w-full">
-            {/* Completed Roadmap */}
-            {roadmap && (
-              <div
-                className={`w-full bg-[#FAF4E8] rounded-[40px] md:rounded-[60px] p-5 md:p-10 flex flex-col justify-between gap-6 min-h-[160px] md:min-h-[260px] ${
-                  assignedPractitioners.length === 0 ? "md:col-span-2" : ""
-                }`}
-              >
-                <span className="self-start inline-flex items-center gap-2 bg-white text-[#B77145] text-[12px] md:text-[14px] font-semibold rounded-full h-9 md:h-11 pl-1.5 pr-4 md:pr-5">
-                  <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#B77145] flex items-center justify-center shrink-0">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="white"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-3 h-3 md:w-4 md:h-4"
-                    >
-                      <path d="M5 12.5l4.5 4.5L19 7.5" />
-                    </svg>
-                  </span>
-                  Completed
-                </span>
-
-                <div className="flex flex-col gap-[10px] md:gap-[14px]">
-                  <h3 className="text-[20px] md:text-[28px] lg:text-[30px] font-medium text-[#5F2305] leading-[120%] tracking-[-2%]">
-                    Neurodivergent Roadmap
-                  </h3>
-                  <p className="text-[12px] md:text-[16px] font-medium text-[#B77145] leading-[130%]">
-                    You've completed your roadmap assessment
-                    {roadmapCompletedOn && (
-                      <>
-                        <span className="mx-2 opacity-50">•</span>
-                        <span className="whitespace-nowrap">
-                          {roadmapCompletedOn}
-                        </span>
-                      </>
-                    )}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Assigned Practitioner(s) */}
-            {assignedPractitioners.map((practitioner) => (
-              <div
-                key={practitioner.id}
-                className="w-full bg-[#B77145] rounded-[40px] md:rounded-[60px] p-5 md:p-10 flex flex-col justify-between gap-6 min-h-[160px] md:min-h-[260px] relative overflow-hidden"
-                style={{
-                  backgroundImage: `url(https://res.cloudinary.com/dspwbbjyt/image/upload/v1789386749/profile-bg_zdzkkz.svg)`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              >
-                <span className="self-start inline-flex items-center bg-white/20 backdrop-blur-md text-white text-[12px] md:text-[14px] font-semibold rounded-full h-9 md:h-11 px-4 md:px-5">
-                  Your Practitioner
-                </span>
-
-                <div className="flex items-center gap-3 md:gap-5 min-w-0">
-                  <div className="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden bg-white shrink-0 flex items-center justify-center">
-                    {practitioner.profile_image ? (
-                      <img
-                        src={practitioner.profile_image}
-                        alt={practitioner.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-[#B77145] text-[22px] md:text-[30px] font-medium">
-                        {practitioner.name?.charAt(0)?.toUpperCase() || "P"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1 md:gap-1.5 min-w-0">
-                    <h3 className="text-[20px] md:text-[26px] lg:text-[30px] font-medium text-white leading-[120%] tracking-[-2%] break-words">
-                      {practitioner.name}
-                    </h3>
-                    <p className="text-[12px] md:text-[16px] font-medium text-white/80 leading-[130%] break-words">
-                      {practitioner.specialization || "General Care Specialist"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        
       </div>
+
+      {isHistoryModalOpen && (
+        <ProfileHistoryModal
+          onClose={() => setIsHistoryModalOpen(false)}
+          timeline={roadmapTimeline}
+          roadmap={roadmap}
+          practitioners={assignedPractitioners}
+        />
+      )}
 
       {/* 0. EDIT PROFILE MODAL */}
       {isEditModalOpen && (
@@ -980,7 +942,13 @@ export default function Profile() {
           className="fixed inset-0 bg-white/70 z-50 flex justify-center items-center p-4 backdrop-blur-xs"
         >
           <div
+            ref={shareModalRef}
             onClick={(e) => e.stopPropagation()}
+            style={
+              shareStep !== "selection" && shareModalHeight
+                ? { minHeight: shareModalHeight }
+                : undefined
+            }
             className="bg-[#FAF4EB] w-[330px] md:w-[500px] max-h-[90vh] overflow-y-auto p-4 md:p-8 rounded-[20px] md:rounded-[40px] flex flex-col justify-between relative transition-all shadow-xl"
           >
             {/* STEP 1: INITIAL SELECTION CARD */}
@@ -1044,7 +1012,7 @@ export default function Profile() {
             {shareStep === "review" && (
               <form
                 onSubmit={handleSubmitTextReview}
-                className="flex flex-col gap-4 md:gap-6 h-full w-full"
+                className="flex flex-col gap-4 md:gap-6 flex-1 w-full"
               >
                 <div className="flex flex-col gap-4 justify-center w-full">
                   <div className="flex justify-start items-center">
@@ -1072,14 +1040,14 @@ export default function Profile() {
                   </div>
                 </div>
 
-                <div className="flex-1 ">
+                <div className="flex-1 flex flex-col">
                   <textarea
                     rows={4}
                     required
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
                     placeholder="Write your feedback here..."
-                    className="w-full min-h-[120px] text-[12px] md:text-[16px] bg-white rounded-[20px] p-4 md:p-6 text-[#B77145] placeholder-[#B77145]/60 focus:outline-none resize-none"
+                    className="w-full flex-1 min-h-[120px] text-[12px] md:text-[16px] bg-white rounded-[20px] p-4 md:p-6 text-[#B77145] placeholder-[#B77145]/60 focus:outline-none resize-none"
                   />
                 </div>
 
@@ -1095,7 +1063,7 @@ export default function Profile() {
 
             {/* STEP 3: VIDEO CARD */}
             {shareStep === "video" && (
-              <div className="flex flex-col justify-between h-full gap-4 md:gap-6 w-full">
+              <div className="flex flex-col justify-between flex-1 gap-4 md:gap-6 w-full">
                 <div className="flex flex-col gap-4 w-full">
                   <div className="flex justify-start items-center">
                     <button

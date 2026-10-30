@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiClock, FiVideo, FiX } from "react-icons/fi";
+import { FiClock, FiPlay, FiX } from "react-icons/fi";
 import ai from "../assets/Ai/ai.svg";
 import Logo from "../assets/Ai/Logo.svg";
 
@@ -37,7 +37,7 @@ const CHAT_FADE_MASK =
 const VIEW_TRANSITION = { duration: 0.45, ease: [0.22, 1, 0.36, 1] };
 
 const HEADER_BUTTON_CLASS =
-  "w-10 h-10 text-[#68270B] hover:opacity-70 flex items-center justify-center transition-opacity duration-150 cursor-pointer";
+  "w-10 h-10 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)] text-[#68270B] hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)] flex items-center justify-center transition-shadow duration-150 cursor-pointer";
 
 const isSmallScreen = () => window.matchMedia("(max-width: 767px)").matches;
 
@@ -320,7 +320,8 @@ const ManasiAi = () => {
               title="How to use"
               className={HEADER_BUTTON_CLASS}
             >
-              <FiVideo size={19} />
+              {/* Nudged right so the triangle looks optically centred */}
+              <FiPlay size={16} className="translate-x-px" />
             </button>
             <button
               onClick={isHistoryOpen ? () => setIsHistoryOpen(false) : openHistory}
@@ -328,7 +329,7 @@ const ManasiAi = () => {
               title="History"
               className={HEADER_BUTTON_CLASS}
             >
-              <FiClock size={18} />
+              <FiClock size={17} />
             </button>
             <button
               onClick={closeAiPage}
@@ -336,7 +337,7 @@ const ManasiAi = () => {
               title="Close"
               className={HEADER_BUTTON_CLASS}
             >
-              <FiX size={20} />
+              <FiX size={18} />
             </button>
           </div>
 
