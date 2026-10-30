@@ -549,10 +549,10 @@ const Community = () => {
             )}
         </section>
       ) : (
-        <section className="w-full min-h-100 lg:h-225 flex justify-center items-center relative overflow-hidden ">
+        <section className="w-full min-h-100 md:h-150 lg:h-225 flex justify-center items-center relative overflow-hidden ">
           <div className="absolute inset-0 flex justify-center items-center z-10 text-[#B77145] text-center pointer-events-none px-4">
             <div className="max-w-70 sm:max-w-md md:max-w-xs lg:max-w-xs">
-              <p className="text-[12px] lg:text-[18px] font-medium">
+              <p className="text-[12px] md:text-[16px] lg:text-[18px] font-medium">
                 Support, & positive
                 <br />
                 outcomes real experiences.
@@ -562,12 +562,12 @@ const Community = () => {
 
           {/* Spinning Container Wrapper */}
           <div className="absolute inset-0 flex justify-center items-center animate-spin-smooth pointer-events-none  md:mt-0 lg:mt-0">
-            <div className="h-50 lg:h-140 w-50 lg:w-140 rounded-full relative flex justify-center items-center pointer-events-auto">
+            <div className="h-50 md:h-104 lg:h-140 w-50 md:w-104 lg:w-140 rounded-full relative flex justify-center items-center pointer-events-auto">
               {/* Card 1 */}
-              <div className="h-80 w-13.75 lg:h-175 lg:w-28.75 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
+              <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-all bg-cover ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-all bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -581,7 +581,7 @@ const Community = () => {
                 />
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -596,10 +596,10 @@ const Community = () => {
               </div>
 
               {/* Card 2 */}
-              <div className="h-80 w-13.75 lg:h-175 lg:w-28.75 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
+              <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -613,7 +613,7 @@ const Community = () => {
                 />
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -628,10 +628,10 @@ const Community = () => {
               </div>
 
               {/* Card 3 */}
-              <div className="h-80 w-13.75 lg:h-175 lg:w-28.75 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
+              <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -645,7 +645,7 @@ const Community = () => {
                 />
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -660,10 +660,10 @@ const Community = () => {
               </div>
 
               {/* Card 4 */}
-              <div className="h-80 w-13.75 lg:h-175 lg:w-28.75 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
+              <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -677,7 +677,7 @@ const Community = () => {
                 />
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -692,10 +692,10 @@ const Community = () => {
               </div>
 
               {/* Card 5 */}
-              <div className="h-80 w-13.75 lg:h-175 lg:w-28.75 md:h-90 md:w-13 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
+              <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
@@ -709,7 +709,7 @@ const Community = () => {
                 />
                 <div
                   onClick={() => setIsModalOpen(true)}
-                  className={`relative overflow-hidden group w-full h-16.25 lg:h-36.25 rounded-lg lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
+                  className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
                   style={
