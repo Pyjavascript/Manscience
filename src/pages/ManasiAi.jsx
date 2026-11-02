@@ -55,8 +55,8 @@ const ManasiAi = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // History sidebar state: open by default beside the chat on desktop
-  const [isHistoryOpen, setIsHistoryOpen] = useState(() => !isSmallScreen());
+  // History sidebar state: closed by default, opened from the header button
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [sessionsList, setSessionsList] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
