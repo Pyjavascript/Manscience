@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiClock, FiPlay, FiX } from "react-icons/fi";
 import ai from "../assets/Ai/ai.svg";
@@ -42,7 +42,6 @@ const HEADER_BUTTON_CLASS =
 const isSmallScreen = () => window.matchMedia("(max-width: 767px)").matches;
 
 const ManasiAi = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [returnPath] = useState(() =>
     resolveAiReturnPath(searchParams.get("from")),
@@ -88,7 +87,7 @@ const ManasiAi = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       const uid = session?.user?.id ?? null;
       if (!uid) {
-        navigate(getAuthUrl(), { replace: true });
+        window.location.replace(`${window.location.origin}${getAuthUrl()}`);
         return;
       }
       setAuthLoading(false);
@@ -99,7 +98,7 @@ const ManasiAi = () => {
       fetchUserProfile(session.user).then(setUserProfile);
     });
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
   // ---------- Session & history ----------
 
@@ -143,7 +142,9 @@ const ManasiAi = () => {
     closeHistoryOnSmallScreens();
   };
 
-  const openProfile = () => navigate(PROFILE_PAGE_PATH);
+  const openProfile = () => {
+    window.location.href = `${window.location.origin}${PROFILE_PAGE_PATH}`;
+  };
 
   // The auth listener above sends the user to the login page once signed out
   const logout = () => supabase.auth.signOut();
@@ -157,7 +158,9 @@ const ManasiAi = () => {
     setMessages((prev) => [...prev, { role: "assistant", content }]);
 
   // The roadmap lives on its own page and returns here when submitted
-  const openRoadmapPage = () => navigate(getRoadmapUrl());
+  const openRoadmapPage = () => {
+    window.location.href = `${window.location.origin}${getRoadmapUrl()}`;
+  };
 
   // ---------- Chat ----------
 

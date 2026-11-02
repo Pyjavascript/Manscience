@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { supabase } from "../supabase";
-import { useNavigate } from "react-router-dom";
 import bg from "../assets/Ai/bg.svg";
 import Logo from "../assets/form/LogoBrown.svg";
 import hide from "../assets/form/hide.svg";
 
 export default function ResetPassword() {
-  const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

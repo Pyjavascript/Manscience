@@ -41,7 +41,7 @@ export default function App() {
         <Route path="/community-hub" element={<Community/>}/>
         <Route path="/slider" element={<SmoothExpertSlider/>}/>
         <Route path="/ai" element={<ManasiAi/>}/>
-        <Route path="/ai/roadmap" element={<ManasiRoadmap/>}/>
+        <Route path="/roadmap" element={<ManasiRoadmap/>}/>
         <Route path="/post/mnri" element={<FAQSection/>}/>
         <Route path="/legals" element={<TermsAndConditions/>}/>
         <Route path="/practitioner-dashboard" element={<PractitionerDashboard/>}/>

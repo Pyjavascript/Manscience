@@ -1,10 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../supabase";
-import { useNavigate } from "react-router-dom";
 import tick from "../assets/tick.svg";
 
 export default function Subscription() {
-  const navigate = useNavigate();
   const [subscription, setSubscription] = useState(null);
   const [selectedTab, setSelectedTab] = useState("starter");
   const [loading, setLoading] = useState(true);

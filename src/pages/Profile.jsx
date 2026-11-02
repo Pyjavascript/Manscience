@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase";
-import { useNavigate } from "react-router-dom";
 import users from "../assets/share.svg";
 import arrow from "../assets/profile/arrow.svg";
 import upload from "../assets/profile/upload.svg";
@@ -20,7 +19,6 @@ import { fetchChatHistory } from "../components/ManasiAi/api";
 import ProfileHistoryModal from "../components/ProfileHistoryModal";
 
 export default function Profile() {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [dbUser, setDbUser] = useState(null);

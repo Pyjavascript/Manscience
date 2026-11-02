@@ -74,7 +74,7 @@ export const buildRoadmapPayload = (answers, dataset, userId) => {
 // ---------- Roadmap page routing ----------
 
 export const AI_PAGE_PATH = "/ai";
-export const ROADMAP_PAGE_PATH = "/ai/roadmap";
+export const ROADMAP_PAGE_PATH = "/roadmap";
 const AUTH_PAGE_PATH = "/auth";
 export const PROFILE_PAGE_PATH = "/profile";
 const DEFAULT_RETURN_PATH = AI_PAGE_PATH;
@@ -104,8 +104,13 @@ const toSameOriginPath = (value, ...excludedBases) => {
 // lose it.
 export const resolveAiReturnPath = (from) => {
   const fresh =
-    toSameOriginPath(from, AI_PAGE_PATH) ||
-    toSameOriginPath(document.referrer, AI_PAGE_PATH, AUTH_PAGE_PATH);
+    toSameOriginPath(from, AI_PAGE_PATH, ROADMAP_PAGE_PATH) ||
+    toSameOriginPath(
+      document.referrer,
+      AI_PAGE_PATH,
+      ROADMAP_PAGE_PATH,
+      AUTH_PAGE_PATH,
+    );
   try {
     if (fresh) sessionStorage.setItem(AI_RETURN_STORAGE_KEY, fresh);
     return fresh || sessionStorage.getItem(AI_RETURN_STORAGE_KEY) || "/";

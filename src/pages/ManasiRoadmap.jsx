@@ -14,6 +14,7 @@ import {
   classifyScreening,
   buildRoadmapPayload,
   resolveRoadmapReturnPath,
+  getAuthUrl,
 } from "../components/ManasiAi/helpers";
 import { saveChatTurn, submitRoadmap } from "../components/ManasiAi/api";
 import ScreeningQuestion from "../components/ManasiAi/ScreeningQuestion";
@@ -33,6 +34,7 @@ const ManasiRoadmap = () => {
   );
   const [sessionId] = useState(generateSessionId);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // screening -> intro -> scoring -> completed
   const [phase, setPhase] = useState("screening");
@@ -52,15 +54,25 @@ const ManasiRoadmap = () => {
 
   // ---------- Effects ----------
 
+  // Signed-out users are sent to log in and brought back to this URL,
+  // so the roadmap is always saved against their account
   useEffect(() => {
-    supabase.auth
-      .getUser()
-      .then(({ data: { user } }) => {
-        if (user) setCurrentUserId(user.id);
-      })
-      .catch((err) => console.error("Auth context load failure:", err));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null;
+      if (!uid) {
+        window.location.replace(`${window.location.origin}${getAuthUrl()}`);
+        return;
+      }
+      setCurrentUserId(uid);
+      setAuthLoading(false);
+    });
 
-    return () => clearTimeout(advanceTimer.current);
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(advanceTimer.current);
+    };
   }, []);
 
   // ---------- History ----------
@@ -224,14 +236,14 @@ const ManasiRoadmap = () => {
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={phase}
+            key={authLoading ? "auth" : phase}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={PHASE_TRANSITION}
             className="flex-1 min-h-0 flex flex-col"
           >
-            {renderPhase()}
+            {!authLoading && renderPhase()}
           </motion.div>
         </AnimatePresence>
       </div>

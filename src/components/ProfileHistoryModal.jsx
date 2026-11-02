@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { getRoadmapUrl } from "./ManasiAi/helpers";
 
 // Shared type scale so every card in the pop-up reads the same way
@@ -142,8 +141,6 @@ const ProfileHistoryModal = ({
   roadmap,
   practitioners,
 }) => {
-  const navigate = useNavigate();
-
   // The newest attempt counts as in progress only if nothing was completed
   // after it; every other attempt goes under "Earlier"
   const latestComplete = timeline.find((e) => e.isComplete);
@@ -152,7 +149,9 @@ const ProfileHistoryModal = ({
     (e) => e !== latestComplete && e !== inProgress,
   );
 
-  const startRoadmap = () => navigate(getRoadmapUrl("/profile"));
+  const startRoadmap = () => {
+    window.location.href = `${window.location.origin}${getRoadmapUrl("/profile")}`;
+  };
   const summary = roadmap?.practitioner_summary?.trim();
 
   return (

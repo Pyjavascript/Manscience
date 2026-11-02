@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { supabase } from "../supabase";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import bg from "../assets/Ai/bg.svg";
 import Logo from "../assets/form/LogoBrown.svg";
 import google from "../assets/form/google.svg";
@@ -25,7 +25,6 @@ const toSafeRedirectPath = (value) => {
 };
 
 export default function Auth() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // Where to land after signing in: the page that sent the user here
   // (e.g. Manasi AI), otherwise the profile
