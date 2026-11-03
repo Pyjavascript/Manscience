@@ -4,7 +4,7 @@ import ai from "../../assets/Ai/ai.svg";
 import sent from "../../assets/Ai/sent.svg";
 import inparrow from "../../assets/Ai/inparrow.svg";
 import inparrowbrown from "../../assets/Ai/inparrowbrown.svg";
-import { getCurrentTime } from "./helpers";
+import { getCurrentTime, getLinkCtas } from "./helpers";
 import FeedbackButtons from "./FeedbackButtons";
 
 const MessageTime = ({ time }) => (
@@ -47,19 +47,14 @@ const AssistantMessage = ({
 
       {showCtas && (
         <div className="flex flex-wrap gap-2">
-          {/* 1. External URL CTA */}
-          {msg.cta.cta_url && (
+          {/* 1. External URL CTAs (cta_url + link actions, de-duplicated) */}
+          {getLinkCtas(msg.cta).map(({ label, url }) => (
             <CtaArrowButton
-              label={msg.cta.cta_trigger || "Learn More"}
-              onClick={() =>
-                onLinkCtaClick(
-                  index,
-                  msg.cta.cta_trigger || "Learn More",
-                  msg.cta.cta_url,
-                )
-              }
+              key={url}
+              label={label}
+              onClick={() => onLinkCtaClick(index, label, url)}
             />
-          )}
+          ))}
 
           {/* 2. Get a Roadmap CTA (opens the roadmap page) */}
           {msg.cta.cta_category === "Condition" && (

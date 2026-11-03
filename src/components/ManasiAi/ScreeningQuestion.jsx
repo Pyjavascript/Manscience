@@ -40,7 +40,7 @@ const ScreeningQuestion = ({ step, selectedOption, onSelect }) => {
                   key={opt}
                   disabled={isLocked}
                   onClick={() => onSelect(opt)}
-                  className={`w-full max-w-70 md:max-w-none md:min-w-50 whitespace-nowrap font-medium text-[15px] md:text-[17px] px-6 py-3.5 rounded-full transition-[background-color,color,transform] duration-200 ${
+                  className={`w-full max-w-70 md:max-w-none md:min-w-[140px] h-[45px] md:h-[50px] lg:h-[70px] px-6 md:px-10 flex items-center justify-center whitespace-nowrap font-medium text-[14px] md:text-[16px] rounded-full transition-[background-color,color,transform] duration-200 ${
                     isSelected
                       ? "bg-[#68270B] text-white"
                       : "bg-[#FAF4E8] text-[#68270B] enabled:hover:bg-[#68270B] enabled:hover:text-white"

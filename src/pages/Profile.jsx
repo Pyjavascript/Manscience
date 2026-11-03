@@ -576,7 +576,7 @@ export default function Profile() {
           <div className="w-full bg-[#FAF4E8] rounded-[40px] md:rounded-[60px] p-5 md:p-10 flex flex-col justify-between h-[140px] md:h-[260px]">
             <div className="flex flex-col gap-[10px] md:gap-[20px]">
               <h3 className="text-[20px] md:text-[28px] lg:text-[30px] font-medium text-[#5F2305] leading-[120%] tracking-[-2%]">
-                Check my Roadmap
+                Start my Roadmap
               </h3>
               <p className="text-[10px] md:text-[16px] lg:text-[18px] font-medium text-[#5F2305] leading-[130%] max-w-[160px] md:max-w-[280px]">
                 Take the next step in your journey with 20% off your order.
@@ -586,16 +586,16 @@ export default function Profile() {
             <div
               className="flex justify-end items-end w-full"
               onClick={() => {
-                window.location.href = `${window.location.origin}/coming-soon`;
+                window.location.href = `${window.location.origin}/roadmap`;
               }}
             >
               <button
                 className="bg-[#68270B] text-white text-[10px] md:text-[16px] font-semibold md:font-semibold rounded-full transition h-[45px] w-[90px] md:h-[70px] md:min-w-[140px]   md:h-[50px] lg:h-[70px] md:w-[110px] lg:min-w-[140px] px-6 md:px-10 flex items-center justify-center cursor-pointer"
                 onClick={() => {
-                  window.location.href = `${window.location.origin}/coming-soon`;
+                  window.location.href = `${window.location.origin}/roadmap`;
                 }}
               >
-                Manage
+                Start
               </button>
             </div>
           </div>
@@ -849,83 +849,91 @@ export default function Profile() {
           onClick={() => setIsPasswordModalOpen(false)}
           className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4 backdrop-blur-xs"
         >
+          {/* Same width and frame as the "Share Your Story" popup so the
+              profile pop-ups feel consistent; height follows the content */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#FAF4E8] w-full max-w-md rounded-[30px] p-6 md:p-8 space-y-6 shadow-2xl relative"
+            className="bg-[#FAF4EB] w-[330px] md:w-[500px] max-h-[90vh] overflow-y-auto p-5 md:p-8 rounded-[20px] md:rounded-[40px] flex flex-col gap-5 md:gap-6 shadow-xl relative"
           >
             <div className="flex justify-between items-center border-b border-[#B77145]/20 pb-3">
-              <h2 className="text-xl font-semibold text-[#68270B]">
+              <h2 className="text-[20px] md:text-[28px] font-medium text-[#68270B] leading-[120%] tracking-[-2%]">
                 Update Password
               </h2>
               <button
                 onClick={() => setIsPasswordModalOpen(false)}
-                className="text-[#68270B] font-bold text-lg p-1"
+                className="text-[#68270B] font-bold text-lg p-1 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handlePasswordUpdate} className="space-y-4">
-              {/* New Password Input */}
-              <div>
-                <label className="block text-sm font-medium text-[#68270B] mb-1">
-                  New Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPasswords ? "text" : "password"}
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Minimum 8 characters"
-                    className="m-0 w-full h-12 bg-white rounded-full pl-4 pr-12 text-sm focus:outline-none border border-transparent focus:border-[#B77145]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswords(!showPasswords)}
-                    className="password-toggle-btn"
-                  >
-                    <img
-                      src={showPasswords ? hide : show}
-                      alt="Toggle password visibility"
-                      className="w-7 h-7 opacity-60 hover:opacity-100 transition-opacity"
+            <form
+              onSubmit={handlePasswordUpdate}
+              className="flex flex-col gap-6 md:gap-7"
+            >
+              <div className="flex flex-col gap-4 md:gap-5">
+                {/* New Password Input */}
+                <div>
+                  <label className="block text-sm md:text-[15px] font-medium text-[#68270B] mb-2">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords ? "text" : "password"}
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Minimum 8 characters"
+                      className="m-0 w-full h-12 md:h-14 bg-white rounded-full pl-5 pr-12 text-sm md:text-[15px] focus:outline-none border border-transparent focus:border-[#B77145]"
                     />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(!showPasswords)}
+                      className="password-toggle-btn"
+                    >
+                      <img
+                        src={showPasswords ? hide : show}
+                        alt="Toggle password visibility"
+                        className="w-7 h-7 opacity-60 hover:opacity-100 transition-opacity"
+                      />
+                    </button>
+                  </div>
                 </div>
+
+                {/* Confirm Password Input */}
+                <div>
+                  <label className="block text-sm md:text-[15px] font-medium text-[#68270B] mb-2">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords ? "text" : "password"}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter password"
+                      className="w-full h-12 md:h-14 bg-white rounded-full pl-5 pr-12 text-sm md:text-[15px] focus:outline-none border border-transparent focus:border-[#B77145]"
+                    />
+                  </div>
+                </div>
+
+                {passwordError && (
+                  <p className="text-xs text-red-600 font-medium">
+                    {passwordError}
+                  </p>
+                )}
+                {passwordSuccess && (
+                  <p className="text-xs text-green-700 font-medium">
+                    {passwordSuccess}
+                  </p>
+                )}
               </div>
 
-              {/* Confirm Password Input */}
-              <div>
-                <label className="block text-sm font-medium text-[#68270B] mb-1">
-                  Confirm New Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPasswords ? "text" : "password"}
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter password"
-                    className="w-full h-12 bg-white rounded-full pl-4 pr-12 text-sm focus:outline-none border border-transparent focus:border-[#B77145]"
-                  />
-                </div>
-              </div>
-
-              {passwordError && (
-                <p className="text-xs text-red-600 font-medium">
-                  {passwordError}
-                </p>
-              )}
-              {passwordSuccess && (
-                <p className="text-xs text-green-700 font-medium">
-                  {passwordSuccess}
-                </p>
-              )}
-
+              {/* Styled like the Share popup buttons */}
               <button
                 type="submit"
                 disabled={updatingPassword}
-                className="w-full h-15 bg-[#B77145] text-white font-semibold rounded-full hover:opacity-90 transition disabled:opacity-50"
+                className="w-full bg-[#B77145] text-white text-[14px] md:text-[16px] font-semibold rounded-[40px] hover:opacity-90 transition cursor-pointer h-12 md:h-[70px] flex items-center justify-center leading-[124%] disabled:opacity-50"
               >
                 {updatingPassword ? "Updating..." : "Save New Password"}
               </button>

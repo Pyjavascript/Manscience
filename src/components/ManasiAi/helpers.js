@@ -23,6 +23,30 @@ export const createUserMessage = (content) => ({
 export const withActiveCta = (messages, index, label) =>
   messages.map((m, idx) => (idx === index ? { ...m, activeCta: label } : m));
 
+// Compares URLs loosely so ".../tomatis" and ".../tomatis/" count as one
+const normalizeUrl = (url) => url.trim().toLowerCase().replace(/\/+$/, "");
+
+// Link buttons for a /chat reply: the main cta_url first, then any link
+// actions, skipping URLs that are already shown
+export const getLinkCtas = (cta) => {
+  const candidates = [
+    { label: cta.cta_trigger, url: cta.cta_url },
+    ...(cta.actions ?? [])
+      .filter((a) => a.action_type === "Link" && a.available !== false)
+      .map((a) => ({ label: a.label, url: a.url })),
+  ];
+
+  const seen = new Set();
+  return candidates.reduce((links, { label, url }) => {
+    if (!url) return links;
+    const key = normalizeUrl(url);
+    if (seen.has(key)) return links;
+    seen.add(key);
+    links.push({ label: label || "Learn More", url });
+    return links;
+  }, []);
+};
+
 // ---------- Screening & scoring ----------
 
 // Picks the domain dataset based on the 4 screening answers

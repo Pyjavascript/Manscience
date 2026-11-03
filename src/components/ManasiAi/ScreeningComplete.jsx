@@ -14,7 +14,7 @@ const ScreeningComplete = ({ onBegin }) => (
 
     <button
       onClick={onBegin}
-      className="group flex items-center gap-2.5 font-medium text-[15px] p-4.25 rounded-full transition-all duration-200 cursor-pointer active:scale-95 bg-[#FAF4E8] text-[#68270B] hover:bg-[#68270B] hover:text-white"
+      className="group flex items-center justify-center gap-2.5 font-medium text-[14px] md:text-[16px] h-[45px] md:h-[50px] lg:h-[70px] min-w-[140px] px-6 md:px-10 rounded-full transition-all duration-200 cursor-pointer active:scale-95 bg-[#FAF4E8] text-[#68270B] hover:bg-[#68270B] hover:text-white"
     >
       <img src={journey} alt="icon" className="group-hover:hidden" />
       <img src={journeyWhite} alt="icon" className="hidden group-hover:block" />
