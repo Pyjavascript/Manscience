@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { FaEdit, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
-import { deleteCmsItem, saveCmsItem } from "./cmsApi";
+import { FaCheck, FaEdit, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
+import { deleteCmsItem, deleteCmsItems, describeBulkDelete, saveCmsItem } from "./cmsApi";
+import { BulkActionBar, SelectAllCheckbox, SelectModeButton } from "../BulkSelect";
+import { useSelection } from "../useSelection";
 import { UPLOADING, hasUnpublishedChanges, toFormState, uniqueSlug } from "./cmsFields";
 import { INPUT_BASE, ImageField, Switch } from "./CmsControls";
 
@@ -49,6 +51,8 @@ const BlogFiltersPanel = ({
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  // In multi-select mode clicking a chip ticks it for bulk delete instead of filtering the blogs
+  const selection = useSelection(filters.map((item) => item.id));
   const colorKey = fields.find((f) => f.type === "color")?.key;
 
   const openEditor = (item) => {
@@ -111,6 +115,32 @@ const BlogFiltersPanel = ({
       onChanged();
     } catch (err) {
       alert(`Error deleting filter: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = selection.selectedIds;
+    const noun = ids.length === 1 ? "filter" : "filters";
+    const used = ids.reduce((sum, id) => sum + (countsByFilter.get(id) || 0), 0);
+    const warnings = [
+      used > 0 && `${used} blog${used === 1 ? " uses" : "s use"} these filters and will be left without one.`,
+      sharedWithTherapies && "This list is also used for therapy categories, so they will be removed there too.",
+    ].filter(Boolean);
+    if (
+      !window.confirm(
+        [`Delete ${ids.length} ${noun}? They will also be removed from the website.`, ...warnings, "This operation is permanent."].join("\n\n"),
+      )
+    )
+      return;
+    try {
+      setSaving(true);
+      const result = await deleteCmsItems(collectionId, ids);
+      if (result.deleted.includes(activeFilter)) onSelect("all");
+      selection.stop();
+      alert(describeBulkDelete(result, noun));
+      onChanged();
     } finally {
       setSaving(false);
     }
@@ -185,23 +215,66 @@ const BlogFiltersPanel = ({
         <div>
           <h3 className="text-base font-semibold text-gray-900">Filter tags</h3>
           <p className="text-sm text-gray-500">
-            {loading ? "Loading filters…" : "Click a filter to show only its blogs."}
+            {loading
+              ? "Loading filters…"
+              : selection.active
+                ? "Click filters to select them, then delete."
+                : "Click a filter to show only its blogs."}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => openEditor(null)}
-          disabled={saving}
-          className="px-4 py-2 rounded-xl border border-brand/30 bg-brand-50 text-sm font-semibold text-brand hover:bg-brand-100 transition flex items-center gap-2 disabled:opacity-40"
-        >
-          <FaPlus size={11} /> New filter
-        </button>
+        <div className="flex items-center gap-2">
+          {selection.active && (
+            <label className="flex items-center gap-2 px-2 text-sm text-gray-600 cursor-pointer">
+              <SelectAllCheckbox selection={selection} disabled={saving} />
+              All
+            </label>
+          )}
+          {filters.length > 0 && <SelectModeButton selection={selection} disabled={saving} />}
+          {!selection.active && (
+            <button
+              type="button"
+              onClick={() => openEditor(null)}
+              disabled={saving}
+              className="px-4 py-2 rounded-xl border border-brand/30 bg-brand-50 text-sm font-semibold text-brand hover:bg-brand-100 transition flex items-center gap-2 disabled:opacity-40"
+            >
+              <FaPlus size={11} /> New filter
+            </button>
+          )}
+        </div>
       </div>
 
+      <BulkActionBar
+        selection={selection}
+        noun={selection.count === 1 ? "filter" : "filters"}
+        onDelete={handleBulkDelete}
+        busy={saving}
+        className="mt-4"
+      />
+
       <div className="mt-5 flex flex-wrap gap-2">
-        <FilterChip active={activeFilter === "all"} label="All" count={totalCount} onClick={() => onSelect("all")} />
+        {!selection.active && (
+          <FilterChip active={activeFilter === "all"} label="All" count={totalCount} onClick={() => onSelect("all")} />
+        )}
         {filters.map((item) => {
           const data = item.fieldData || {};
+          if (selection.active) {
+            const picked = selection.isSelected(item.id);
+            return (
+              <FilterChip
+                key={item.id}
+                active={picked}
+                color={colorKey ? data[colorKey] : undefined}
+                label={
+                  <>
+                    {picked && <FaCheck size={10} className="inline mr-1.5 -mt-0.5" />}
+                    {String(data.name ?? "").trim() || "Untitled"}
+                  </>
+                }
+                count={countsByFilter.get(item.id) || 0}
+                onClick={() => selection.toggle(item.id)}
+              />
+            );
+          }
           const active = activeFilter === item.id;
           return (
             <FilterChip
@@ -243,7 +316,7 @@ const BlogFiltersPanel = ({
             </FilterChip>
           );
         })}
-        {unlinkedCount > 0 && (
+        {!selection.active && unlinkedCount > 0 && (
           <FilterChip
             active={activeFilter === "unlinked"}
             label="Not in filter list"

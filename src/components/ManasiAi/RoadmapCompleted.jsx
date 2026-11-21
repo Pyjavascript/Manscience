@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { BRAIN_IMAGE_URL } from "./constants";
+import { BRAIN_IMAGE_URL, ROADMAP_CONTROL_HEIGHT } from "./constants";
 
 const RoadmapCompleted = ({ isLoading, onSubmit, error }) => (
   <main className="flex-1 min-h-0 flex flex-col justify-center items-center text-center max-w-[480px] w-full mx-auto px-4 my-auto">
@@ -31,7 +31,7 @@ const RoadmapCompleted = ({ isLoading, onSubmit, error }) => (
       <button
         onClick={onSubmit}
         disabled={isLoading}
-        className="w-full bg-[#68270B] hover:bg-[#521e08] text-white font-medium py-3.5 md:py-4 rounded-full text-[16px] md:text-[18px] transition duration-200 active:scale-98 cursor-pointer disabled:opacity-50"
+        className={`w-full ${ROADMAP_CONTROL_HEIGHT} flex items-center justify-center bg-[#68270B] hover:bg-[#521e08] text-white font-medium rounded-full text-[16px] md:text-[18px] transition duration-200 active:scale-98 cursor-pointer disabled:opacity-50`}
       >
         {isLoading ? "Submitting" : "Submit"}
       </button>

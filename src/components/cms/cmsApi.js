@@ -106,3 +106,27 @@ export const deleteCmsItem = async (collectionId, itemId) => {
   });
   if (!response.ok) throw new Error(await readError(response, "Webflow rejected the delete."));
 };
+
+// Deletes items one at a time (Webflow rate-limits bursts) and keeps going past failures.
+// Returns the ids that were deleted and the ones that failed, with their error messages.
+export const deleteCmsItems = async (collectionId, itemIds) => {
+  const deleted = [];
+  const failed = [];
+  for (const itemId of itemIds) {
+    try {
+      await deleteCmsItem(collectionId, itemId);
+      deleted.push(itemId);
+    } catch (err) {
+      failed.push({ itemId, message: err.message });
+    }
+  }
+  return { deleted, failed };
+};
+
+// One alert line summarising a bulk delete; `noun` is the plural name, e.g. "blogs"
+export const describeBulkDelete = ({ deleted, failed }, noun) =>
+  failed.length === 0
+    ? `${deleted.length} ${noun} deleted and removed from the website.`
+    : `${deleted.length} ${noun} deleted, ${failed.length} failed:\n\n${failed
+        .map((f) => f.message)
+        .join("\n")}`;

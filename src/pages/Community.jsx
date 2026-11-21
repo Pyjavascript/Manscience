@@ -15,8 +15,6 @@ const Community = () => {
   // --- State Functions for the Carousel Modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState(null);
 
   const [tagsList, setTagsList] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -188,81 +186,119 @@ const Community = () => {
     setIsModalOpen(true); // Open the stack modal
   };
 
+  // --- Deck shuffle animation ---
+  // The deck is a ring: offset 0 is the front card, offset n-1 is the bottom
+  // of the deck (hidden behind the stack).
+  //   Next → the front card swings out to the right, drops behind the stack
+  //          and settles at the bottom; every other card steps forward.
+  //   Prev → the bottom card slides out from behind on the left, comes over
+  //          the top and lands in front; every other card steps back.
+  // The travelling card uses a keyframe animation (it has to leave the stack
+  // before it can change layers); the rest of the stack uses CSS transitions.
+  const SHUFFLE_MS = 850;
+  const [shuffle, setShuffle] = useState(null); // { id, dir } of the travelling card
+  const shuffleLockRef = useRef(false);
+  const shuffleTimerRef = useRef(null);
+
+  const prefersReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  const moveDeck = (dir) => {
+    const n = deckData.length;
+    if (n < 2 || shuffleLockRef.current) return;
+
+    // Card that travels: current front on Next, bottom card on Prev
+    const travellerIdx = dir === "next" ? currentIndex : (currentIndex - 1 + n) % n;
+    const animate = n >= 4 && !prefersReducedMotion();
+
+    if (animate) {
+      shuffleLockRef.current = true;
+      setShuffle({ id: deckData[travellerIdx].id, dir });
+      clearTimeout(shuffleTimerRef.current);
+      shuffleTimerRef.current = setTimeout(() => {
+        shuffleLockRef.current = false;
+        setShuffle(null);
+      }, SHUFFLE_MS);
+    }
+
+    setCurrentIndex((prev) => (dir === "next" ? (prev + 1) % n : (prev - 1 + n) % n));
+  };
+
   const handleNext = (e) => {
-    e.stopPropagation();
-
-    if (isSwiping) return;
-
-    setSwipeDirection("next");
-    setIsSwiping(true);
-
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % deckData.length);
-      setIsSwiping(false);
-      setSwipeDirection(null);
-    }, 300);
+    e?.stopPropagation();
+    moveDeck("next");
   };
 
   const handlePrev = (e) => {
-    e.stopPropagation();
-
-    if (isSwiping) return;
-
-    setSwipeDirection("prev");
-    setIsSwiping(true);
-
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev - 1 + deckData.length) % deckData.length);
-      setIsSwiping(false);
-      setSwipeDirection(null);
-    }, 500);
+    e?.stopPropagation();
+    moveDeck("prev");
   };
 
-  const getCardPlacementClass = (idx) => {
-    const nextIndex = (currentIndex + 1) % deckData.length;
-    const prevIndex = (currentIndex - 1 + deckData.length) % deckData.length;
-    const secondIndex = (currentIndex + 2) % deckData.length;
+  // Opening the story modal (from a grid card's + or a circle) collapses the
+  // filter row so it doesn't show through behind the modal.
+  useEffect(() => {
+    if (isModalOpen) setShowFilters(false);
+  }, [isModalOpen]);
 
-    // ACTIVE CARD
-    if (idx === currentIndex) {
-      if (isSwiping && swipeDirection === "next") {
-        return "opacity-100 z-30 scale-100 translate-y-0 rotate-0 pointer-events-auto";
-      }
-      if (isSwiping && swipeDirection === "prev") {
-        // ease into the "next slot" look instead of vanishing off-screen
-        return "opacity-95 z-20 scale-96 -translate-y-[20px] md:-translate-y-[25px] -rotate-3 pointer-events-none";
-      }
-      return "opacity-100 z-30 scale-100 translate-y-0 rotate-0 pointer-events-auto";
+  // Switching from the grid to the circular view collapses the filter row.
+  useEffect(() => {
+    if (!enabled) setShowFilters(false);
+  }, [enabled]);
+
+  // Reset any in-flight shuffle when the modal closes
+  useEffect(() => {
+    if (isModalOpen) return;
+    clearTimeout(shuffleTimerRef.current);
+    shuffleLockRef.current = false;
+    setShuffle(null);
+  }, [isModalOpen]);
+
+  useEffect(() => () => clearTimeout(shuffleTimerRef.current), []);
+
+  // Resting slot for each card, from its distance to the active card.
+  // All transforms share the same function list so they interpolate cleanly
+  // (and match the keyframes in index.css).
+  const getCardStyle = (idx) => {
+    const n = deckData.length;
+    const offset = (idx - currentIndex + n) % n;
+    const card = deckData[idx];
+
+    let style;
+    if (offset === 0) {
+      style = { transform: "translate3d(0,0,0) rotate(0deg) rotateY(0deg) scale(1)", opacity: 1, zIndex: 30, pointerEvents: "auto" };
+    } else if (offset === 1) {
+      style = { transform: "translate3d(0,-5%,0) rotate(-3deg) rotateY(0deg) scale(0.96)", opacity: 1, zIndex: 20, pointerEvents: "none" };
+    } else if (offset === 2) {
+      style = { transform: "translate3d(0,-9%,0) rotate(3deg) rotateY(0deg) scale(0.92)", opacity: 1, zIndex: 10, pointerEvents: "none" };
+    } else {
+      // bottom of the deck — tucked behind the stack
+      style = { transform: "translate3d(0,-9%,0) rotate(0deg) rotateY(0deg) scale(0.88)", opacity: 0, zIndex: 0, pointerEvents: "none" };
     }
 
-    // NEXT CARD
-    if (idx === nextIndex) {
-      if (isSwiping && swipeDirection === "prev") {
-        // gets pushed one slot further back to make room
-        return "opacity-90 z-10 scale-92 -translate-y-[35px] md:-translate-y-[45px] rotate-3 pointer-events-none";
-      }
-      return "opacity-95 z-20 scale-96 -translate-y-[20px] md:-translate-y-[25px] -rotate-3 pointer-events-none";
+    if (shuffle && shuffle.id === card.id) {
+      style = {
+        ...style,
+        animation: `${shuffle.dir === "next" ? "community-card-next" : "community-card-prev"} ${SHUFFLE_MS}ms cubic-bezier(0.45,0,0.2,1) both`,
+        transition: "none",
+        pointerEvents: "none",
+      };
     }
-
-    // PREVIOUS CARD — comes to front on prev click
-    if (idx === prevIndex) {
-      if (isSwiping && swipeDirection === "prev") {
-        return "opacity-100 z-30 scale-100 translate-y-0 translate-x-0 rotate-0 pointer-events-auto";
-      }
-      return "opacity-0 z-0 scale-80 translate-y-[20px] translate-x-[-40px] -rotate-8 pointer-events-none";
-    }
-
-    // SECOND CARD BEHIND
-    if (idx === secondIndex) {
-      if (isSwiping && swipeDirection === "prev") {
-        // it's about to fall out of the visible stack
-        return "opacity-0 scale-80 pointer-events-none";
-      }
-      return "opacity-90 z-10 scale-92 -translate-y-[35px] md:-translate-y-[45px] rotate-3 pointer-events-none";
-    }
-
-    return "opacity-0 scale-80 pointer-events-none";
+    return style;
   };
+
+  // Keyboard support while the deck is open
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") handleNext();
+      else if (e.key === "ArrowLeft") handlePrev();
+      else if (e.key === "Escape") setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen, deckData, currentIndex]);
 
   useEffect(() => {
     fetchFilters();
@@ -410,7 +446,7 @@ const Community = () => {
       {/* Conditional Layout Injection Section */}
       {enabled ? (
         <section className="w-full  pt-[30px] flex flex-col items-center">
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2.5 w-full max-w-350">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 w-full">
             {communityPosts
               .filter(
                 (post) =>
@@ -431,7 +467,7 @@ const Community = () => {
                   return (
                     <div
                       key={post.id}
-                      className="w-full h-[280px] sm:h-100 bg-[#FFFBF3] rounded-[40px] sm:rounded-4xl mx-auto p-5 md:p-5 flex flex-col justify-between text-white hover:text-[#68270B] bg-repeat-none bg-cover bg-center relative group cursor-pointer transition-all duration-300 overflow-hidden"
+                      className="w-full h-[260px] sm:h-auto sm:aspect-[4/5] bg-[#FFFBF3] rounded-[28px] xl:rounded-[34px] mx-auto p-4 md:p-5 flex flex-col justify-between text-white hover:text-[#68270B] bg-repeat-none bg-cover bg-center relative group cursor-pointer transition-all duration-300 overflow-hidden"
                       style={{
                         backgroundImage: post.thumbnail_url
                           ? `linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5)), url(${post.thumbnail_url})`
@@ -445,7 +481,7 @@ const Community = () => {
                             "radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 75%)",
                         }}
                       />
-                      <div className="px-3.75 py-1.5 h-[40px] md:h-[50px] md:w-[160px] bg-white rounded-full text-[12px] font-medium md:text-[18px] flex justify-center items-center gap-2 text-center text-[#B77145] w-fit max-w-[90%] z-10">
+                      <div className="px-3.5 xl:px-4 h-9 xl:h-10 bg-white rounded-full text-[12px] xl:text-[13px] font-medium flex justify-center items-center gap-2 text-center text-[#B77145] w-fit max-w-[90%] z-10">
                         <span
                           className="w-[8px] h-[8px] rounded-full inline-block shrink-0"
                           style={{ backgroundColor: tagColor }}
@@ -457,10 +493,10 @@ const Community = () => {
 
                       <div className="flex justify-between items-end w-full z-10">
                         <div>
-                          <h2 className="text-[15px] md:text-[18px] font-medium">
+                          <h2 className="text-[14px] xl:text-[16px] font-medium">
                             {post.username}
                           </h2>
-                          <p className="text-[14px] md:text-[12px] font-regular">
+                          <p className="text-[12px] xl:text-[13px] font-regular">
                             {new Date(post.created_at).toLocaleDateString(
                               "en-US",
                               {
@@ -475,7 +511,7 @@ const Community = () => {
                           onClick={() => setActiveVideoUrl(post.video_url)}
                           className="cursor-pointer"
                         >
-                          <img src={playBtn} alt="Play Video" />
+                          <img src={playBtn} alt="Play Video" className="w-11 h-11 xl:w-auto xl:h-auto" />
                         </button>
                       </div>
                     </div>
@@ -486,10 +522,10 @@ const Community = () => {
                 return (
                   <div
                     key={post.id}
-                    className="w-full h-[280px] sm:h-100 bg-[#FFFBF3] rounded-[40px] mx-auto transition-transform p-5 md:p-5 flex flex-col justify-between"
+                    className="w-full h-[260px] sm:h-auto sm:aspect-[4/5] bg-[#FFFBF3] rounded-[28px] xl:rounded-[34px] mx-auto transition-transform p-4 md:p-5 flex flex-col justify-between"
                   >
-                    <div className="flex flex-col gap-4 md:gap-7.5">
-                      <div className="px-3.75 py-1.5 h-[50px] md:h-[60px] md:w-[160px] bg-white rounded-full text-[12px] font-medium md:text-[18px] flex justify-center items-center gap-2 text-center text-[#B77145] w-fit max-w-[90%]">
+                    <div className="flex flex-col gap-3.5 xl:gap-5 min-h-0">
+                      <div className="px-3.5 xl:px-4 h-9 xl:h-10 bg-white rounded-full text-[12px] xl:text-[13px] font-medium flex justify-center items-center gap-2 text-center text-[#B77145] w-fit max-w-[90%]">
                         <span
                           className="w-[8px] h-[8px] rounded-full inline-block shrink-0"
                           style={{ backgroundColor: tagColor }}
@@ -499,17 +535,17 @@ const Community = () => {
                         </p>
                       </div>
 
-                      <div className="text-[15px] md:text-[18px] text-[#B77145] leading-[-120%] font-medium pr-[28px]">
+                      <div className="text-[15px] lg:text-[16px] xl:text-[24.5px] text-[#B77145] leading-snug font-semibold pr-2 xl:pr-[28px] line-clamp-4">
                         <p>{post.header}</p>
                       </div>
                     </div>
 
                     <div className="flex w-full justify-between items-center text-[#68270B]">
                       <div>
-                        <h2 className="text-[15px] md:text-[15px] font-medium">
+                        <h2 className="text-[14px] xl:text-[15px] font-medium">
                           {post.username}
                         </h2>
-                        <p className="text-[14px] md:text-[12px] font-regular">
+                        <p className="text-[12px] xl:text-[13px] font-regular">
                           {new Date(post.created_at).toLocaleDateString(
                             "en-US",
                             {
@@ -522,12 +558,12 @@ const Community = () => {
                       </div>
                       <div
                         onClick={() => handleOpenCardInCarousel(post)}
-                        className="bg-[#B77145] h-[40px] w-[40px] md:h-[43.75px] md:w-[43.75px] flex justify-center items-center rounded-full cursor-pointer hover:scale-105 transition-transform"
+                        className="bg-[#B77145] h-10 w-10 xl:h-11 xl:w-11 shrink-0 flex justify-center items-center rounded-full cursor-pointer hover:scale-105 transition-transform"
                       >
                         <img
                           src={plus}
                           alt="more"
-                          className="w-[25px] h-[25px]"
+                          className="w-[22px] h-[22px] xl:w-[25px] xl:h-[25px]"
                         />
                       </div>
                     </div>
@@ -729,37 +765,38 @@ const Community = () => {
           {isModalOpen && (
             <div
               onClick={() => setIsModalOpen(false)}
-              className="pt-30 md:pt-0 fixed inset-0 w-full h-full flex justify-center items-center z-50 bg-[#E5E5E5]/95 md:bg-black/10 backdrop-blur-sm transition-all duration-300"
+              className="pt-30 md:pt-0 fixed inset-0 w-full h-full flex justify-center items-center z-50 bg-[#E5E5E5]/95 md:bg-black/10 backdrop-blur-sm animate-[community-overlay-in_0.3s_ease-out_both] motion-reduce:animate-none"
             >
-              <div className="relative w-full max-w-150 flex flex-col items-center justify-center gap-3 pb-5 md:pb-0 md:gap-6 px-4">
+              <div className="relative w-full max-w-150 flex flex-col items-center justify-center gap-3 pb-5 md:pb-0 md:gap-6 px-4 animate-[community-deck-in_0.5s_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none">
                 {/* Card Stack Container */}
-                <div className="relative w-[320px] h-105 lg:w-105 lg:h-125 order-1">
-                  {deckData.map((card, idx) => {
-                    const isActive = idx === currentIndex;
-                    return (
-                      <CarouselCard
-                        key={card.id}
-                        card={card}
-                        isActive={isActive}
-                        isSwiping={isSwiping}
-                        swipeDirection={swipeDirection}
-                        placementClass={getCardPlacementClass(idx)}
-                      />
-                    );
-                  })}
+                <div
+                  // Original card size (320×420, 420×500 on desktop). Width never
+                  // exceeds the viewport and height shrinks on short screens.
+                  className="relative order-1 w-[min(320px,calc(100vw_-_32px))] h-[min(420px,calc(100dvh_-_240px))] lg:w-105 lg:h-[min(500px,calc(100dvh_-_160px))]"
+                  style={{ perspective: "1400px", perspectiveOrigin: "50% 40%" }}
+                >
+                  {deckData.map((card, idx) => (
+                    <CarouselCard
+                      key={card.id}
+                      card={card}
+                      cardStyle={getCardStyle(idx)}
+                    />
+                  ))}
                 </div>
 
                 {/* Action Buttons Row Container */}
                 <div className="flex items-center justify-center gap-2 order-2 md:absolute md:w-full md:justify-between md:px-0 pointer-events-none">
                   <button
                     onClick={handlePrev}
-                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#B77145] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center transition-transform duration-100 pointer-events-auto lg:-translate-x-5"
+                    aria-label="Previous story"
+                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#B77145] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center transition-[transform,background-color] duration-150 pointer-events-auto lg:-translate-x-5 outline-none focus-visible:ring-2 focus-visible:ring-[#B77145]/40 focus-visible:ring-offset-2"
                   >
                     &#8249;
                   </button>
                   <button
                     onClick={handleNext}
-                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#B77145] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center transition-transform duration-100 pointer-events-auto lg:translate-x-5"
+                    aria-label="Next story"
+                    className="w-12 h-12 lg:w-12.5 lg:h-12.5 rounded-full bg-[#B77145] hover:bg-[#9c6c4f] active:scale-95 text-white text-[22px] flex justify-center items-center transition-[transform,background-color] duration-150 pointer-events-auto lg:translate-x-5 outline-none focus-visible:ring-2 focus-visible:ring-[#B77145]/40 focus-visible:ring-offset-2"
                   >
                     &#8250;
                   </button>
@@ -801,13 +838,7 @@ const Community = () => {
 
 export default Community;
 
-const CarouselCard = ({
-  card,
-  isActive,
-  isSwiping,
-  swipeDirection,
-  placementClass,
-}) => {
+const CarouselCard = ({ card, cardStyle }) => {
   const textRef = useRef(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
@@ -836,51 +867,43 @@ const CarouselCard = ({
     <div
       onClick={(e) => e.stopPropagation()}
       style={{
-        transformOrigin: "bottom center",
-        transform:
-          isSwiping && isActive && swipeDirection === "next"
-            ? "translateX(100%) scale(0.95) rotate(10deg)"
-            : isSwiping && isActive && swipeDirection === "prev"
-              ? "translateX(-5%) scale(0.95) rotate(-10deg)"
-              : undefined,
-        // Restored floaty fade out effect for Next (0.3), kept 0 for Prev to avoid ghosting
-        opacity:
-          isSwiping && isActive && swipeDirection === "next"
-            ? 0.3
-            : isSwiping && isActive
-              ? 0
-              : undefined,
+        ...cardStyle,
+        transformOrigin: "50% 100%",
+        backfaceVisibility: "hidden",
+        willChange: "transform, opacity",
         fontFamily: '"Manrope", sans-serif',
       }}
-      // Reverted to duration-500 and the custom cubic-bezier easing to get the original placement animation
-      className={`absolute w-full h-full rounded-[30px] lg:rounded-[40px] p-6 lg:p-8.75 flex flex-col justify-between transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${card.bgClass} ${placementClass}`}
+      // Only transform + opacity are transitioned — z-index switches instantly so
+      // cards never slip under/over each other mid-flight.
+      className={`absolute w-full h-full rounded-[30px] lg:rounded-[40px] p-6 lg:p-8.75 flex flex-col justify-between transition-[transform,opacity] duration-550 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${card.bgClass}`}
     >
-      <div className="shrink-0 flex flex-col gap-3.75">
-        <div className="flex flex-col gap-6.25">
+      <div className="shrink-0 flex flex-col gap-3 xl:gap-3.5">
+        <div className="flex flex-col gap-4 xl:gap-5">
+          {/* Label pill: 160px wide, 40px tall on mobile, 50px from md up */}
           <div
-            className={`h-[40px] md:h-[50px] w-40 border rounded-full text-[13px] lg:text-[13px] ${card.tagClass} flex justify-center items-center text-center bg-[#B77145]`}
+            className={`self-start w-40 max-w-full h-[40px] md:h-[50px] px-4 border rounded-full text-[13px] ${card.tagClass} flex justify-center items-center text-center bg-[#B77145]`}
           >
-            <p className="font-medium">{card.tag}</p>
+            <p className="font-medium truncate">{card.tag}</p>
           </div>
           <h2
-            className={`text-[18px] lg:text-[24px] font-normal leading-tight ${card.titleClass} w-full lg:w-2/3`}
+            className={`text-[16px] md:text-[17px] xl:text-[20px] font-normal leading-tight ${card.titleClass} w-full xl:w-[85%]`}
           >
             {card.title}
           </h2>
         </div>
-        <div className="flex justify-between items-center text-xs lg:text-[14px] font-medium pb-2">
-          <span>{card.author}</span>
-          <span>{card.time}</span>
+        <div className="flex justify-between items-center gap-3 text-[11.5px] md:text-[12px] xl:text-[13px] font-medium pb-1">
+          <span className="truncate">{card.author}</span>
+          <span className="shrink-0">{card.time}</span>
         </div>
       </div>
 
-      <div className="relative flex-1 min-h-0 mt-6.25">
+      <div className="relative flex-1 min-h-0 mt-4 xl:mt-5">
         <div
           ref={textRef}
           className="h-full overflow-y-auto pr-1 scrollbar-none"
         >
           <p
-            className={`text-[13px] lg:text-[14px] leading-relaxed lg:leading-[1.6] font-medium ${card.descClass}`}
+            className={`text-[13px] xl:text-[14px] leading-relaxed xl:leading-[1.6] font-medium ${card.descClass}`}
           >
             {card.desc}
           </p>

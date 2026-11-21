@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { FaEdit, FaPlus, FaTrash, FaUser } from "react-icons/fa";
 import { CELEBRITY_COLLECTION_ID, CELEBRITY_FIELDS } from "./cmsCollections";
-import { deleteCmsItem, saveCmsItem } from "./cmsApi";
+import { deleteCmsItem, deleteCmsItems, describeBulkDelete, saveCmsItem } from "./cmsApi";
+import { BulkActionBar, SelectAllCheckbox, SelectCheckbox, SelectModeButton } from "../BulkSelect";
+import { useSelection } from "../useSelection";
 import { UPLOADING, hasUnpublishedChanges, toFormState, uniqueSlug } from "./cmsFields";
 import { INPUT_BASE, ImageField } from "./CmsControls";
 
@@ -35,6 +37,8 @@ const CelebritiesPanel = ({
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const list = conditionName ? celebritiesForCondition(celebrities, conditionName) : [];
+  const selection = useSelection(list.map((item) => item.id));
 
   if (!conditionName) {
     return (
@@ -44,7 +48,6 @@ const CelebritiesPanel = ({
     );
   }
 
-  const list = celebritiesForCondition(celebrities, conditionName);
   const visibleFields = CELEBRITY_FIELDS.filter((f) => !f.hidden);
 
   const openEditor = (item) => {
@@ -104,6 +107,26 @@ const CelebritiesPanel = ({
       onChanged();
     } catch (err) {
       alert(`Error deleting celebrity: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = selection.selectedIds;
+    const noun = ids.length === 1 ? "celebrity" : "celebrities";
+    if (
+      !window.confirm(
+        `Delete ${ids.length} ${noun}? They will also be removed from the website. This operation is permanent.`,
+      )
+    )
+      return;
+    try {
+      setSaving(true);
+      const result = await deleteCmsItems(CELEBRITY_COLLECTION_ID, ids);
+      selection.stop();
+      alert(describeBulkDelete(result, noun));
+      onChanged();
     } finally {
       setSaving(false);
     }
@@ -195,19 +218,27 @@ const CelebritiesPanel = ({
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 flex items-center gap-3">
+          {selection.active && list.length > 0 && (
+            <SelectAllCheckbox selection={selection} disabled={saving} />
+          )}
           {loading
             ? "Loading celebrities…"
             : `${list.length} ${list.length === 1 ? "celebrity" : "celebrities"} in the carousel, in this order.`}
         </p>
-        <button
-          type="button"
-          onClick={() => openEditor(null)}
-          disabled={saving}
-          className="px-4 py-2 bg-brand hover:bg-brand-600 text-white text-sm font-medium rounded-xl transition flex items-center gap-2 shrink-0 disabled:opacity-40"
-        >
-          <FaPlus size={11} /> Add celebrity
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {list.length > 0 && <SelectModeButton selection={selection} disabled={saving} />}
+          {!selection.active && (
+            <button
+              type="button"
+              onClick={() => openEditor(null)}
+              disabled={saving}
+              className="px-4 py-2 bg-brand hover:bg-brand-600 text-white text-sm font-medium rounded-xl transition flex items-center gap-2 disabled:opacity-40"
+            >
+              <FaPlus size={11} /> Add celebrity
+            </button>
+          )}
+        </div>
       </div>
 
       {!loading && list.length === 0 && (
@@ -216,13 +247,36 @@ const CelebritiesPanel = ({
         </div>
       )}
 
+      <BulkActionBar
+        selection={selection}
+        noun={selection.count === 1 ? "celebrity" : "celebrities"}
+        onDelete={handleBulkDelete}
+        busy={saving}
+        className="mt-4"
+      />
+
       <ul className="mt-6 space-y-3">
         {list.map((item) => {
           const data = item.fieldData || {};
           const photo = data["actors-image"]?.url;
           const unpublished = hasUnpublishedChanges(item);
           return (
-            <li key={item.id} className="flex gap-4 rounded-2xl border border-gray-200 p-3 bg-white">
+            <li
+              key={item.id}
+              className={`flex gap-4 rounded-2xl border p-3 ${
+                selection.isSelected(item.id) ? "border-brand bg-brand-50/50" : "border-gray-200 bg-white"
+              }`}
+            >
+              {selection.active && (
+                <div className="self-center">
+                  <SelectCheckbox
+                    checked={selection.isSelected(item.id)}
+                    onChange={() => selection.toggle(item.id)}
+                    disabled={saving}
+                    label={`Select ${String(data.name).trim()}`}
+                  />
+                </div>
+              )}
               {photo ? (
                 <img src={photo} alt="" className="w-20 h-24 rounded-xl object-cover bg-gray-100 shrink-0" />
               ) : (

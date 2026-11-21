@@ -321,10 +321,16 @@ export const normalizeRoadmapResult = (row) => {
   };
 };
 
-// Index of the first question in the visible 4-question window,
-// keeping the current question roughly in view
-export const getQuestionWindowStart = (totalQuestions, currentIdx) => {
-  if (totalQuestions <= 4 || currentIdx <= 1) return 0;
-  if (currentIdx >= totalQuestions - 2) return totalQuestions - 4;
-  return currentIdx - 1;
+// Index of the first question in the visible window of `visibleRows`
+// questions (4 normally, fewer on short phones). The current question sits
+// one row from the top when there's room, and is always kept in view.
+export const getQuestionWindowStart = (
+  totalQuestions,
+  currentIdx,
+  visibleRows = 4,
+) => {
+  if (totalQuestions <= visibleRows) return 0;
+  const rowsAbove = visibleRows >= 3 ? 1 : 0;
+  const maxStart = totalQuestions - visibleRows;
+  return Math.min(Math.max(currentIdx - rowsAbove, 0), maxStart);
 };

@@ -37,7 +37,7 @@ const CHAT_FADE_MASK =
 const VIEW_TRANSITION = { duration: 0.45, ease: [0.22, 1, 0.36, 1] };
 
 const HEADER_BUTTON_CLASS =
-  "w-10 h-10 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)] text-[#68270B] hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)] flex items-center justify-center transition-shadow duration-150 cursor-pointer";
+  "w-[30px] h-[30px] md:w-[40px] md:h-[40px] shrink-0 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)] text-[#68270B] hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)] flex items-center justify-center transition-shadow duration-150 cursor-pointer";
 
 const isSmallScreen = () => window.matchMedia("(max-width: 767px)").matches;
 
@@ -309,14 +309,28 @@ const ManasiAi = () => {
         onLogout={logout}
       />
 
-      <div className="flex-1 min-w-0 flex flex-col pt-6 md:pt-10">
+      {/* Header sizes are in px so Webflow's 14px/16px <html> font-size
+          doesn't rescale them the way it rescales Tailwind's rem values */}
+      <div className="flex-1 min-w-0 flex flex-col pt-[24px] md:pt-[40px]">
         <div className="flex-1 flex flex-col min-h-0 relative">
-          <div className="md:absolute pl-5 md:pl-11 pb-2 z-10">
-            <img src={Logo} className="w-28.75 md:w-51" alt="Manascience" />
+          <div className="md:absolute pl-[20px] md:pl-[44px] pb-[8px] z-10">
+            <a
+              href="https://www.manascience.in/new-home"
+              target="_top"
+              aria-label="Go to Manascience home"
+              className="inline-block"
+            >
+              <img
+                src={Logo}
+                className="w-[140px] min-[390px]:w-[160px] md:w-[204px] max-w-none"
+                alt="Manascience"
+              />
+            </a>
           </div>
 
-          {/* Offset so the 40px buttons are centred on the logo's height */}
-          <div className="absolute -top-3 md:-top-1.5 right-5 md:right-11 z-20 flex items-center gap-2">
+          {/* Offset so the buttons (30px mobile, 40px desktop) are centred on
+              the logo's height (logo is 204x29, so height = width * 29/204) */}
+          <div className="absolute -top-[5px] min-[390px]:-top-[4px] md:-top-[6px] right-[20px] md:right-[44px] z-20 flex items-center gap-[8px]">
             <button
               onClick={() => setIsTutorialOpen(true)}
               aria-label="How to use Manasi AI"
@@ -324,7 +338,7 @@ const ManasiAi = () => {
               className={HEADER_BUTTON_CLASS}
             >
               {/* Nudged right so the triangle looks optically centred */}
-              <FiPlay size={16} className="translate-x-px" />
+              <FiPlay className="w-[12px] h-[12px] md:w-[16px] md:h-[16px] translate-x-px" />
             </button>
             <button
               onClick={isHistoryOpen ? () => setIsHistoryOpen(false) : openHistory}
@@ -332,7 +346,7 @@ const ManasiAi = () => {
               title="History"
               className={HEADER_BUTTON_CLASS}
             >
-              <FiClock size={17} />
+              <FiClock className="w-[13px] h-[13px] md:w-[17px] md:h-[17px]" />
             </button>
             <button
               onClick={closeAiPage}
@@ -340,7 +354,7 @@ const ManasiAi = () => {
               title="Close"
               className={HEADER_BUTTON_CLASS}
             >
-              <FiX size={18} />
+              <FiX className="w-[14px] h-[14px] md:w-[18px] md:h-[18px]" />
             </button>
           </div>
 

@@ -40,7 +40,7 @@ export const QUESTIONNAIRE = [
   {
     id: 3,
     question:
-      "Has a doctor, psychologist, or therapist ever mentioned autism, ADHD, dyslexia, developmental delay, or another neurodevelopmental condition?",
+      "Has a professional ever mentioned autism, ADHD, dyslexia or another neurodevelopmental condition?",
     options: ["Yes", "No", "Not Sure"],
   },
 ];
@@ -64,6 +64,10 @@ export const INITIAL_SCORING_STATE = {
   selectedRating: null,
 };
 
-export const SCREENING_COMPLETE_MESSAGE = `Great job! We've completed your initial screening. Based on your responses, we'll now build your personalized Brain Roadmap.`;
+export const SCREENING_COMPLETE_MESSAGE = "Screening done. Now let's map how your mind works.";
 export const ROADMAP_ERROR_MESSAGE =
   "We encountered an issue saving your profile data records. Please try again.";
+
+// One height for every roadmap button and input: 60px on every screen size.
+// Use this instead of hard-coding heights so they stay in sync.
+export const ROADMAP_CONTROL_HEIGHT = "h-[60px]";

@@ -1,99 +1,69 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiChevronUp, FiLogOut, FiPlus, FiUser, FiX } from "react-icons/fi";
+import {
+  LuLogOut,
+  LuMessageCircle,
+  LuPanelLeftClose,
+  LuPlus,
+  LuSearch,
+} from "react-icons/lu";
 import UserImg from "../../assets/profile/user.svg";
+import AiIcon from "../../assets/Ai/ai.svg";
 import { getConversationTitle, groupConversationsByDay } from "./helpers";
+
+// All sizes in this panel are px, not Tailwind's rem scale, so Webflow's
+// 14px/16px <html> font-size doesn't rescale it.
 
 const SIDEBAR_WIDTH = 288;
 const PANEL_TRANSITION = { duration: 0.3, ease: [0.22, 1, 0.36, 1] };
-const MENU_TRANSITION = { duration: 0.15, ease: "easeOut" };
 
-const MENU_ITEM_CLASS =
-  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-[#68270B] hover:bg-[#68270B]/8 transition-colors cursor-pointer";
+const IS_MAC =
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 const PanelMessage = ({ children }) => (
-  <p className="px-3 py-6 text-[13px] text-[#68270B]/60">{children}</p>
+  <p className="py-[8px] text-[13px] leading-[1.5] text-[#68270B]/60">{children}</p>
 );
 
-// Avatar, name and email pinned to the bottom of the sidebar. Opens a small
-// menu with links to the profile page and log out.
-const UserFooter = ({ user, onOpenProfile, onLogout }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const footerRef = useRef(null);
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const closeOnOutsideClick = (e) => {
-      // composedPath() so clicks inside Webflow's shadow root aren't
-      // mistaken for outside clicks
-      if (!e.composedPath().includes(footerRef.current)) setIsMenuOpen(false);
-    };
-    const closeOnEscape = (e) => {
-      if (e.key === "Escape") setIsMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", closeOnOutsideClick);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsideClick);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [isMenuOpen]);
-
-  return (
-    <div ref={footerRef} className="relative shrink-0 px-4 py-4 border-t border-[#68270B]/10">
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, transform: "translateY(6px)" }}
-            animate={{ opacity: 1, transform: "translateY(0px)" }}
-            exit={{ opacity: 0, transform: "translateY(6px)" }}
-            transition={MENU_TRANSITION}
-            role="menu"
-            className="absolute left-4 right-4 bottom-full mb-2 p-1.5 rounded-2xl bg-white shadow-xl ring-1 ring-[#68270B]/10"
-          >
-            <button role="menuitem" onClick={onOpenProfile} className={MENU_ITEM_CLASS}>
-              <FiUser size={16} /> Go to profile
-            </button>
-            <button role="menuitem" onClick={onLogout} className={MENU_ITEM_CLASS}>
-              <FiLogOut size={16} /> Log out
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <button
-        onClick={() => setIsMenuOpen((open) => !open)}
-        aria-haspopup="menu"
-        aria-expanded={isMenuOpen}
-        className={`w-full flex items-center gap-3 p-2 rounded-2xl text-left transition-colors cursor-pointer ${
-          isMenuOpen ? "bg-[#68270B]/10" : "hover:bg-[#68270B]/6"
-        }`}
-      >
-        <img
-          src={user?.avatarUrl || UserImg}
-          alt=""
-          className="w-11 h-11 rounded-2xl object-cover bg-white shrink-0"
-        />
-        <span className="flex-1 min-w-0">
-          <span className="block truncate text-[15px] font-semibold">
-            {user?.name || " "}
-          </span>
-          {user?.email && (
-            <span className="block truncate text-[12px] text-[#68270B]/60">
-              {user.email}
-            </span>
-          )}
+// Card pinned to the bottom of the sidebar: avatar, name and email open the
+// profile; the icon on the right logs out.
+const UserFooter = ({ user, isSignedIn, onOpenProfile, onLogout }) => (
+  <div className="shrink-0 flex items-center gap-[4px] p-[8px] rounded-[16px] bg-[#FFFCF7] border border-[#68270B]/10">
+    <button
+      onClick={onOpenProfile}
+      title="Go to profile"
+      className="flex-1 min-w-0 flex items-center gap-[10px] p-[2px] rounded-[10px] text-left hover:bg-[#68270B]/5 transition-colors cursor-pointer"
+    >
+      <img
+        src={user?.avatarUrl || UserImg}
+        alt=""
+        className="w-[36px] h-[36px] rounded-[8px] object-cover bg-[#B77145] shrink-0"
+      />
+      <span className="flex-1 min-w-0">
+        <span className="block truncate text-[13px] font-semibold text-[#68270B] leading-[18px]">
+          {/* Profile loads just after sign-in, so only say Guest when signed out */}
+          {user?.name || (isSignedIn ? " " : "Guest")}
         </span>
-        <FiChevronUp
-          size={18}
-          className={`shrink-0 text-[#68270B]/60 transition-transform duration-200 ${
-            isMenuOpen ? "" : "rotate-180"
-          }`}
-        />
+        {user?.email && (
+          <span className="block truncate text-[11px] text-[#68270B]/60 leading-[16px]">
+            {user.email}
+          </span>
+        )}
+      </span>
+    </button>
+
+    {isSignedIn && (
+      <button
+        onClick={onLogout}
+        aria-label="Log out"
+        title="Log out"
+        className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center text-[#68270B]/75 hover:text-[#68270B] hover:bg-[#68270B]/8 transition-colors cursor-pointer"
+      >
+        <LuLogOut className="w-[17px] h-[17px]" />
       </button>
-    </div>
-  );
-};
+    )}
+  </div>
+);
 
 // Left sidebar with the user's stored chats grouped by day. Sits beside
 // the chat on desktop and slides over it on small screens.
@@ -110,6 +80,37 @@ const HistoryPanel = ({
   onOpenProfile,
   onLogout,
 }) => {
+  const [query, setQuery] = useState("");
+  const searchRef = useRef(null);
+
+  // Clear the search whenever the panel closes
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
+    if (!isOpen) setQuery("");
+  }
+
+  // Ctrl/⌘ + K focuses the search box while the panel is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter((record) =>
+      getConversationTitle(record).toLowerCase().includes(q)
+    );
+  }, [conversations, query]);
+
   const renderList = () => {
     // Checked first so the sign-in prompt doesn't flash while auth loads
     if (isLoading && conversations.length === 0) {
@@ -121,10 +122,15 @@ const HistoryPanel = ({
     if (conversations.length === 0) {
       return <PanelMessage>No conversations yet.</PanelMessage>;
     }
+    if (filtered.length === 0) {
+      return <PanelMessage>No chats match “{query.trim()}”.</PanelMessage>;
+    }
 
-    return groupConversationsByDay(conversations).map(({ label, items }) => (
-      <section key={label}>
-        <h3 className="px-3 pt-4 pb-2 text-[12px] font-semibold text-[#68270B]/50">
+    // Day groups sit 17px apart; inside a group the label and 36px rows
+    // are 4px apart
+    return groupConversationsByDay(filtered).map(({ label, items }) => (
+      <section key={label} className="flex flex-col gap-[4px]">
+        <h3 className="text-[12px] leading-[16px] font-normal text-[#68270B]/60">
           {label}
         </h3>
         {items.map((record) => {
@@ -135,19 +141,27 @@ const HistoryPanel = ({
               key={record.session_id}
               title={title}
               onClick={() => onSelect(record)}
-              className={`w-full text-left truncate px-3 py-2.5 rounded-xl text-[14px] transition-colors duration-150 cursor-pointer ${
+              aria-current={isActive ? "page" : undefined}
+              className={`w-full h-[36px] shrink-0 flex items-center gap-[8px] pl-[11px] pr-[12px] rounded-full text-left text-[14px] leading-[20px] transition-colors duration-150 cursor-pointer ${
                 isActive
-                  ? "bg-[#68270B]/10 text-[#68270B] font-semibold"
-                  : "text-[#68270B]/80 font-medium hover:bg-[#68270B]/6 hover:text-[#68270B]"
+                  ? "bg-[#EDDDC9] text-[#68270B] font-medium"
+                  : "text-[#68270B]/80 font-normal hover:bg-[#EDDDC9]/60 hover:text-[#68270B]"
               }`}
             >
-              {title}
+              <LuMessageCircle
+                className={`w-[16px] h-[16px] shrink-0 ${
+                  isActive ? "text-[#68270B]" : "text-[#B77145]"
+                }`}
+              />
+              <span className="flex-1 min-w-0 truncate">{title}</span>
             </button>
           );
         })}
       </section>
     ));
   };
+
+  const totalCount = isSignedIn ? conversations.length : 0;
 
   return (
     <AnimatePresence initial={false}>
@@ -172,33 +186,82 @@ const HistoryPanel = ({
             transition={PANEL_TRANSITION}
             className="absolute md:relative inset-y-0 left-0 z-40 h-full max-w-[85vw] shrink-0 overflow-hidden bg-[#FAF4E8] text-[#68270B] border-r border-[#68270B]/10"
           >
-            {/* Fixed width so the contents don't reflow while the width animates */}
-            <div style={{ width: SIDEBAR_WIDTH }} className="h-full max-w-[85vw] flex flex-col">
-              <div className="flex items-center justify-between px-5 pt-5 pb-4">
-                <h2 className="text-[16px] font-semibold">Conversations</h2>
+            {/* Fixed width so the contents don't reflow while the width
+                animates. Figma: 288 wide, 20px side padding (248 content),
+                24px between sections. Gaps tighten on short screens. */}
+            <div
+              style={{ width: SIDEBAR_WIDTH }}
+              className="h-full max-w-[85vw] flex flex-col gap-[24px] px-[20px] pt-[24px] pb-[20px] [@media(max-height:640px)]:gap-[16px] [@media(max-height:640px)]:pt-[16px] [@media(max-height:640px)]:pb-[12px]"
+            >
+              {/* Brand + collapse */}
+              <div className="shrink-0 flex items-center justify-between gap-[8px]">
+                <div className="flex items-center gap-[10px] min-w-0">
+                  <span className="w-[36px] h-[36px] shrink-0 rounded-[10px] bg-[#B77145] flex items-center justify-center">
+                    <img src={AiIcon} alt="" className="h-[20px]" />
+                  </span>
+                  <h2 className="truncate text-[18px] leading-[24px] font-semibold text-[#68270B]">
+                    Manasi AI
+                  </h2>
+                </div>
                 <button
                   onClick={onClose}
                   aria-label="Close history"
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[#68270B]/60 hover:text-[#68270B] hover:bg-[#68270B]/8 transition-colors cursor-pointer"
+                  title="Close sidebar"
+                  className="w-[32px] h-[32px] -mr-[6px] shrink-0 rounded-[8px] flex items-center justify-center text-[#68270B]/70 hover:text-[#68270B] hover:bg-[#68270B]/8 transition-colors cursor-pointer"
                 >
-                  <FiX size={18} />
+                  <LuPanelLeftClose className="w-[20px] h-[20px]" />
                 </button>
               </div>
 
-              <div className="px-4 pb-3">
+              {/* New chat + search: 44px pills, 12px apart */}
+              <div className="shrink-0 flex flex-col gap-[12px]">
                 <button
                   onClick={onNewChat}
-                  className="w-full flex items-center gap-3 px-5 h-12 rounded-full bg-[#68270B] text-[#FAF4E8] text-[15px] font-semibold hover:bg-[#7d3414] transition-colors cursor-pointer"
+                  className="w-full h-[44px] flex items-center justify-center gap-[8px] rounded-full bg-[#68270B] text-[#FAF4E8] text-[15px] leading-[20px] font-medium hover:bg-[#7d3414] transition-colors cursor-pointer"
                 >
-                  <FiPlus size={18} /> New chat
+                  <LuPlus className="w-[18px] h-[18px]" /> New chat
                 </button>
+
+                <label className="w-full h-[44px] flex items-center gap-[10px] pl-[16px] pr-[12px] rounded-full bg-[#FFFCF7] border border-[#68270B]/12 focus-within:border-[#68270B]/35 transition-colors cursor-text">
+                  <LuSearch className="w-[16px] h-[16px] shrink-0 text-[#68270B]/75" />
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Escape" && setQuery("")}
+                    placeholder="Search chats"
+                    aria-label="Search chats"
+                    className="flex-1 min-w-0 bg-transparent border-none p-0 text-[14px] leading-[20px] text-[#68270B] placeholder:text-[#68270B]/55 focus:outline-none focus:ring-0"
+                  />
+                 
+                </label>
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4 [scrollbar-width:thin] [scrollbar-color:rgba(104,39,11,0.25)_transparent]">
-                {renderList()}
+              {/* Chat history: heading stays put, the day groups scroll */}
+              <div className="flex-1 min-h-0 flex flex-col gap-[17px]">
+                <div className="shrink-0 flex items-center gap-[8px]">
+                  <h2 className="text-[15px] leading-[20px] font-semibold text-[#68270B]">
+                    Chat history
+                  </h2>
+                  {totalCount > 0 && (
+                    <span className="h-[20px] min-w-[24px] px-[8px] flex items-center justify-center rounded-full bg-[#EDDDC9] text-[12px] leading-none font-medium text-[#68270B]/80">
+                      {totalCount}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 min-h-0 flex flex-col gap-[17px] overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:rgba(104,39,11,0.25)_transparent]">
+                  {renderList()}
+                </div>
               </div>
 
-              <UserFooter user={user} onOpenProfile={onOpenProfile} onLogout={onLogout} />
+              <UserFooter
+                user={user}
+                isSignedIn={isSignedIn}
+                onOpenProfile={onOpenProfile}
+                onLogout={onLogout}
+              />
             </div>
           </motion.aside>
         </>

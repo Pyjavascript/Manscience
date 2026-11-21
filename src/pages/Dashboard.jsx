@@ -66,7 +66,16 @@ import {
   THERAPY_VIEW_HEADER,
 } from "../components/cms/cmsCollections";
 import {
+  BulkActionBar,
+  SelectAllCheckbox,
+  SelectCheckbox,
+  SelectModeButton,
+} from "../components/BulkSelect";
+import { useSelection } from "../components/useSelection";
+import {
   deleteCmsItem,
+  deleteCmsItems,
+  describeBulkDelete,
   fetchCmsItems,
   fetchCmsSchema,
   publishCmsItems,
@@ -517,7 +526,12 @@ const Dashboard = () => {
   const [newTagColor, setNewTagColor] = useState("#B77145");
   const [tagsLoading, setTagsLoading] = useState(false);
   const [newTagName, setNewConditionTagName] = useState("");
+  // Id of the tag loaded into the tag form; null means the form creates a new tag
+  const [editingTagId, setEditingTagId] = useState(null);
+  const [tagSaving, setTagSaving] = useState(false);
   const [communitySubView, setCommunitySubTabFilter] = useState("posts"); // "posts" | "tags"
+  // Which list a bulk delete is running on ("posts", "tags", "therapies", ...), or null
+  const [bulkDeleting, setBulkDeleting] = useState(null);
   const fetchCommunityPosts = async () => {
     try {
       setCommunityLoading(true);
@@ -557,21 +571,46 @@ const Dashboard = () => {
     }
   };
 
-  const handleCreateTag = async (e) => {
+  const resetTagForm = () => {
+    setEditingTagId(null);
+    setNewConditionTagName("");
+    setNewTagColor("#B77145");
+  };
+
+  const openEditTag = (tag) => {
+    setEditingTagId(tag.id);
+    setNewConditionTagName(tag.name || "");
+    setNewTagColor(tag.color || "#B77145");
+    // On narrow screens the form sits above the table, possibly off screen
+    document
+      .getElementById("community-tag-form")
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+
+  // Creates a tag, or saves the one loaded by openEditTag
+  const handleSubmitTag = async (e) => {
     e.preventDefault();
     if (!newTagName.trim()) return;
+    const values = { name: newTagName.trim(), color: newTagColor };
     try {
-      const { error } = await supabase
-        .from("community_tags")
-        .insert([{ name: newTagName.trim(), color: newTagColor }]);
+      setTagSaving(true);
+      const { error } = editingTagId
+        ? await supabase
+            .from("community_tags")
+            .update(values)
+            .eq("id", editingTagId)
+        : await supabase.from("community_tags").insert([values]);
 
       if (error) throw error;
-      alert("New tag added successfully!");
-      setNewConditionTagName("");
-      setNewTagColor("#B77145");
+      alert(editingTagId ? "Tag updated." : "New tag added successfully!");
+      resetTagForm();
       fetchCommunityTags();
+      // Posts show the tag's name and colour, so reload them too
+      if (editingTagId) fetchCommunityPosts();
     } catch (err) {
-      alert(`Tag generation failed: ${err.message}`);
+      alert(`Saving tag failed: ${err.message}`);
+    } finally {
+      setTagSaving(false);
     }
   };
 
@@ -590,6 +629,7 @@ const Dashboard = () => {
 
       if (error) throw error;
       alert("Tag purged.");
+      if (editingTagId === id) resetTagForm();
       fetchCommunityTags();
       fetchCommunityPosts();
     } catch (err) {
@@ -777,49 +817,16 @@ const Dashboard = () => {
   // "all", "unlinked" (tag missing from the filter list) or a filter item id
   const [blogFilterView, setBlogFilterView] = useState("all");
   const [blogSearch, setBlogSearch] = useState("");
-  // Ids of blogs ticked as "needs fixing" (e.g. missing link). Dashboard-only, kept in Supabase.
-  const [blogFixFlags, setBlogFixFlags] = useState(() => new Set());
-
-  const fetchBlogFixFlags = async () => {
-    const { data, error } = await supabase.from("blog_fix_flags").select("blog_id");
-    if (error) {
-      console.error("Error loading blog fix flags:", error);
-      return;
-    }
-    setBlogFixFlags(new Set(data.map((row) => row.blog_id)));
-  };
 
   const fetchBlogsFromCms = async () => {
     try {
       setBlogsLoading(true);
-      const [data] = await Promise.all([
-        fetchCmsItems(BLOG_COLLECTION_ID),
-        fetchBlogFixFlags(),
-      ]);
+      const data = await fetchCmsItems(BLOG_COLLECTION_ID);
       setBlogsList(data?.items || []);
     } catch (err) {
       console.error("Error loading blogs:", err);
     } finally {
       setBlogsLoading(false);
-    }
-  };
-
-  const toggleBlogFixFlag = async (blogId) => {
-    const flagged = blogFixFlags.has(blogId);
-    const update = (add) =>
-      setBlogFixFlags((prev) => {
-        const next = new Set(prev);
-        if (add) next.add(blogId);
-        else next.delete(blogId);
-        return next;
-      });
-    update(!flagged);
-    const { error } = flagged
-      ? await supabase.from("blog_fix_flags").delete().eq("blog_id", blogId)
-      : await supabase.from("blog_fix_flags").upsert({ blog_id: blogId });
-    if (error) {
-      update(flagged);
-      alert(`Couldn't save the checkbox: ${error.message}`);
     }
   };
 
@@ -864,7 +871,7 @@ const Dashboard = () => {
 
   const visibleBlogs = useMemo(() => {
     const query = blogSearch.trim().toLowerCase();
-    const matches = blogsList.filter((blog) => {
+    return blogsList.filter((blog) => {
       const data = blog.fieldData || {};
       const tag = data["filter-tag"];
       if (blogFilterView === "unlinked" && blogFilterLabels.has(tag)) return false;
@@ -876,11 +883,7 @@ const Dashboard = () => {
         )
       );
     });
-    // Blogs ticked as needing a fix go first; sort is stable, so CMS order is kept otherwise
-    return matches.sort(
-      (a, b) => blogFixFlags.has(b.id) - blogFixFlags.has(a.id),
-    );
-  }, [blogsList, blogFilterView, blogSearch, blogFilterLabels, blogFixFlags]);
+  }, [blogsList, blogFilterView, blogSearch, blogFilterLabels]);
 
   // --- BLOG EDITOR ---
   const openCreateBlog = () => {
@@ -1555,6 +1558,110 @@ const Dashboard = () => {
     return communityPosts.filter((p) => p.status === communityFilter);
   }, [communityPosts, communityFilter]);
 
+  // --- MULTI-SELECT & BULK DELETE ---
+  const postSelection = useSelection(filteredCommunityList.map((p) => p.id));
+  const tagSelection = useSelection(tagsList.map((t) => t.id));
+  const therapySelection = useSelection(therapiesList.map((t) => t.id));
+  const conditionSelection = useSelection(conditionsList.map((c) => c.id));
+  const blogSelection = useSelection(visibleBlogs.map((b) => b.id));
+
+  const confirmBulkDelete = (count, noun, extra = "") =>
+    window.confirm(
+      [`Delete ${count} ${noun}?`, extra, "This operation is permanent."]
+        .filter(Boolean)
+        .join("\n\n"),
+    );
+
+  // Supabase rows go in one request
+  const bulkDeleteRows = async ({ key, table, selection, noun, extra, after }) => {
+    const ids = selection.selectedIds;
+    if (ids.length === 0 || !confirmBulkDelete(ids.length, noun, extra)) return;
+    try {
+      setBulkDeleting(key);
+      const { error } = await supabase.from(table).delete().in("id", ids);
+      if (error) throw error;
+      selection.stop();
+      alert(`${ids.length} ${noun} deleted.`);
+      after(ids);
+    } catch (err) {
+      alert(`Bulk delete failed: ${err.message}`);
+    } finally {
+      setBulkDeleting(null);
+    }
+  };
+
+  // Webflow items go one at a time; the list is reloaded whatever happens
+  const bulkDeleteCms = async ({ key, collectionId, selection, noun, after }) => {
+    const ids = selection.selectedIds;
+    if (
+      ids.length === 0 ||
+      !confirmBulkDelete(ids.length, noun, "They will also be removed from the website.")
+    )
+      return;
+    try {
+      setBulkDeleting(key);
+      const result = await deleteCmsItems(collectionId, ids);
+      selection.stop();
+      alert(describeBulkDelete(result, noun));
+      after(result.deleted);
+    } finally {
+      setBulkDeleting(null);
+    }
+  };
+
+  const handleBulkDeletePosts = () =>
+    bulkDeleteRows({
+      key: "posts",
+      table: "community_hub",
+      selection: postSelection,
+      noun: postSelection.count === 1 ? "post" : "posts",
+      after: () => fetchCommunityPosts(),
+    });
+
+  const handleBulkDeleteTags = () =>
+    bulkDeleteRows({
+      key: "tags",
+      table: "community_tags",
+      selection: tagSelection,
+      noun: tagSelection.count === 1 ? "tag" : "tags",
+      extra: "Posts using these tags will default to unassigned.",
+      after: (ids) => {
+        if (ids.includes(editingTagId)) resetTagForm();
+        fetchCommunityTags();
+        fetchCommunityPosts();
+      },
+    });
+
+  const handleBulkDeleteTherapies = () =>
+    bulkDeleteCms({
+      key: "therapies",
+      collectionId: THERAPY_COLLECTION_ID,
+      selection: therapySelection,
+      noun: therapySelection.count === 1 ? "therapy" : "therapies",
+      after: (deleted) => {
+        setTherapyCount((prev) => Math.max(0, prev - deleted.length));
+        fetchTherapiesFromCms();
+      },
+    });
+
+  const handleBulkDeleteConditions = () =>
+    bulkDeleteCms({
+      key: "conditions",
+      collectionId: CONDITION_COLLECTION_ID,
+      selection: conditionSelection,
+      noun: conditionSelection.count === 1 ? "condition" : "conditions",
+      after: () => fetchConditionsTabCms(),
+    });
+
+  const handleBulkDeleteBlogs = () =>
+    bulkDeleteCms({
+      key: "blogs",
+      collectionId: BLOG_COLLECTION_ID,
+      selection: blogSelection,
+      noun: blogSelection.count === 1 ? "blog" : "blogs",
+      after: () => fetchBlogsFromCms(),
+    });
+
   useEffect(() => {
     refreshOverviewData();
   }, []);
@@ -2145,6 +2252,12 @@ const Dashboard = () => {
                     }
                     )
                   </button>
+                  <div className="ml-auto pb-2">
+                    <SelectModeButton
+                      selection={postSelection}
+                      disabled={bulkDeleting === "posts"}
+                    />
+                  </div>
                 </div>
 
                 {communityLoading ? (
@@ -2157,9 +2270,21 @@ const Dashboard = () => {
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
+                    <BulkActionBar
+                      selection={postSelection}
+                      noun={postSelection.count === 1 ? "post" : "posts"}
+                      onDelete={handleBulkDeletePosts}
+                      busy={bulkDeleting === "posts"}
+                      className="mb-4"
+                    />
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-gray-200 bg-gray-50 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                          {postSelection.active && (
+                            <th className="py-4 pl-6 pr-2 w-10">
+                              <SelectAllCheckbox selection={postSelection} />
+                            </th>
+                          )}
                           <th className="py-4 px-6">Header / Tag</th>
                           <th className="py-4 px-6">Content Body</th>
                           <th className="py-4 px-6">Username Author</th>
@@ -2171,8 +2296,17 @@ const Dashboard = () => {
                         {filteredCommunityList.map((post) => (
                           <tr
                             key={post.id}
-                            className="hover:bg-slate-50 transition"
+                            className={`transition ${postSelection.isSelected(post.id) ? "bg-brand-50/50" : "hover:bg-slate-50"}`}
                           >
+                            {postSelection.active && (
+                              <td className="py-4 pl-6 pr-2">
+                                <SelectCheckbox
+                                  checked={postSelection.isSelected(post.id)}
+                                  onChange={() => postSelection.toggle(post.id)}
+                                  label="Select post"
+                                />
+                              </td>
+                            )}
                             <td className="py-4 px-6">
                               <div className="font-semibold text-gray-900">
                                 {post.header || (
@@ -2282,17 +2416,21 @@ const Dashboard = () => {
 
             {communitySubView === "tags" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <div className="bg-white p-6 rounded-3xl border border-gray-200 space-y-4">
+                <div
+                  id="community-tag-form"
+                  className={`bg-white p-6 rounded-3xl border space-y-4 ${editingTagId ? "border-brand" : "border-gray-200"}`}
+                >
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Add Pre-defined Tag
+                      {editingTagId ? "Edit Tag" : "Add Pre-defined Tag"}
                     </h3>
                     <p className="text-gray-400 text-xs mt-0.5">
-                      Define metadata criteria properties for categorization
-                      selection drop-down boxes.
+                      {editingTagId
+                        ? "Changes apply to every post that uses this tag."
+                        : "Define metadata criteria properties for categorization selection drop-down boxes."}
                     </p>
                   </div>
-                  <form onSubmit={handleCreateTag} className="space-y-3">
+                  <form onSubmit={handleSubmitTag} className="space-y-3">
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
                         Tag Name *
@@ -2329,19 +2467,41 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                    <button
-                      type="submit"
-                      className="w-full bg-brand text-white font-semibold py-2.5 rounded-xl transition text-sm hover:bg-brand-600"
-                    >
-                      Add Tag
-                    </button>
+                    <div className="flex gap-2">
+                      {editingTagId && (
+                        <button
+                          type="button"
+                          onClick={resetTagForm}
+                          className="flex-1 font-medium py-2.5 rounded-xl transition text-sm text-gray-600 border border-gray-200 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={tagSaving}
+                        className="flex-1 bg-brand text-white font-semibold py-2.5 rounded-xl transition text-sm hover:bg-brand-600 disabled:opacity-40"
+                      >
+                        {tagSaving
+                          ? "Saving..."
+                          : editingTagId
+                            ? "Save Changes"
+                            : "Add Tag"}
+                      </button>
+                    </div>
                   </form>
                 </div>
 
                 <div className="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Active System Dropdown Options Collection
-                  </h3>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Active System Dropdown Options Collection
+                    </h3>
+                    <SelectModeButton
+                      selection={tagSelection}
+                      disabled={bulkDeleting === "tags"}
+                    />
+                  </div>
                   {tagsLoading ? (
                     <p className="text-gray-400 italic text-sm">
                       Synchronizing schemas inventory models variables...
@@ -2352,26 +2512,53 @@ const Dashboard = () => {
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
+                      <BulkActionBar
+                        selection={tagSelection}
+                        noun={tagSelection.count === 1 ? "tag" : "tags"}
+                        onDelete={handleBulkDeleteTags}
+                        busy={bulkDeleting === "tags"}
+                        className="mb-4"
+                      />
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-gray-200 bg-gray-50 text-gray-400 text-xs font-bold uppercase tracking-wider">
+                            {tagSelection.active && (
+                              <th className="py-3 pl-6 pr-2 w-10">
+                                <SelectAllCheckbox selection={tagSelection} />
+                              </th>
+                            )}
                             <th className="py-3 px-6">Available Tags</th>
                             <th className="py-3 px-6 select-all font-mono">
                               Reference Record ID
                             </th>
-                            <th className="py-3 px-6 text-center">
-                              Purge Control
-                            </th>
+                            <th className="py-3 px-6 text-center">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
                           {tagsList.map((tag) => (
                             <tr
                               key={tag.id}
-                              className="hover:bg-slate-50 transition"
+                              className={`transition ${
+                                editingTagId === tag.id || tagSelection.isSelected(tag.id)
+                                  ? "bg-brand-50/50"
+                                  : "hover:bg-slate-50"
+                              }`}
                             >
+                              {tagSelection.active && (
+                                <td className="py-3.5 pl-6 pr-2">
+                                  <SelectCheckbox
+                                    checked={tagSelection.isSelected(tag.id)}
+                                    onChange={() => tagSelection.toggle(tag.id)}
+                                    label={`Select ${tag.name}`}
+                                  />
+                                </td>
+                              )}
                               <td className="py-3.5 px-6 font-semibold text-gray-800">
-                                <span className="bg-brand-50 border border-brand-100 text-brand px-3 py-1 rounded-lg font-bold text-xs uppercase tracking-wide">
+                                <span className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand px-3 py-1 rounded-lg font-bold text-xs uppercase tracking-wide">
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0"
+                                    style={{ backgroundColor: tag.color || "#C85527" }}
+                                  />
                                   {tag.name}
                                 </span>
                               </td>
@@ -2379,13 +2566,22 @@ const Dashboard = () => {
                                 {tag.id}
                               </td>
                               <td className="py-3.5 px-6 text-center">
-                                <button
-                                  onClick={() => handleDeleteTag(tag.id)}
-                                  className="p-2 text-red-500 hover:bg-red-50 border border-gray-100 rounded-xl transition inline-flex"
-                                  title="Purge tag asset reference mapping constraint parameters"
-                                >
-                                  <FaTrash size={12} />
-                                </button>
+                                <div className="inline-flex items-center gap-2">
+                                  <button
+                                    onClick={() => openEditTag(tag)}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 border border-gray-100 rounded-xl transition inline-flex"
+                                    title="Edit tag"
+                                  >
+                                    <FaEdit size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteTag(tag.id)}
+                                    className="p-2 text-red-500 hover:bg-red-50 border border-gray-100 rounded-xl transition inline-flex"
+                                    title="Delete tag"
+                                  >
+                                    <FaTrash size={12} />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -2513,16 +2709,22 @@ const Dashboard = () => {
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
                   Therapies ({therapiesList.length})
                 </span>
-                <button
-                  onClick={fetchTherapiesFromCms}
-                  className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
-                >
-                  <FaSync
-                    size={10}
-                    className={therapiesLoading ? "animate-spin" : ""}
-                  />{" "}
-                  Refresh
-                </button>
+                <div className="flex items-center gap-4">
+                  <SelectModeButton
+                    selection={therapySelection}
+                    disabled={bulkDeleting === "therapies"}
+                  />
+                  <button
+                    onClick={fetchTherapiesFromCms}
+                    className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <FaSync
+                      size={10}
+                      className={therapiesLoading ? "animate-spin" : ""}
+                    />{" "}
+                    Refresh
+                  </button>
+                </div>
               </div>
 
               {therapiesLoading && therapiesList.length === 0 ? (
@@ -2536,9 +2738,21 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
+                  <BulkActionBar
+                    selection={therapySelection}
+                    noun={therapySelection.count === 1 ? "therapy" : "therapies"}
+                    onDelete={handleBulkDeleteTherapies}
+                    busy={bulkDeleting === "therapies"}
+                    className="m-4"
+                  />
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                        {therapySelection.active && (
+                          <th className="py-4 pl-6 pr-2 w-10">
+                            <SelectAllCheckbox selection={therapySelection} />
+                          </th>
+                        )}
                         <th className="py-4 px-6">Therapy</th>
                         <th className="py-4 px-6">Main Category</th>
                         <th className="py-4 px-6 text-center">Status</th>
@@ -2555,8 +2769,17 @@ const Dashboard = () => {
                         return (
                           <tr
                             key={item.id}
-                            className="hover:bg-slate-50 transition"
+                            className={`transition ${therapySelection.isSelected(item.id) ? "bg-brand-50/50" : "hover:bg-slate-50"}`}
                           >
+                            {therapySelection.active && (
+                              <td className="py-4 pl-6 pr-2">
+                                <SelectCheckbox
+                                  checked={therapySelection.isSelected(item.id)}
+                                  onChange={() => therapySelection.toggle(item.id)}
+                                  label={`Select ${data.name || "therapy"}`}
+                                />
+                              </td>
+                            )}
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-3">
                                 {thumb ? (
@@ -2661,16 +2884,22 @@ const Dashboard = () => {
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
                   Live Managed Target Conditions ({conditionsList.length})
                 </span>
-                <button
-                  onClick={fetchConditionsTabCms}
-                  className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
-                >
-                  <FaSync
-                    size={10}
-                    className={conditionsLoading ? "animate-spin" : ""}
-                  />{" "}
-                  Force Sync Data
-                </button>
+                <div className="flex items-center gap-4">
+                  <SelectModeButton
+                    selection={conditionSelection}
+                    disabled={bulkDeleting === "conditions"}
+                  />
+                  <button
+                    onClick={fetchConditionsTabCms}
+                    className="text-xs text-brand font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <FaSync
+                      size={10}
+                      className={conditionsLoading ? "animate-spin" : ""}
+                    />{" "}
+                    Force Sync Data
+                  </button>
+                </div>
               </div>
 
               {conditionsLoading && conditionsList.length === 0 ? (
@@ -2685,9 +2914,21 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
+                  <BulkActionBar
+                    selection={conditionSelection}
+                    noun={conditionSelection.count === 1 ? "condition" : "conditions"}
+                    onDelete={handleBulkDeleteConditions}
+                    busy={bulkDeleting === "conditions"}
+                    className="m-4"
+                  />
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                        {conditionSelection.active && (
+                          <th className="py-4 pl-6 pr-2 w-10">
+                            <SelectAllCheckbox selection={conditionSelection} />
+                          </th>
+                        )}
                         <th className="py-4 px-6">Condition Name Key</th>
                         <th className="py-4 px-6">Generated Slug String</th>
                         <th className="py-4 px-6 select-none font-mono">
@@ -2704,8 +2945,17 @@ const Dashboard = () => {
                         return (
                           <tr
                             key={item.id}
-                            className="hover:bg-slate-50 transition"
+                            className={`transition ${conditionSelection.isSelected(item.id) ? "bg-brand-50/50" : "hover:bg-slate-50"}`}
                           >
+                            {conditionSelection.active && (
+                              <td className="py-4 pl-6 pr-2">
+                                <SelectCheckbox
+                                  checked={conditionSelection.isSelected(item.id)}
+                                  onChange={() => conditionSelection.toggle(item.id)}
+                                  label={`Select ${data.name || "condition"}`}
+                                />
+                              </td>
+                            )}
                             <td className="py-4 px-6 font-semibold text-gray-900 tracking-tight">
                               <div className="flex items-center gap-3">
                                 {data["hero-image-desktop"]?.url ? (
@@ -2814,7 +3064,11 @@ const Dashboard = () => {
                     ? `Blogs (${blogsList.length})`
                     : `Showing ${visibleBlogs.length} of ${blogsList.length}`}
                 </span>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <SelectModeButton
+                    selection={blogSelection}
+                    disabled={bulkDeleting === "blogs"}
+                  />
                   <input
                     type="search"
                     value={blogSearch}
@@ -2848,17 +3102,32 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
+                  <BulkActionBar
+                    selection={blogSelection}
+                    noun={blogSelection.count === 1 ? "blog" : "blogs"}
+                    onDelete={handleBulkDeleteBlogs}
+                    busy={bulkDeleting === "blogs"}
+                    className="m-4"
+                  />
                   {/* Fixed layout: the Blog column takes the leftover width so the table never scrolls sideways */}
                   <table className="w-full table-fixed text-left border-collapse">
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                        <th className="py-4 pl-6 pr-0 w-14">#</th>
+                        {blogSelection.active && (
+                          <th className="py-4 pl-6 pr-0 w-12">
+                            <SelectAllCheckbox selection={blogSelection} />
+                          </th>
+                        )}
+                        <th
+                          className={`py-4 pr-0 ${blogSelection.active ? "pl-2 w-10" : "pl-6 w-14"}`}
+                        >
+                          #
+                        </th>
                         <th className="py-4 px-3">Blog</th>
                         <th className="py-4 px-3 w-40">Filter</th>
                         <th className="py-4 px-3 w-44">Author & Date</th>
                         <th className="py-4 px-2 w-32 text-center">Status</th>
-                        <th className="py-4 px-2 w-36 text-center">Actions</th>
-                        <th className="py-4 pl-2 pr-6 w-20 text-center">Fix</th>
+                        <th className="py-4 pl-2 pr-6 w-36 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
@@ -2873,13 +3142,23 @@ const Dashboard = () => {
                         const filterItem = blogFilters.find((f) => f.id === tag);
                         const style = blogStyleLabels.get(data["cta-image"]);
                         const unpublished = hasUnpublishedChanges(blog);
-                        const needsFix = blogFixFlags.has(blog.id);
                         return (
                           <tr
                             key={blog.id}
-                            className={`transition ${needsFix ? "bg-amber-50/60 hover:bg-amber-50" : "hover:bg-slate-50"}`}
+                            className={`transition ${blogSelection.isSelected(blog.id) ? "bg-brand-50/50" : "hover:bg-slate-50"}`}
                           >
-                            <td className="py-4 pl-6 pr-0 text-gray-400 text-xs font-medium tabular-nums">
+                            {blogSelection.active && (
+                              <td className="py-4 pl-6 pr-0">
+                                <SelectCheckbox
+                                  checked={blogSelection.isSelected(blog.id)}
+                                  onChange={() => blogSelection.toggle(blog.id)}
+                                  label={`Select ${String(data.name ?? "").trim() || "blog"}`}
+                                />
+                              </td>
+                            )}
+                            <td
+                              className={`py-4 pr-0 text-gray-400 text-xs font-medium tabular-nums ${blogSelection.active ? "pl-2" : "pl-6"}`}
+                            >
                               {index + 1}
                             </td>
                             <td className="py-4 px-3">
@@ -2957,7 +3236,7 @@ const Dashboard = () => {
                                     : "Live"}
                               </span>
                             </td>
-                            <td className="py-4 px-2 text-center">
+                            <td className="py-4 pl-2 pr-6 text-center">
                               <div className="inline-flex items-center gap-0.5">
                                 <button
                                   onClick={() => setSelectedBlogDetail(blog)}
@@ -2992,15 +3271,6 @@ const Dashboard = () => {
                                   <FaTrash size={14} />
                                 </button>
                               </div>
-                            </td>
-                            <td className="py-4 pl-2 pr-6 text-center">
-                              <input
-                                type="checkbox"
-                                checked={needsFix}
-                                onChange={() => toggleBlogFixFlag(blog.id)}
-                                className="w-4 h-4 accent-amber-600 cursor-pointer"
-                                title={needsFix ? "Needs fixing — untick when fixed" : "Tick if this blog needs fixing"}
-                              />
                             </td>
                           </tr>
                         );

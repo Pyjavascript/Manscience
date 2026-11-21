@@ -6,7 +6,6 @@ export default function Subscription() {
   const [subscription, setSubscription] = useState(null);
   const [selectedTab, setSelectedTab] = useState("starter");
   const [loading, setLoading] = useState(true);
-  const [activeLoadingPlanId, setActiveLoadingPlanId] = useState(null);
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const popupRef = useRef(null);
@@ -49,48 +48,8 @@ export default function Subscription() {
     setLoading(false);
   }
 
-  async function buyPlan(planId) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      // navigate("/auth");
-      window.location.href = `${window.location.origin}/auth`;
-      return;
-    }
-
-    try {
-      setActiveLoadingPlanId(planId);
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      const response = await fetch(
-        "https://obzogpozgoolhededqkb.supabase.co/functions/v1/stripe",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ plan: planId }),
-        },
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.error);
-        setActiveLoadingPlanId(null);
-        return;
-      }
-
-      window.location.href = data.url;
-    } catch (err) {
-      console.error("Payment routing failed:", err.message);
-      setActiveLoadingPlanId(null);
-    }
+  function buyPlan() {
+    window.location.href = "https://www.manascience.in/coming-soon";
   }
 
   if (loading) {
@@ -140,7 +99,6 @@ export default function Subscription() {
 
   const currentPlan = plansData[selectedTab];
   const isCurrentlyActive = subscription?.plan === currentPlan.id;
-  const isPlanRedirecting = activeLoadingPlanId === currentPlan.id;
 
   return (
     <main className="min-h-screen py-10 px-4 flex flex-col items-center justify-start text-[#B77145] font-sans selection:bg-[#B77145]/20 manrope">
@@ -155,7 +113,7 @@ export default function Subscription() {
         <button
           type="button"
           onClick={() => setSelectedTab("starter")}
-          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${
+          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${
             selectedTab === "starter"
               ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
@@ -166,7 +124,7 @@ export default function Subscription() {
         <button
           type="button"
           onClick={() => setSelectedTab("quarterly")}
-          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${
+          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${
             selectedTab === "quarterly"
               ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
@@ -177,7 +135,7 @@ export default function Subscription() {
         <button
           type="button"
           onClick={() => setSelectedTab("yearly")}
-          className={`flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19x] w-[80px] md:w-[80px] ${
+          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19x] w-[80px] md:w-[80px] ${
             selectedTab === "yearly"
               ? "bg-white text-[#B77145] shadow-sm"
               : "text-white hover:text-white/80"
@@ -193,11 +151,11 @@ export default function Subscription() {
         <h2 className="text-[28px] md:text-[32px] lg:text-[38px] font-medium mb-3 text-[#B77145] leading-[120%] tracking-[-4%]">
           {currentPlan.title}
         </h2>
-        <p className="text-[13px] md:text-[16px] text-[#B77145]/80 max-w-60  md:max-w-80 lg:max-w-80 leading-relaxed mb-6.5 font-normal tracking-[-2%]">
+        <p className="text-[13px] md:text-[16px] text-[#B77145]/80 max-w-[280px] md:max-w-[340px] leading-relaxed min-h-[3.25em] line-clamp-2 mb-6.5 font-normal tracking-[-2%]">
           {currentPlan.subtitle}
         </p>
 
-        <div className="text-[15px] md:text-[16px] font-semibold mb-6 text-[#B77145]">
+        <div className="text-[20px] md:text-[24px] font-bold mb-6 text-[#B77145]">
           {currentPlan.price}
           <span className="text-lg md:text-[16px] font-semibold mb-6 text-[#B77145]">
             {currentPlan.period}
@@ -215,38 +173,11 @@ export default function Subscription() {
           {/* Floating Action Button */}
           <div className="absolute inset-0 flex items-end justify-center p-6 bg-linear-to-t from-black/20 via-transparent to-transparent">
             <button
-              onClick={() => buyPlan(currentPlan.id)}
-              disabled={isCurrentlyActive || activeLoadingPlanId !== null}
-              className="bg-[#b77145]  text-white w-[160px] md:w-[160px] h-[60px] md:h-[70px] rounded-full text-sm  font-semibold transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
+              onClick={buyPlan}
+              disabled={isCurrentlyActive}
+              className="cursor-pointer disabled:cursor-default bg-[#b77145]  text-white w-[160px] md:w-[160px] h-[60px] md:h-[70px] rounded-full text-sm  font-semibold transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
             >
-              {isCurrentlyActive ? (
-                "Current Plan"
-              ) : isPlanRedirecting ? (
-                <>
-                  <svg
-                    className="animate-spin h-4 w-4 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  <span>Connecting...</span>
-                </>
-              ) : (
-                currentPlan.buttonText
-              )}
+              {isCurrentlyActive ? "Current Plan" : currentPlan.buttonText}
             </button>
           </div>
         </div>

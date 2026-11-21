@@ -10,9 +10,9 @@ const ChatComposer = ({
   inputDisabled,
   sendDisabled,
 }) => (
-  <div className="w-full max-w-3xl mx-auto space-y-4 bg-transparent p-4">
+  <div className="w-full max-w-[768px] mx-auto space-y-[16px] bg-transparent p-[16px]">
     {showInput && (
-      <div className="md:w-150 min-h-15 md:min-h-20 rounded-3xl md:rounded-[34px] px-3.75 py-2.5 md:py-4 md:px-6 max-w-2xl mx-auto bg-white text-gray-900 flex justify-between items-center gap-2">
+      <div className="md:w-[600px] min-h-[60px] md:min-h-[80px] rounded-[24px] md:rounded-[34px] px-[15px] py-[10px] md:py-[16px] md:px-[24px] max-w-[672px] mx-auto bg-white text-gray-900 flex justify-between items-center gap-[8px]">
         <textarea
           rows={1}
           placeholder="What would you like help with?"
@@ -20,21 +20,21 @@ const ChatComposer = ({
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={onKeyDown}
           disabled={inputDisabled}
-          className="placeholder:text-black w-full text-[13px] md:text-[18px] font-semibold text-gray-800 bg-transparent resize-none focus:outline-none focus:ring-0 border-none p-0 field-sizing-content max-h-36 overflow-y-auto scrollbar-none "
+          className="placeholder:text-black w-full text-[13px] md:text-[18px] font-semibold text-gray-800 bg-transparent resize-none focus:outline-none focus:ring-0 border-none p-0 field-sizing-content max-h-[144px] overflow-y-auto scrollbar-none "
         />
         <button
           onClick={() => onSend()}
           disabled={sendDisabled}
-          className="w-11 md:w-12 md:h-11.25 h-9.5 rounded-full bg-[#B77145] hover:bg-amber-800 disabled:bg-amber-700/40 flex items-center justify-center text-white transition"
+          className="w-[44px] md:w-[48px] md:h-[45px] h-[38px] shrink-0 rounded-full bg-[#B77145] hover:bg-amber-800 disabled:bg-amber-700/40 flex items-center justify-center text-white transition"
         >
-          <img src={inparrow} alt="send" className="-rotate-45 h-3" />
+          <img src={inparrow} alt="send" className="-rotate-45 h-[12px]" />
         </button>
       </div>
     )}
 
     {showInput && (
-      <footer className="w-full text-center pb-2 pt-1">
-        <p className="text-[13px] font-normal md:text-[14px] text-white max-w-md md:max-w-max mx-auto px-4">
+      <footer className="w-full text-center pb-[8px] pt-[4px]">
+        <p className="text-[13px] font-normal md:text-[14px] text-white max-w-[448px] md:max-w-max mx-auto px-[16px]">
           Manasi AI can make mistakes, kindly consult a certified practitioner.
         </p>
       </footer>

@@ -17,6 +17,7 @@ import {
   getAuthUrl,
 } from "../components/ManasiAi/helpers";
 import { saveChatTurn, submitRoadmap } from "../components/ManasiAi/api";
+import ProfileDetailsForm from "../components/ManasiAi/ProfileDetailsForm";
 import ScreeningQuestion from "../components/ManasiAi/ScreeningQuestion";
 import ScreeningComplete from "../components/ManasiAi/ScreeningComplete";
 import DomainScoring from "../components/ManasiAi/DomainScoring";
@@ -36,8 +37,12 @@ const ManasiRoadmap = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // screening -> intro -> scoring -> completed
-  const [phase, setPhase] = useState("screening");
+  // details -> screening -> intro -> scoring -> completed
+  const [phase, setPhase] = useState("details");
+
+  // Basic details from the first form. UI only for now: kept in state,
+  // not sent to the backend yet
+  const [profileDetails, setProfileDetails] = useState(null);
 
   // Screening questions
   const [screeningStep, setScreeningStep] = useState(0);
@@ -109,6 +114,31 @@ const ManasiRoadmap = () => {
         setPhase("intro");
       }
     }, ANSWER_DELAY_MS);
+  };
+
+  // First question goes back to the details form, any later one goes to
+  // the previous question and drops the answer given there
+  const handleScreeningBack = () => {
+    clearTimeout(advanceTimer.current);
+    setSelectedOption(null);
+
+    if (screeningStep === 0) {
+      setPhase("details");
+      return;
+    }
+
+    const prevStep = screeningStep - 1;
+    setScreeningAnswers((prev) => prev.slice(0, prevStep));
+    setScreeningStep(prevStep);
+  };
+
+  // From "Screening done" back to the last screening question
+  const handleIntroBack = () => {
+    const lastStep = QUESTIONNAIRE.length - 1;
+    setScreeningAnswers((prev) => prev.slice(0, lastStep));
+    setScreeningStep(lastStep);
+    setScoringState(INITIAL_SCORING_STATE);
+    setPhase("screening");
   };
 
   // ---------- Domain scoring ----------
@@ -194,18 +224,36 @@ const ManasiRoadmap = () => {
   // ---------- Render ----------
 
   const renderPhase = () => {
+    if (phase === "details") {
+      return (
+        <ProfileDetailsForm
+          initialDetails={profileDetails}
+          onSubmit={(details) => {
+            setProfileDetails(details);
+            setPhase("screening");
+          }}
+        />
+      );
+    }
+
     if (phase === "screening") {
       return (
         <ScreeningQuestion
           step={screeningStep}
           selectedOption={selectedOption}
           onSelect={handleScreeningSelect}
+          onBack={handleScreeningBack}
         />
       );
     }
 
     if (phase === "intro") {
-      return <ScreeningComplete onBegin={() => setPhase("scoring")} />;
+      return (
+        <ScreeningComplete
+          onBegin={() => setPhase("scoring")}
+          onBack={handleIntroBack}
+        />
+      );
     }
 
     if (phase === "scoring") {
@@ -231,7 +279,14 @@ const ManasiRoadmap = () => {
       <PageBackground />
       <div className="flex-1 flex flex-col min-h-0 relative">
         <div className="md:absolute pl-5 md:pl-11 pb-2 z-10">
-          <img src={Logo} className="w-28.75 md:w-51" alt="Manascience" />
+          <a
+            href="https://www.manascience.in/new-home"
+            target="_top"
+            aria-label="Go to Manascience home"
+            className="inline-block"
+          >
+            <img src={Logo} className="w-28.75 md:w-51" alt="Manascience" />
+          </a>
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
