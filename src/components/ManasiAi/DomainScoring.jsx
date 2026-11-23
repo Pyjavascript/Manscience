@@ -3,9 +3,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { RATING_OPTIONS } from "./constants";
 import { getQuestionWindowStart } from "./helpers";
 
-// One question card is 75px tall with a 10px gap, so each row is 85px
-const CARD_GAP = 10;
-const QUESTION_ROW_HEIGHT = 85;
+// Card sizes are plain pixels worked out in JS, never rem, so the cards, the
+// list window and the slide distance always match whatever the page's root
+// font size is. Cards grow with the screen height up to the design size, so
+// exactly 4 show on laptops and big monitors alike.
+const CARD_GAP = 14;
+const MIN_CARD_HEIGHT = 64;
+const MAX_CARD_HEIGHT = 88;
 const MAX_VISIBLE_ROWS = 4;
 
 // Shared easing so the list slide and the card highlight move in sync
@@ -13,16 +17,19 @@ const SLIDE_TRANSITION = { duration: 0.45, ease: [0.22, 1, 0.36, 1] };
 
 const px = (value) => parseFloat(value) || 0;
 
-// How many question rows fit once the header, the rating buttons and the
-// gaps between them are taken out of the screen height. Short phones show
-// fewer rows instead of scrolling.
-const useVisibleRows = () => {
+// How many question rows fit, and how tall each card can be, once the
+// header, the rating buttons and the gaps between them are taken out of the
+// screen height. Short phones show fewer rows instead of scrolling.
+const useCardLayout = () => {
   const mainRef = useRef(null);
   const headerRef = useRef(null);
   const topSpacerRef = useRef(null);
   const bottomSpacerRef = useRef(null);
   const ratingsRef = useRef(null);
-  const [rows, setRows] = useState(MAX_VISIBLE_ROWS);
+  const [layout, setLayout] = useState({
+    rows: MAX_VISIBLE_ROWS,
+    cardHeight: MAX_CARD_HEIGHT,
+  });
 
   useLayoutEffect(() => {
     const main = mainRef.current;
@@ -42,8 +49,24 @@ const useVisibleRows = () => {
         ratings.offsetHeight -
         px(getComputedStyle(topSpacer).minHeight) -
         px(getComputedStyle(bottomSpacer).minHeight);
-      const fit = Math.floor((available + CARD_GAP) / QUESTION_ROW_HEIGHT);
-      setRows(Math.min(MAX_VISIBLE_ROWS, Math.max(1, fit)));
+
+      const fit = Math.floor(
+        (available + CARD_GAP) / (MIN_CARD_HEIGHT + CARD_GAP),
+      );
+      const rows = Math.min(MAX_VISIBLE_ROWS, Math.max(1, fit));
+      const cardHeight = Math.min(
+        MAX_CARD_HEIGHT,
+        Math.max(
+          MIN_CARD_HEIGHT,
+          Math.floor((available - (rows - 1) * CARD_GAP) / rows),
+        ),
+      );
+
+      setLayout((prev) =>
+        prev.rows === rows && prev.cardHeight === cardHeight
+          ? prev
+          : { rows, cardHeight },
+      );
     };
 
     measure();
@@ -60,7 +83,7 @@ const useVisibleRows = () => {
     topSpacerRef,
     bottomSpacerRef,
     ratingsRef,
-    rows,
+    ...layout,
   };
 };
 
@@ -84,7 +107,9 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
     bottomSpacerRef,
     ratingsRef,
     rows,
-  } = useVisibleRows();
+    cardHeight,
+  } = useCardLayout();
+  const rowHeight = cardHeight + CARD_GAP;
   const visibleCount = Math.min(rows, activeDomain.questions.length);
   const topIndex = getQuestionWindowStart(
     activeDomain.questions.length,
@@ -112,7 +137,7 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
           {activeDomain.domain}
         </h2>
 
-        <div className="w-full max-w-120 bg-white/20 h-1 rounded-full overflow-hidden mx-auto">
+        <div className="w-full max-w-[480px] bg-white/20 h-1 rounded-full overflow-hidden mx-auto">
           <div
             className="bg-white h-full w-full origin-left transition-transform duration-300 rounded-full"
             style={{ transform: `scaleX(${progressPercent / 100})` }}
@@ -125,15 +150,15 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
       <div
         ref={topSpacerRef}
         aria-hidden="true"
-        className="flex-1 md:flex-none min-h-6 md:min-h-7"
+        className="flex-1 md:flex-none min-h-[24px] md:min-h-[28px]"
       />
 
       {/* Question list: up to 4 rows, fewer on short screens */}
       <div className="shrink-0 w-full flex justify-center">
         <div
-          className="relative w-full max-w-xl overflow-hidden"
+          className="relative w-full max-w-[576px] overflow-hidden"
           style={{
-            height: visibleCount * QUESTION_ROW_HEIGHT - CARD_GAP,
+            height: visibleCount * rowHeight - CARD_GAP,
           }}
         >
           {/* Keyed by domain so a new domain fades in fresh instead of
@@ -152,11 +177,11 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
               <motion.div
                 initial={false}
                 animate={{
-                  transform: `translateY(${-(topIndex * QUESTION_ROW_HEIGHT)}px)`,
+                  transform: `translateY(${-(topIndex * rowHeight)}px)`,
                 }}
                 transition={SLIDE_TRANSITION}
-                style={{ willChange: "transform" }}
-                className="flex flex-col items-center gap-2.5 w-full"
+                style={{ willChange: "transform", rowGap: CARD_GAP }}
+                className="flex flex-col items-center w-full"
               >
                 {activeDomain.questions.map((qText, idx) => {
                   const isCurrent = idx === currentQuestionIdx;
@@ -171,7 +196,8 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
                         transform: isCurrent ? "scale(1)" : "scale(0.92)",
                       }}
                       transition={SLIDE_TRANSITION}
-                      className="relative rounded-[22px] h-18.75 w-full md:w-120 md:rounded-[28px] text-[13px] md:text-[15px] leading-[1.35] font-medium text-left shrink-0 overflow-hidden bg-[#68270B]/20 text-white/80"
+                      style={{ height: cardHeight }}
+                      className="relative rounded-[22px] w-full md:w-[480px] md:rounded-[28px] text-[13px] md:text-[15px] leading-[1.35] font-medium text-left shrink-0 overflow-hidden bg-[#68270B]/20 text-white/80"
                     >
                       <span className="absolute inset-0 flex items-center px-5 md:px-6">
                         {label}
@@ -198,7 +224,7 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
       <div
         ref={bottomSpacerRef}
         aria-hidden="true"
-        className="flex-1 md:flex-none min-h-6 md:min-h-7"
+        className="flex-1 md:flex-none min-h-[24px] md:min-h-[28px]"
       />
 
       {/* Rating controls: always visible and the same size. 60px circles
@@ -214,7 +240,7 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
               <button
                 key={num}
                 onClick={() => onRatingSelect(num)}
-                className={`flex-1 min-w-0 max-w-15 aspect-square rounded-full flex items-center justify-center font-semibold text-[17px] transition-[background-color,color,transform] duration-150 cursor-pointer ${
+                className={`flex-1 min-w-0 max-w-[60px] aspect-square rounded-full flex items-center justify-center font-semibold text-[17px] transition-[background-color,color,transform] duration-150 cursor-pointer ${
                   isSelected
                     ? "bg-[#68270B] text-white scale-105"
                     : "bg-white text-[#68270B] hover:bg-white/90"
