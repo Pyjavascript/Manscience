@@ -10,7 +10,7 @@ import show from "../assets/form/show.svg";
 
 import or from "../assets/form/or.svg";
 
-const DEFAULT_REDIRECT_PATH = "/profile";
+const DEFAULT_REDIRECT_PATH = "/ai";
 
 // Same-site path from ?redirect=, so the link can't send users off-site
 const toSafeRedirectPath = (value) => {
@@ -27,7 +27,7 @@ const toSafeRedirectPath = (value) => {
 export default function Auth() {
   const [searchParams] = useSearchParams();
   // Where to land after signing in: the page that sent the user here
-  // (e.g. Manasi AI), otherwise the profile
+  // (e.g. Manasi AI), otherwise Manasi AI itself
   const redirectUrl = `${window.location.origin}${toSafeRedirectPath(
     searchParams.get("redirect"),
   )}`;
@@ -322,7 +322,7 @@ export default function Auth() {
                     }}
                     className="text-[14px] md:text-[16px] font-normal text-[#2e1004] hover:underline cursor-pointer"
                   >
-                    {authMode === "login" ? "? Create a free account" : "Login"}
+                    {authMode === "login" ? "Create a free account" : "Login"}
                   </button>
                 </p>
               </div>

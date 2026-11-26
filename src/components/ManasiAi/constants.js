@@ -8,6 +8,9 @@ export const ROADMAP_SUBMIT_ENDPOINT = `${MANASI_API_BASE}/roadmap/submit`;
 export const MAPPED_THERAPIES_ENDPOINT = `${MANASI_API_BASE}/roadmap/mapped-therapies`;
 export const FEEDBACK_ENDPOINT = `${MANASI_API_BASE}/chat/feedback`;
 
+// Country preselected in the roadmap details form
+export const DEFAULT_COUNTRY = "India";
+
 // Backend limit for the thumbs-down text (FEEDBACK_MAX_SUGGESTION_CHARS)
 export const FEEDBACK_MAX_CHARS = 1000;
 

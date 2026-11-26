@@ -15,7 +15,6 @@ import {
   getAuthUrl,
   resolveAiReturnPath,
   historyToMessages,
-  PROFILE_PAGE_PATH,
 } from "../components/ManasiAi/helpers";
 import {
   postChatMessage,
@@ -29,6 +28,7 @@ import ChatComposer from "../components/ManasiAi/ChatComposer";
 import PageBackground from "../components/ManasiAi/PageBackground";
 import HistoryPanel from "../components/ManasiAi/HistoryPanel";
 import TutorialVideoModal from "../components/ManasiAi/TutorialVideoModal";
+import ProfileInfoModal from "../components/ProfileInfoModal";
 
 const CHAT_FADE_MASK =
   "linear-gradient(to bottom, transparent 0%, black 8%, black 88%, transparent 100%)";
@@ -60,6 +60,7 @@ const ManasiAi = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const scrollRef = useRef(null);
   // Session a pending reply belongs to, so switching chats mid-reply
@@ -142,9 +143,12 @@ const ManasiAi = () => {
     closeHistoryOnSmallScreens();
   };
 
-  const openProfile = () => {
-    window.location.href = `${window.location.origin}${PROFILE_PAGE_PATH}`;
-  };
+  const openProfile = () => setIsProfileOpen(true);
+  const closeProfile = useStableCallback(() => setIsProfileOpen(false));
+
+  // Keep the sidebar's name and avatar in step with profile edits
+  const handleProfileUpdated = ({ name, avatarUrl }) =>
+    setUserProfile((prev) => ({ ...prev, name, avatarUrl }));
 
   // The auth listener above sends the user to the login page once signed out
   const logout = () => supabase.auth.signOut();
@@ -386,6 +390,14 @@ const ManasiAi = () => {
         isOpen={isTutorialOpen}
         onClose={closeTutorial}
       />
+
+      {isProfileOpen && (
+        <ProfileInfoModal
+          onClose={closeProfile}
+          onLogout={logout}
+          onProfileUpdated={handleProfileUpdated}
+        />
+      )}
     </div>
   );
 };

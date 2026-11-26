@@ -66,9 +66,10 @@ export default function Subscription() {
       id: "starter",
       title: "Single Roadmap",
       subtitle:
-        "A personalized roadmap for your therapy journey. No subscription needed.",
+        "A personalized roadmap for your therapy journey.",
       price: "₹1,499",
-      period: "/mo",
+      period: "",
+      roadmapText: "One personalized Manasi roadmap",
       buttonText: "Get Involved",
       image:
         "https://res.cloudinary.com/dspwbbjyt/image/upload/v1785938548/Image_jyjcj0.png",
@@ -80,17 +81,19 @@ export default function Subscription() {
         "Consistent guidance and structured support designed for families.",
       price: "₹3,999",
       period: "/quarter",
+      roadmapText: "+1 personalized Manasi roadmap",
       buttonText: "Get Involved",
       image:
-        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1789202513/Group_1261154510_ifnyz6.png",
+        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1795687013/Group_1261154510_1_f7ljrg.png",
     },
     yearly: {
       id: "yearly",
       title: "Yearly Care",
       subtitle:
-        "Long-term mental care with full access to all therapy resources.",
+        "A year of guidance, resources and roadmap updates",
       price: "₹11,999",
       period: "/year",
+      roadmapText: "+2 personalized Manasi roadmaps",
       buttonText: "Get Involved",
       image:
         "https://res.cloudinary.com/dspwbbjyt/image/upload/v1789202513/Group_1261154509_r7pqmu.png",
@@ -113,33 +116,30 @@ export default function Subscription() {
         <button
           type="button"
           onClick={() => setSelectedTab("starter")}
-          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${
-            selectedTab === "starter"
-              ? "bg-white text-[#B77145] shadow-sm"
-              : "text-white hover:text-white/80"
-          }`}
+          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${selectedTab === "starter"
+            ? "bg-white text-[#B77145] shadow-sm"
+            : "text-white hover:text-white/80"
+            }`}
         >
           Starter
         </button>
         <button
           type="button"
           onClick={() => setSelectedTab("quarterly")}
-          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${
-            selectedTab === "quarterly"
-              ? "bg-white text-[#B77145] shadow-sm"
-              : "text-white hover:text-white/80"
-          }`}
+          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${selectedTab === "quarterly"
+            ? "bg-white text-[#B77145] shadow-sm"
+            : "text-white hover:text-white/80"
+            }`}
         >
           Quarterly
         </button>
         <button
           type="button"
           onClick={() => setSelectedTab("yearly")}
-          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19x] w-[80px] md:w-[80px] ${
-            selectedTab === "yearly"
-              ? "bg-white text-[#B77145] shadow-sm"
-              : "text-white hover:text-white/80"
-          }`}
+          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19x] w-[80px] md:w-[80px] ${selectedTab === "yearly"
+            ? "bg-white text-[#B77145] shadow-sm"
+            : "text-white hover:text-white/80"
+            }`}
         >
           Yearly
         </button>
@@ -151,7 +151,7 @@ export default function Subscription() {
         <h2 className="text-[28px] md:text-[32px] lg:text-[38px] font-medium mb-3 text-[#B77145] leading-[120%] tracking-[-4%]">
           {currentPlan.title}
         </h2>
-        <p className="text-[13px] md:text-[16px] text-[#B77145]/80 max-w-[280px] md:max-w-[340px] leading-relaxed min-h-[3.25em] line-clamp-2 mb-6.5 font-normal tracking-[-2%]">
+        <p className="text-[13px] md:text-[16px] text-[#B77145]/80 max-w-[220px] md:max-w-[280px] leading-relaxed min-h-[3.25em] line-clamp-2 mb-6.5 font-normal tracking-[-2%]">
           {currentPlan.subtitle}
         </p>
 
@@ -205,7 +205,13 @@ export default function Subscription() {
                 alt="tick"
                 className="md:w-4 md:h-4 h-2.5 w-2.5"
               />
-              <span>One personalized Manasi roadmap</span>
+              <span>
+                {currentPlan.id === "starter"
+                  ? "One personalized Manasi roadmap"
+                  : currentPlan.id === "quarterly"
+                    ? "+1 personalized Manasi roadmap"
+                    : "+2 personalized Manasi roadmaps"}
+              </span>
             </li>
             <li className="flex items-center gap-[2.5px]">
               <img
@@ -213,7 +219,14 @@ export default function Subscription() {
                 alt="tick"
                 className="md:w-4 md:h-4 h-2.5 w-2.5 "
               />
-              <span>7-day full platform access</span>
+              <span>
+                {currentPlan.id === "starter"
+                  ? "7-day full platform access"
+                  : currentPlan.id === "quarterly"
+                    ? "Full platform access"
+                    : "Full platform access"}
+              </span>
+
             </li>
             <li className="flex items-center gap-[2.5px]">
               <img
@@ -237,7 +250,9 @@ export default function Subscription() {
                 alt="tick"
                 className="md:w-4 md:h-4 h-2.5 w-2.5 "
               />
-              <span>Save & revisit your roadmap</span>
+              {currentPlan.id === "starter"
+                ? "One time roadmap only"
+                : "Updatable roadmaps"}
             </li>
           </ul>
         </div>

@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Auth from "./pages/Auth";
-import Profile from "./pages/Profile";
 import Subscription from "./pages/Subscription";
 import Success from "./pages/Success";
 import Cancel from "./pages/Cancel";
@@ -19,6 +18,7 @@ import TermsAndConditions from "./components/TermsAndConditions";
 import PractitionerDashboard from "./pages/PractitionerDashboard";
 import ResetPassword from "./pages/ResetPassword";
 import CircleTimeline from "./components/CircleTimeline";
+import Contact from "./pages/Contact";
 
 export default function App() {
   return (
@@ -26,7 +26,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<SubscriptionInput />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="/subscription" element={<Subscription />} />
         <Route
           path="*"
@@ -47,6 +46,7 @@ export default function App() {
         <Route path="/practitioner-dashboard" element={<PractitionerDashboard/>}/>
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/timeline" element={<CircleTimeline />} />
+        <Route path="/contact" element={<Contact />} />
 
       </Routes>
     </BrowserRouter>

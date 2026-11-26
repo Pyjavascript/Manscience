@@ -6,7 +6,7 @@ const Success = () => {
       <div className="bg-white rounded-sm shadow p-6 flex flex-col gap-4 w-full max-w-md text-center">
         <h1 className="text-2xl font-bold text-green-600">Payment Successful!</h1> 
         <p className="text-gray-700">Thank you for your purchase. Your subscription is now active.</p>
-        <a href="/profile" className="mt-4 inline-block bg-green-600 text-white py-2 px-4 rounded-lg">Go to Profile</a>
+        <a href="/ai" className="mt-4 inline-block bg-green-600 text-white py-2 px-4 rounded-lg">Go to Manasi AI</a>
       </div>
     </main>
   )

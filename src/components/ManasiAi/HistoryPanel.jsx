@@ -31,7 +31,7 @@ const UserFooter = ({ user, isSignedIn, onOpenProfile, onLogout }) => (
   <div className="shrink-0 flex items-center gap-[4px] p-[8px] rounded-[16px] bg-[#FFFCF7] border border-[#68270B]/10">
     <button
       onClick={onOpenProfile}
-      title="Go to profile"
+      title="View profile"
       className="flex-1 min-w-0 flex items-center gap-[10px] p-[2px] rounded-[10px] text-left hover:bg-[#68270B]/5 transition-colors cursor-pointer"
     >
       <img

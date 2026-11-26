@@ -6,6 +6,7 @@ import {
   ROADMAP_SUBMIT_ENDPOINT,
   MAPPED_THERAPIES_ENDPOINT,
   FEEDBACK_ENDPOINT,
+  DEFAULT_COUNTRY,
 } from "./constants.js";
 import { ROADMAP_RESULTS_TABLE } from "./helpers.js";
 
@@ -109,7 +110,7 @@ export const fetchProfileDetails = async (authUser) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select("name, gender, age, location")
+      .select("name, gender, age, country, state, phone")
       .eq("id", authUser.id)
       .maybeSingle();
     if (error) throw error;
@@ -120,21 +121,27 @@ export const fetchProfileDetails = async (authUser) => {
 
   const meta = authUser.user_metadata || {};
   const name = row?.name || meta.name || meta.full_name || "";
-  if (!name && !row?.gender && !row?.age && !row?.location) return null;
+  if (!name && !row?.gender && !row?.age && !row?.state && !row?.phone)
+    return null;
 
   return {
     name,
     gender: row?.gender || "",
     age: row?.age != null ? String(row.age) : "",
-    location: row?.location || "",
+    country: row?.country || DEFAULT_COUNTRY,
+    state: row?.state || "",
+    phone: row?.phone || "",
   };
 };
 
 // Saves the roadmap details form to the user's profile
-export const saveProfileDetails = async (userId, { name, gender, age, location }) => {
+export const saveProfileDetails = async (
+  userId,
+  { name, gender, age, country, state, phone },
+) => {
   const { error } = await supabase
     .from("users")
-    .update({ name, gender, age: Number(age), location })
+    .update({ name, gender, age: Number(age), country, state, phone })
     .eq("id", userId);
   if (error) throw error;
 

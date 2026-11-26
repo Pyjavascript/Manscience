@@ -45,7 +45,7 @@ export default function ResetPassword() {
     } else {
       alert("Password updated successfully!");
       // navigate("/profile"); // Redirect to profile or login
-      window.location.href = `${window.location.origin}/profile`;
+      window.location.href = `${window.location.origin}/ai`;
     }
   }
 

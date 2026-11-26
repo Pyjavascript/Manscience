@@ -252,7 +252,7 @@ const PractitionerDashboard = () => {
               recipientEmail: patientEmail,
               subject: `New Request from Dr. ${practitionerProfile.name}: ${querySubject.trim()}`,
               message: `Hello,\n\nYour practitioner Dr. ${practitionerProfile.name} has sent you a new questionnaire regarding: "${querySubject.trim()}".\n\nPlease log in to review and submit your answers.`,
-              actionLink: `${window.location.origin}/profile`,
+              actionLink: `${window.location.origin}/ai`,
               buttonText: "Answer Questions in Profile",
             },
           });

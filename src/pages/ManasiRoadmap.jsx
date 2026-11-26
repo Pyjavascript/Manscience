@@ -78,12 +78,26 @@ const ManasiRoadmap = () => {
       }
       setCurrentUserId(uid);
 
-      // Prefill the details form from the profile once, before showing it.
+      // Load saved details once, before showing anything. If they're all
+      // filled in, skip the form; otherwise use them to prefill it.
       // Not awaited: awaiting Supabase calls inside this callback can deadlock
       if (!detailsRequested.current) {
         detailsRequested.current = true;
         fetchProfileDetails(session.user)
-          .then((saved) => saved && setProfileDetails((prev) => prev ?? saved))
+          .then((saved) => {
+            if (!saved) return;
+            setProfileDetails((prev) => prev ?? saved);
+            const isComplete =
+              saved.name &&
+              saved.gender &&
+              saved.age &&
+              saved.country &&
+              saved.state &&
+              saved.phone;
+            if (isComplete) {
+              setPhase((prev) => (prev === "details" ? "screening" : prev));
+            }
+          })
           .finally(() => setAuthLoading(false));
       }
     });

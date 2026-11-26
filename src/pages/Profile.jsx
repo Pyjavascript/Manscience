@@ -17,6 +17,7 @@ import {
 } from "../components/ManasiAi/helpers";
 import { fetchChatHistory } from "../components/ManasiAi/api";
 import ProfileHistoryModal from "../components/ProfileHistoryModal";
+import ProfileInfoModal from "../components/ProfileInfoModal";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -66,6 +67,7 @@ export default function Profile() {
   const [roadmapTimeline, setRoadmapTimeline] = useState([]);
   const [assignedPractitioners, setAssignedPractitioners] = useState([]);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -160,7 +162,8 @@ export default function Profile() {
       isShareModalOpen ||
       isPasswordModalOpen ||
       isEditModalOpen ||
-      isHistoryModalOpen;
+      isHistoryModalOpen ||
+      isInfoModalOpen;
 
     if (isAnyModalOpen) {
       document.body.style.overflow = "hidden";
@@ -170,7 +173,13 @@ export default function Profile() {
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isShareModalOpen, isPasswordModalOpen, isEditModalOpen, isHistoryModalOpen]);
+  }, [
+    isShareModalOpen,
+    isPasswordModalOpen,
+    isEditModalOpen,
+    isHistoryModalOpen,
+    isInfoModalOpen,
+  ]);
 
   // --- ACCOUNT MANAGEMENT ACTIONS ---
 
@@ -689,7 +698,20 @@ export default function Profile() {
             </button>
           </div>
 
-        
+          {/* My Details: read-only pop-up with everything we hold about the user */}
+          <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
+            <span className="text-[16px] md:text-[24px] font-medium text-[#B77145] leading-[120%] tracking-[-3%]">
+              My Details
+            </span>
+            <button
+              onClick={() => setIsInfoModalOpen(true)}
+              className="bg-[#B77145] hover:opacity-90 text-white text-[14px] md:text-[16px] font-semibold rounded-[30px] md:rounded-[40px] transition md:h-20 h-15  w-27.5 md:w-[160px] cursor-pointer"
+            >
+              View
+            </button>
+          </div>
+
+
 
           {/* Log Out */}
           <div className="w-full bg-[#FAF4E8] rounded-[20px] md:rounded-[40px] flex items-center justify-between px-5 md:px-10 h-20 md:h-35">
@@ -729,6 +751,14 @@ export default function Profile() {
           timeline={roadmapTimeline}
           roadmap={roadmap}
           practitioners={assignedPractitioners}
+        />
+      )}
+
+      {isInfoModalOpen && (
+        <ProfileInfoModal
+          onClose={() => setIsInfoModalOpen(false)}
+          onLogout={logout}
+          onProfileUpdated={loadProfile}
         />
       )}
 
