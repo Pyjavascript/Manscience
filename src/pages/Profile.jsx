@@ -545,16 +545,16 @@ export default function Profile() {
               <button
                 className="flex items-center justify-end  bg-white/30 hover:bg-white/30 backdrop-blur-md rounded-full transition cursor-pointer min-w-[105px] lg:min-w-[180px] h-[45px] md:h-[60px] lg:h-[70px] px-[12px] gap-[15px] md:gap-[18px]"
                 onClick={() => {
-                  window.location.href = `${window.location.origin}/subscription`;
+                  window.location.href = `${window.location.origin}/ai`;
                 }}
               >
                 <span
                   className="text-white text-[10px] md:text-[12px] lg:text-[15px] font-semibold lg:pl-[15px]"
                   onClick={() => {
-                    window.location.href = `${window.location.origin}/subscription`;
+                    window.location.href = `${window.location.origin}/ai`;
                   }}
                 >
-                  Subscribe
+                  Ask a question
                 </span>
                 <div
                   className="bg-white text-[#B5673C] w-[30px] h-[30px] lg:w-[50px] lg:h-[50px] rounded-full flex items-center justify-center"
@@ -579,7 +579,7 @@ export default function Profile() {
                 Start my Roadmap
               </h3>
               <p className="text-[10px] md:text-[16px] lg:text-[18px] font-medium text-[#5F2305] leading-[130%] max-w-[160px] md:max-w-[280px]">
-                Take the next step in your journey with 20% off your order.
+                Answer a few questions and get your personalised roadmap.
               </p>
             </div>
 

@@ -25,7 +25,7 @@ const ChatComposer = ({
         <button
           onClick={() => onSend()}
           disabled={sendDisabled}
-          className="w-[44px] md:w-[48px] md:h-[45px] h-[38px] shrink-0 rounded-full bg-[#B77145] hover:bg-amber-800 disabled:bg-amber-700/40 flex items-center justify-center text-white transition"
+          className="w-[44px] md:w-[48px] md:h-[48px] h-[44px] shrink-0 rounded-full bg-[#B77145] hover:bg-amber-800 disabled:bg-amber-700/40 flex items-center justify-center text-white transition"
         >
           <img src={inparrow} alt="send" className="-rotate-45 h-[12px]" />
         </button>

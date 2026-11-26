@@ -32,7 +32,7 @@ const ArrowRight = () => (
 );
 
 // First step of the roadmap: basic details about the user.
-// UI only for now: the details are handed to onSubmit and not saved anywhere.
+// The parent saves the details to the user's profile.
 const ProfileDetailsForm = ({ initialDetails, onSubmit }) => {
   // Prefilled when the user comes back from the first question
   const [details, setDetails] = useState(initialDetails ?? INITIAL_DETAILS);

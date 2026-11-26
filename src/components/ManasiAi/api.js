@@ -102,6 +102,46 @@ export const fetchUserProfile = async (authUser) => {
   };
 };
 
+// Details saved from an earlier roadmap, used to prefill the details form.
+// Falls back to the auth name; returns null if nothing is known.
+export const fetchProfileDetails = async (authUser) => {
+  let row = null;
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("name, gender, age, location")
+      .eq("id", authUser.id)
+      .maybeSingle();
+    if (error) throw error;
+    row = data;
+  } catch (e) {
+    console.error("Profile details lookup failure:", e);
+  }
+
+  const meta = authUser.user_metadata || {};
+  const name = row?.name || meta.name || meta.full_name || "";
+  if (!name && !row?.gender && !row?.age && !row?.location) return null;
+
+  return {
+    name,
+    gender: row?.gender || "",
+    age: row?.age != null ? String(row.age) : "",
+    location: row?.location || "",
+  };
+};
+
+// Saves the roadmap details form to the user's profile
+export const saveProfileDetails = async (userId, { name, gender, age, location }) => {
+  const { error } = await supabase
+    .from("users")
+    .update({ name, gender, age: Number(age), location })
+    .eq("id", userId);
+  if (error) throw error;
+
+  // Keep the auth name in sync, as the profile page reads it from there
+  await supabase.auth.updateUser({ data: { name, full_name: name } });
+};
+
 // Submits the roadmap, fetches mapped therapies and stores them in Supabase.
 // Throws if any step fails.
 export const submitRoadmap = async (payload, userId) => {

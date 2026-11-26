@@ -173,8 +173,10 @@ export default function Auth() {
       {/* Outer White Card */}
       <section className="bg-white min-h-[600px] py-[20px] px-[15px] md:w-[890px] md:h-[600px] rounded-[30px] md:rounded-[40px] flex flex-col md:flex-row justify-between items-center p-[12px] md:p-[15px] gap-3 md:gap-0">
         {/* Mobile Top Branding / Desktop Left Side Branding */}
-        <div className="w-full md:flex-1 h-auto md:h-full flex flex-col justify-between p-2 md:p-8">
-          <div>
+        <div className="w-full md:flex-1 h-auto md:h-full flex flex-col justify-between p-2 md:p-8 cursor-pointer">
+          <div onClick={() => {
+             window.location.href = `${window.location.origin}/`
+          }}>
             <img src={Logo} alt="Manascience" className="h-6 md:h-auto" />
           </div>
           <div className="hidden md:flex flex-col gap-[20px]">
@@ -310,7 +312,7 @@ export default function Auth() {
                 </h1>
                 <p className="text-[14px] md:text-[16px] font-normal text-[#68270B]">
                   {authMode === "login"
-                    ? "Need an account. "
+                    ? "New here? "
                     : "Already have an account? "}
                   <button
                     type="button"
@@ -320,7 +322,7 @@ export default function Auth() {
                     }}
                     className="text-[14px] md:text-[16px] font-normal text-[#2e1004] hover:underline cursor-pointer"
                   >
-                    {authMode === "login" ? "Sign up" : "Login"}
+                    {authMode === "login" ? "? Create a free account" : "Login"}
                   </button>
                 </p>
               </div>
@@ -408,7 +410,7 @@ export default function Auth() {
                         }}
                         className="text-[14px] font-normal text-[#68270B] mt-[4px] cursor-pointer hover:underline block text-left"
                       >
-                        Forget Password
+                        Forgot password?
                       </button>
                     ) : (
                       <p className="text-[14px] font-normal text-[#68270B] mt-[4px]">

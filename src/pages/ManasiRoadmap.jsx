@@ -16,7 +16,12 @@ import {
   resolveRoadmapReturnPath,
   getAuthUrl,
 } from "../components/ManasiAi/helpers";
-import { saveChatTurn, submitRoadmap } from "../components/ManasiAi/api";
+import {
+  saveChatTurn,
+  submitRoadmap,
+  fetchProfileDetails,
+  saveProfileDetails,
+} from "../components/ManasiAi/api";
 import ProfileDetailsForm from "../components/ManasiAi/ProfileDetailsForm";
 import ScreeningQuestion from "../components/ManasiAi/ScreeningQuestion";
 import ScreeningComplete from "../components/ManasiAi/ScreeningComplete";
@@ -40,9 +45,10 @@ const ManasiRoadmap = () => {
   // details -> screening -> intro -> scoring -> completed
   const [phase, setPhase] = useState("details");
 
-  // Basic details from the first form. UI only for now: kept in state,
-  // not sent to the backend yet
+  // Basic details from the first form, saved to the users table and
+  // prefilled from it on the next roadmap
   const [profileDetails, setProfileDetails] = useState(null);
+  const detailsRequested = useRef(false);
 
   // Screening questions
   const [screeningStep, setScreeningStep] = useState(0);
@@ -71,7 +77,15 @@ const ManasiRoadmap = () => {
         return;
       }
       setCurrentUserId(uid);
-      setAuthLoading(false);
+
+      // Prefill the details form from the profile once, before showing it.
+      // Not awaited: awaiting Supabase calls inside this callback can deadlock
+      if (!detailsRequested.current) {
+        detailsRequested.current = true;
+        fetchProfileDetails(session.user)
+          .then((saved) => saved && setProfileDetails((prev) => prev ?? saved))
+          .finally(() => setAuthLoading(false));
+      }
     });
 
     return () => {
@@ -231,6 +245,10 @@ const ManasiRoadmap = () => {
           onSubmit={(details) => {
             setProfileDetails(details);
             setPhase("screening");
+            // Saved in the background so the roadmap doesn't wait on it
+            saveProfileDetails(currentUserId, details).catch((err) =>
+              console.error("Failed to save profile details:", err),
+            );
           }}
         />
       );
