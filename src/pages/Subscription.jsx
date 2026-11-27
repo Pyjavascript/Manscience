@@ -1,28 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
-import tick from "../assets/tick.svg";
+import PlanPicker from "../components/PlanPicker";
 
 export default function Subscription() {
   const [subscription, setSubscription] = useState(null);
-  const [selectedTab, setSelectedTab] = useState("starter");
   const [loading, setLoading] = useState(true);
-
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const popupRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (popupRef.current && !popupRef.current.contains(event.target)) {
-        setIsPopupOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-    };
-  }, []);
 
   useEffect(() => {
     loadSubscription();
@@ -48,10 +30,6 @@ export default function Subscription() {
     setLoading(false);
   }
 
-  function buyPlan() {
-    window.location.href = "https://www.manascience.in/coming-soon";
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center font-mono bg-[#FAF4E8] text-[#B77145]">
@@ -59,49 +37,6 @@ export default function Subscription() {
       </div>
     );
   }
-
-  // Configurations for each tab view based on the Figma UI
-  const plansData = {
-    starter: {
-      id: "starter",
-      title: "Single Roadmap",
-      subtitle:
-        "A personalized roadmap for your therapy journey.",
-      price: "₹1,499",
-      period: "",
-      roadmapText: "One personalized Manasi roadmap",
-      buttonText: "Get Involved",
-      image:
-        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1785938548/Image_jyjcj0.png",
-    },
-    quarterly: {
-      id: "quarterly",
-      title: "Quarterly Care",
-      subtitle:
-        "Consistent guidance and structured support designed for families.",
-      price: "₹3,999",
-      period: "/quarter",
-      roadmapText: "+1 personalized Manasi roadmap",
-      buttonText: "Get Involved",
-      image:
-        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1795687013/Group_1261154510_1_f7ljrg.png",
-    },
-    yearly: {
-      id: "yearly",
-      title: "Yearly Care",
-      subtitle:
-        "A year of guidance, resources and roadmap updates",
-      price: "₹11,999",
-      period: "/year",
-      roadmapText: "+2 personalized Manasi roadmaps",
-      buttonText: "Get Involved",
-      image:
-        "https://res.cloudinary.com/dspwbbjyt/image/upload/v1789202513/Group_1261154509_r7pqmu.png",
-    },
-  };
-
-  const currentPlan = plansData[selectedTab];
-  const isCurrentlyActive = subscription?.plan === currentPlan.id;
 
   return (
     <main className="min-h-screen py-10 px-4 flex flex-col items-center justify-start text-[#B77145] font-sans selection:bg-[#B77145]/20 manrope">
@@ -112,175 +47,7 @@ export default function Subscription() {
         </h1>
       </div>
 
-      <div className="bg-[#B77145] h-[51px] md:h-[67px] p-[5px] rounded-full mb-10 flex items-center justify-between w-auto gap-[2px] md:gap-[5px]">
-        <button
-          type="button"
-          onClick={() => setSelectedTab("starter")}
-          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${selectedTab === "starter"
-            ? "bg-white text-[#B77145] shadow-sm"
-            : "text-white hover:text-white/80"
-            }`}
-        >
-          Starter
-        </button>
-        <button
-          type="button"
-          onClick={() => setSelectedTab("quarterly")}
-          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19px]  w-[80px]  md:w-[80px] ${selectedTab === "quarterly"
-            ? "bg-white text-[#B77145] shadow-sm"
-            : "text-white hover:text-white/80"
-            }`}
-        >
-          Quarterly
-        </button>
-        <button
-          type="button"
-          onClick={() => setSelectedTab("yearly")}
-          className={`cursor-pointer flex-1 h-full rounded-full text-sm sm:text-base font-medium text-[14px] transition-all duration-300 flex items-center justify-center leading-[115%] tracking-[-3%] py-[15px] px-[19px] md:py-5.75 md:px-[19x] w-[80px] md:w-[80px] ${selectedTab === "yearly"
-            ? "bg-white text-[#B77145] shadow-sm"
-            : "text-white hover:text-white/80"
-            }`}
-        >
-          Yearly
-        </button>
-      </div>
-
-      {/* Main Card Container */}
-      <div className="md:h-[480px] lg:h-[540px] h-auto w-full max-w-82.5  md:max-w-[420px] lg:max-w-[440px] lg:max-w-125 bg-[#FAF4E8] rounded-[45px] md:rounded-[60px] px-[15px] py-[15px] pt-[25px] md:pb-[25px] md:pt-[40px] md:px-[25px] flex flex-col items-center text-center shadow-xs manrope mb-7.5">
-        {/* Dynamic Card Header Text */}
-        <h2 className="text-[28px] md:text-[32px] lg:text-[38px] font-medium mb-3 text-[#B77145] leading-[120%] tracking-[-4%]">
-          {currentPlan.title}
-        </h2>
-        <p className="text-[13px] md:text-[16px] text-[#B77145]/80 max-w-[220px] md:max-w-[280px] leading-relaxed min-h-[3.25em] line-clamp-2 mb-6.5 font-normal tracking-[-2%]">
-          {currentPlan.subtitle}
-        </p>
-
-        <div className="text-[20px] md:text-[24px] font-bold mb-6 text-[#B77145]">
-          {currentPlan.price}
-          <span className="text-lg md:text-[16px] font-semibold mb-6 text-[#B77145]">
-            {currentPlan.period}
-          </span>
-        </div>
-
-        {/* Featured Image Block with Dynamic Button overlay */}
-        <div className="relative w-full aspect-4/3 rounded-[30px] md:rounded-[40px] overflow-hidden group">
-          <img
-            src={currentPlan.image}
-            alt={currentPlan.title}
-            className="w-full h-full object-cover transition-transform duration-500"
-          />
-
-          {/* Floating Action Button */}
-          <div className="absolute inset-0 flex items-end justify-center p-6 bg-linear-to-t from-black/20 via-transparent to-transparent">
-            <button
-              onClick={buyPlan}
-              disabled={isCurrentlyActive}
-              className="cursor-pointer disabled:cursor-default bg-[#b77145]  text-white w-[160px] md:w-[160px] h-[60px] md:h-[70px] rounded-full text-sm  font-semibold transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02]"
-            >
-              {isCurrentlyActive ? "Current Plan" : currentPlan.buttonText}
-            </button>
-          </div>
-        </div>
-      </div>
-      <div ref={popupRef} className="relative group inline-block mb-5 z-30">
-        {/* Know More Button */}
-        <button
-          type="button"
-          onClick={() => setIsPopupOpen((prev) => !prev)}
-          className="cursor-pointer text-sm md:text-[16px] font-bold text-[#68270B] leading-[120%] tracking-[-2%] border-b border-transparent group-hover:border-solid group-hover:border-[#68270B] transition-all focus:outline-none"
-        >
-          Know more
-        </button>
-
-        {/* Popup Bubble */}
-        <div className={`custom-popup ${isPopupOpen ? "is-open" : ""}`}>
-          <h4 className="font-semibold text-[14px] md:text-[16px] mb-3 md:mb-2 lg:mb-3.75 leading-[130%] tracking-[0%]">
-            Whats included
-          </h4>
-
-          <ul className="flex flex-col gap-1.25 font-normal text-[12px] lg:text-[16px]">
-            <li className="flex items-center gap-[2.5px]">
-              <img
-                src={tick}
-                alt="tick"
-                className="md:w-4 md:h-4 h-2.5 w-2.5"
-              />
-              <span>
-                {currentPlan.id === "starter"
-                  ? "One personalized Manasi roadmap"
-                  : currentPlan.id === "quarterly"
-                    ? "+1 personalized Manasi roadmap"
-                    : "+2 personalized Manasi roadmaps"}
-              </span>
-            </li>
-            <li className="flex items-center gap-[2.5px]">
-              <img
-                src={tick}
-                alt="tick"
-                className="md:w-4 md:h-4 h-2.5 w-2.5 "
-              />
-              <span>
-                {currentPlan.id === "starter"
-                  ? "7-day full platform access"
-                  : currentPlan.id === "quarterly"
-                    ? "Full platform access"
-                    : "Full platform access"}
-              </span>
-
-            </li>
-            <li className="flex items-center gap-[2.5px]">
-              <img
-                src={tick}
-                alt="tick"
-                className="md:w-4 md:h-4 h-2.5 w-2.5 "
-              />
-              <span>Therapy Library & Learning Hub</span>
-            </li>
-            <li className="flex items-center gap-[2.5px]">
-              <img
-                src={tick}
-                alt="tick"
-                className="md:w-4 md:h-4 h-2.5 w-2.5 "
-              />
-              <span>Community access</span>
-            </li>
-            <li className="flex items-center gap-[2.5px]">
-              <img
-                src={tick}
-                alt="tick"
-                className="md:w-4 md:h-4 h-2.5 w-2.5 "
-              />
-              {currentPlan.id === "starter"
-                ? "One time roadmap only"
-                : "Updatable roadmaps"}
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* <div className="flex items-center gap-1.5 mt-4">
-        <span
-          className={`h-2 rounded-full transition-all duration-300 ${
-            selectedTab === "starter"
-              ? "w-5 bg-[#B77145]"
-              : "w-2 bg-[#B77145]/30"
-          }`}
-        />
-        <span
-          className={`h-2 rounded-full transition-all duration-300 ${
-            selectedTab === "quarterly"
-              ? "w-5 bg-[#B77145]"
-              : "w-2 bg-[#B77145]/30"
-          }`}
-        />
-        <span
-          className={`h-2 rounded-full transition-all duration-300 ${
-            selectedTab === "yearly"
-              ? "w-5 bg-[#B77145]"
-              : "w-2 bg-[#B77145]/30"
-          }`}
-        />
-      </div> */}
+      <PlanPicker activePlanId={subscription?.plan} />
     </main>
   );
 }

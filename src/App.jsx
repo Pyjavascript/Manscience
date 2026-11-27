@@ -19,6 +19,7 @@ import PractitionerDashboard from "./pages/PractitionerDashboard";
 import ResetPassword from "./pages/ResetPassword";
 import CircleTimeline from "./components/CircleTimeline";
 import Contact from "./pages/Contact";
+import ContactUs from "./pages/ContactUs";
 
 export default function App() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/timeline" element={<CircleTimeline />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/contact-us" element={<ContactUs />} />
 
       </Routes>
     </BrowserRouter>

@@ -90,7 +90,7 @@ const ProfileDetailsForm = ({ initialDetails, onSubmit }) => {
       {/* Spacing tightens on short screens so the form fits without scrolling */}
       <div className="my-auto flex flex-col items-center gap-8 md:gap-10 [@media(max-height:760px)]:gap-6 w-full max-w-100 mx-auto py-6 [@media(max-height:760px)]:py-2 text-center">
         <div className="flex flex-col items-center gap-8 md:gap-10 [@media(max-height:760px)]:gap-5 w-full">
-          <img src={ai} alt="Manasi" className="h-10 md:h-12.5" />
+          <img src="https://res.cloudinary.com/dspwbbjyt/image/upload/v1795769893/ai-gif_ctnktq.gif" alt="Manasi" className="h-10 md:h-12.5" />
           {/* Mobile and tablet break after "can"; desktop breaks after "we".
               The mobile size scales with the screen so line one never wraps */}
           <h1 className="text-[clamp(18px,5.8vw,24px)] md:text-[24px] lg:text-[27px] font-medium text-white tracking-[-3%] leading-[1.25] lg:leading-[1.2]">
@@ -127,17 +127,21 @@ const ProfileDetailsForm = ({ initialDetails, onSubmit }) => {
               />
             </div>
 
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={120}
-              value={details.age}
-              onChange={update("age")}
-              placeholder="Age"
-              aria-label="Age"
-              className={`${FIELD_CLASS} flex-1 min-w-0 no-spinner`}
-            />
+            {/* Wrapped like the dropdowns: a padded input as the flex item
+                gets its padding added on top of its share, so it came out wider */}
+            <div className="flex-1 min-w-0">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={120}
+                value={details.age}
+                onChange={update("age")}
+                placeholder="Age"
+                aria-label="Age"
+                className={`${FIELD_CLASS} no-spinner`}
+              />
+            </div>
           </div>
 
           <div className="flex gap-1.5">

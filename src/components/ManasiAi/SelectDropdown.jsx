@@ -43,6 +43,41 @@ const CheckIcon = () => (
   </svg>
 );
 
+// Next ancestor, stepping out of a shadow root (Webflow) to its host
+const parentOf = (node) => node.parentElement ?? node.getRootNode().host ?? null;
+
+// Scrolls the containers around `field` just enough that `menu` sits inside
+// the visible area (the visual viewport, which excludes the phone keyboard),
+// without pushing the field itself off the top
+const revealInView = (field, menu) => {
+  if (!field || !menu) return;
+  const MARGIN = 12;
+  const vv = window.visualViewport;
+  const viewTop = vv ? vv.offsetTop : 0;
+  const viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  const fieldTop = field.getBoundingClientRect().top;
+  const menuBottom = menu.getBoundingClientRect().bottom;
+
+  let remaining = Math.min(
+    menuBottom + MARGIN - viewBottom,
+    fieldTop - MARGIN - viewTop,
+  );
+  if (remaining <= 0) return;
+
+  // Inner scroll areas first, then the page
+  for (let node = parentOf(field); node && remaining > 0; node = parentOf(node)) {
+    const isPage = node === document.documentElement;
+    if (!isPage && !/(auto|scroll|overlay)/.test(getComputedStyle(node).overflowY))
+      continue;
+    const room = node.scrollHeight - node.clientHeight - node.scrollTop;
+    const step = Math.min(remaining, room);
+    if (step <= 0) continue;
+    if (isPage) window.scrollBy({ top: step, behavior: "smooth" });
+    else node.scrollBy({ top: step, behavior: "smooth" });
+    remaining -= step;
+  }
+};
+
 // Custom select: a field-style trigger that opens a rounded menu of options.
 // Works with mouse, touch and keyboard (arrows, Enter/Space, Escape, Tab,
 // and typing letters to jump to a matching option).
@@ -65,6 +100,7 @@ const SelectDropdown = ({
   // Text typed in a searchable field; null until the user types
   const [query, setQuery] = useState(null);
   const rootRef = useRef(null);
+  const menuRef = useRef(null);
   const triggerRef = useRef(null);
   const listRef = useRef(null);
   const typeahead = useRef({ text: "", timer: null });
@@ -95,6 +131,26 @@ const SelectDropdown = ({
       list.scrollTop = bottom - list.clientHeight;
   }, [isOpen, activeIdx]);
 
+  // On open, scroll so the field and its menu are fully visible — above
+  // the phone keyboard too. Re-checks while the keyboard slides up.
+  useEffect(() => {
+    if (!isOpen) return;
+    let timer;
+    const reveal = () => revealInView(rootRef.current, menuRef.current);
+    const revealSoon = () => {
+      clearTimeout(timer);
+      timer = setTimeout(reveal, 120);
+    };
+    const frame = requestAnimationFrame(reveal);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", revealSoon);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      vv?.removeEventListener("resize", revealSoon);
+    };
+  }, [isOpen]);
+
   useEffect(() => () => clearTimeout(typeahead.current.timer), []);
 
   // Typing letters jumps to the first option starting with them
@@ -119,10 +175,13 @@ const SelectDropdown = ({
 
   // Close when clicking or tapping anywhere outside the dropdown.
   // Re-subscribes each render so close() sees the latest typed text.
+  // composedPath() because inside Webflow's shadow root e.target is
+  // retargeted to the component's host, so every touch (even scrolling
+  // the list) would otherwise count as "outside".
   useEffect(() => {
     if (!isOpen) return;
     const handlePointerDown = (e) => {
-      if (!rootRef.current?.contains(e.target)) close();
+      if (!e.composedPath().includes(rootRef.current)) close();
     };
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
@@ -303,6 +362,7 @@ const SelectDropdown = ({
           // The white rounded card stays fixed; only the list inside scrolls,
           // so the padding and round corners never scroll away
           <motion.div
+            ref={menuRef}
             initial={{ opacity: 0, transform: "translateY(-6px)" }}
             animate={{ opacity: 1, transform: "translateY(0px)" }}
             exit={{ opacity: 0, transform: "translateY(-6px)" }}

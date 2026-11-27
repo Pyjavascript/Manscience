@@ -1,4 +1,4 @@
-import { getRoadmapUrl } from "./ManasiAi/helpers";
+import { AI_PAGE_PATH, getRoadmapUrl } from "./ManasiAi/helpers";
 
 // Shared type scale so every card in the pop-up reads the same way
 const CARD_CLASS = "bg-white rounded-[24px] md:rounded-[30px] p-5 md:p-7";
@@ -150,7 +150,7 @@ const ProfileHistoryModal = ({
   );
 
   const startRoadmap = () => {
-    window.location.href = `${window.location.origin}${getRoadmapUrl("/profile")}`;
+    window.location.href = `${window.location.origin}${getRoadmapUrl(AI_PAGE_PATH)}`;
   };
   const summary = roadmap?.practitioner_summary?.trim();
 

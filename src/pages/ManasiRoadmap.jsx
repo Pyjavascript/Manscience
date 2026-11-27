@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Logo from "../assets/Ai/Logo.svg";
 
@@ -13,8 +12,8 @@ import {
   generateSessionId,
   classifyScreening,
   buildRoadmapPayload,
-  resolveRoadmapReturnPath,
   getAuthUrl,
+  resolveRoadmapReturnPath,
 } from "../components/ManasiAi/helpers";
 import {
   saveChatTurn,
@@ -34,10 +33,6 @@ const ANSWER_DELAY_MS = 250;
 const PHASE_TRANSITION = { duration: 0.3, ease: "easeOut" };
 
 const ManasiRoadmap = () => {
-  const [searchParams] = useSearchParams();
-  const [returnPath] = useState(() =>
-    resolveRoadmapReturnPath(searchParams.get("from")),
-  );
   const [sessionId] = useState(generateSessionId);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -60,6 +55,13 @@ const ManasiRoadmap = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // Page the user started the roadmap from (?from=, else the referrer),
+  // worked out on load so a login detour doesn't change it
+  const [returnPath] = useState(() =>
+    resolveRoadmapReturnPath(
+      new URLSearchParams(window.location.search).get("from"),
+    ),
+  );
 
   const advanceTimer = useRef(null);
 
@@ -117,45 +119,41 @@ const ManasiRoadmap = () => {
 
   // ---------- Screening ----------
 
-  const handleScreeningSelect = (option) => {
-    // Ignore extra clicks while the previous answer is still transitioning
-    if (selectedOption !== null) return;
+  // Picking an answer only selects it (and can be changed); Next commits it
+  const handleScreeningNext = () => {
+    if (selectedOption === null) return;
 
-    setSelectedOption(option);
-    saveTurnToHistory(QUESTIONNAIRE[screeningStep].question, option);
+    saveTurnToHistory(QUESTIONNAIRE[screeningStep].question, selectedOption);
 
-    const answers = [...screeningAnswers, option];
+    const answers = [...screeningAnswers, selectedOption];
     const nextStep = screeningStep + 1;
 
-    advanceTimer.current = setTimeout(() => {
-      setScreeningAnswers(answers);
-      setSelectedOption(null);
+    setScreeningAnswers(answers);
+    setSelectedOption(null);
 
-      if (nextStep < QUESTIONNAIRE.length) {
-        setScreeningStep(nextStep);
-      } else {
-        setScoringState({
-          ...INITIAL_SCORING_STATE,
-          isActive: true,
-          dataset: classifyScreening(answers),
-        });
-        setPhase("intro");
-      }
-    }, ANSWER_DELAY_MS);
+    if (nextStep < QUESTIONNAIRE.length) {
+      setScreeningStep(nextStep);
+    } else {
+      setScoringState({
+        ...INITIAL_SCORING_STATE,
+        isActive: true,
+        dataset: classifyScreening(answers),
+      });
+      setPhase("intro");
+    }
   };
 
   // First question goes back to the details form, any later one goes to
-  // the previous question and drops the answer given there
+  // the previous question with the answer given there still selected
   const handleScreeningBack = () => {
-    clearTimeout(advanceTimer.current);
-    setSelectedOption(null);
-
     if (screeningStep === 0) {
+      setSelectedOption(null);
       setPhase("details");
       return;
     }
 
     const prevStep = screeningStep - 1;
+    setSelectedOption(screeningAnswers[prevStep] ?? null);
     setScreeningAnswers((prev) => prev.slice(0, prevStep));
     setScreeningStep(prevStep);
   };
@@ -163,6 +161,7 @@ const ManasiRoadmap = () => {
   // From "Screening done" back to the last screening question
   const handleIntroBack = () => {
     const lastStep = QUESTIONNAIRE.length - 1;
+    setSelectedOption(screeningAnswers[lastStep] ?? null);
     setScreeningAnswers((prev) => prev.slice(0, lastStep));
     setScreeningStep(lastStep);
     setScoringState(INITIAL_SCORING_STATE);
@@ -240,8 +239,9 @@ const ManasiRoadmap = () => {
         scoringState.pendingPayload,
         currentUserId || sessionId,
       );
-      // Send the user back to wherever they started the roadmap from
-      window.location.assign(returnPath);
+      // Replace, so Back doesn't land on the finished roadmap.
+      // Stays in "Submitting" until the page changes.
+      window.location.replace(`${window.location.origin}${returnPath}`);
     } catch (err) {
       console.error("Pipeline trace error:", err);
       setSubmitError(ROADMAP_ERROR_MESSAGE);
@@ -273,7 +273,8 @@ const ManasiRoadmap = () => {
         <ScreeningQuestion
           step={screeningStep}
           selectedOption={selectedOption}
-          onSelect={handleScreeningSelect}
+          onSelect={setSelectedOption}
+          onNext={handleScreeningNext}
           onBack={handleScreeningBack}
         />
       );

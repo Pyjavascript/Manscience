@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import logo from "../assets/logo-white.png";
 import toggle from "../assets/toggle.svg";
 import grid from "../assets/community/grid.svg";
@@ -24,114 +24,6 @@ const Community = () => {
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
 
   const [showAllGridCards, setShowAllGridCards] = useState(false);
-
-  // Static Mock Data for the Card Elements
-  const [deckData, setDeckData] = useState([
-    {
-      id: 1,
-      tag: "Arrowsmith Program",
-      title: "Improved reading skills in 8 months",
-      desc: '"For the first time, my son wanted to read on his own. After years of struggling with books and avoiding reading, he began picking them up voluntarily. Watching him read with confidence and curiosity was a milestone our family never expected ..."',
-      author: "Sarah M.",
-      time: "2 mo. ago",
-      bgClass: "bg-[#fff] text-[#4a3e3d]",
-      tagClass: "border-[#B77145] text-[#B77145] text-white",
-      titleClass: "text-[#B77145]",
-      descClass: "text-[#68270b]",
-      authorClass: "text-[#5c5251]",
-    },
-    {
-      id: 2,
-      tag: "Language Mastery",
-      title: "Building Confidence Daily",
-      desc: '"Watching him read with confidence and curiosity was a milestone our family never expected. The layout process completely transformed his mindset."',
-      author: "David K.",
-      time: "1 mo. ago",
-      bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
-      tagClass: "border-[#B77145] text-[#B77145] text-white",
-      titleClass: "text-[#B77145]",
-      descClass: "text-[#68270b]",
-      authorClass: "text-[#5c5251]",
-    },
-    {
-      id: 3,
-      tag: "Cognitive Growth",
-      title: "A Whole New Horizon",
-      desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
-      author: "Elena R.",
-      time: "3 wk. ago",
-      bgClass: "bg-[#B77145] text-white",
-      tagClass: "border-none bg-[#fff] text-[#B77145]",
-      authorClass: "text-[#5c5251]",
-      titleClass: "text-white",
-      descClass: "text-[#f7f3f0]",
-    },
-    {
-      id: 4,
-      tag: "Arrowsmith Program",
-      title: "Improved reading skills in 8 months",
-      desc: '"For the first time, my son wanted to read on his own. After years of struggling with books and avoiding reading, he began picking them up voluntarily..."',
-      author: "Sarah M.",
-      time: "2 mo. ago",
-      bgClass: "bg-[#faf4e8] text-[#4a3e3d]",
-      tagClass: "border-[#B77145] text-[#B77145] text-white",
-      titleClass: "text-[#B77145]",
-      descClass: "text-[#68270b]",
-      authorClass: "text-[#5c5251]",
-    },
-    {
-      id: 5,
-      tag: "Language Mastery",
-      title: "Building Confidence Daily",
-      desc: '"Watching him read with confidence and curiosity was a milestone our family never expected. The layout process completely transformed his mindset."',
-      author: "David K.",
-      time: "1 mo. ago",
-      bgClass: "bg-[#faf4e8] text-[#4a3e3d]",
-      tagClass: "border-[#B77145] text-white",
-      titleClass: "text-[#B77145]",
-      descClass: "text-[#68270b]",
-      authorClass: "text-[#5c5251]",
-    },
-    {
-      id: 6,
-      tag: "Cognitive Growth",
-      title: "A Whole New Horizon",
-      desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
-      author: "Elena R.",
-      time: "3 wk. ago",
-      bgClass: "bg-[#B77145] text-white",
-      tagClass: "border-none bg-[#fff] text-[#B77145]",
-      authorClass: "text-[#5c5251]",
-      titleClass: "text-white",
-      descClass: "text-[#f7f3f0]",
-    },
-    {
-      id: 7,
-      tag: "Cognitive Growth",
-      title: "A Whole New Horizon",
-      desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
-      author: "Elena R.",
-      time: "3 wk. ago",
-      bgClass: "bg-[#B77145] text-white",
-      tagClass: "border-none bg-[#fff] text-[#B77145]",
-      authorClass: "text-[#5c5251]",
-      titleClass: "text-white",
-      descClass: "text-[#f7f3f0]",
-    },
-    {
-      id: 8,
-      tag: "Cognitive Growth",
-      title: "A Whole New Horizon",
-      desc: '"The program targets root difficulties rather than teaching workarounds. We\'ve seen incredible structural progression over a short time."',
-      author: "Elena R.",
-      time: "3 wk. ago",
-      bgClass: "bg-[#B77145] text-white",
-      tagClass: "border-none bg-[#fff] text-[#B77145]",
-      authorClass: "text-[#5c5251]",
-      titleClass: "text-white",
-      descClass: "text-[#f7f3f0]",
-    },
-  ]);
 
   const [communityPosts, setCommunityPosts] = useState([]);
 
@@ -159,31 +51,58 @@ const Community = () => {
     }
   }
 
-  // --- HANDLER: Opens clicked card in the stack modal using Supabase 'header' ---
-  const handleOpenCardInCarousel = (post) => {
-    const newCard = {
+  // --- Deck cards: every approved community_hub post, in the same order as the grid ---
+  const deckData = useMemo(() => {
+    // Card colour themes, cycled so neighbouring cards in the stack look different
+    const themes = [
+      {
+        bgClass: "bg-[#fff] text-[#4a3e3d]",
+        tagClass: "border-[#B77145] text-white",
+        titleClass: "text-[#B77145]",
+        descClass: "text-[#68270b]",
+      },
+      {
+        bgClass: "bg-[#fcf9f5] text-[#4a3e3d]",
+        tagClass: "border-[#B77145] text-white",
+        titleClass: "text-[#B77145]",
+        descClass: "text-[#68270b]",
+      },
+      {
+        bgClass: "bg-[#B77145] text-white",
+        tagClass: "border-none bg-[#fff] text-[#B77145]",
+        titleClass: "text-white",
+        descClass: "text-[#f7f3f0]",
+      },
+    ];
+
+    return communityPosts.map((post, i) => ({
       id: post.id,
       tag: post.community_tags?.name || "General",
-      title: post.header || "Manual Heading", // Pulls dynamically from Supabase header column
-      desc: `"${post.content}"`,
-      author: post.username,
+      title: post.header || "",
+      desc: post.content ? `"${post.content}"` : "",
+      author: post.username || "",
       time: new Date(post.created_at).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
       }),
-      bgClass: "bg-[#fff] text-[#4a3e3d]",
-      tagClass: "border-[#B77145] text-[#fff]",
-      titleClass: "text-[#B77145]",
-      descClass: "text-[#68270b]",
-      authorClass: "text-[#5c5251]",
-    };
+      videoUrl: post.video_url || null,
+      ...themes[i % themes.length],
+    }));
+  }, [communityPosts]);
 
-    // Prepend to deckData so it is immediately accessible
-    setDeckData((prev) => [newCard, ...prev.filter((c) => c.id !== post.id)]);
-    setCurrentIndex(0);
+  // --- HANDLER: Opens the stack modal on the clicked grid post ---
+  const handleOpenCardInCarousel = (post) => {
+    const idx = deckData.findIndex((c) => c.id === post.id);
+    setCurrentIndex(idx >= 0 ? idx : 0);
     setEnabled(false); // Switch to circular/stack view layout
     setIsModalOpen(true); // Open the stack modal
+  };
+
+  // Circle cards open the deck from the first post
+  const openDeckFromStart = () => {
+    setCurrentIndex(0);
+    setIsModalOpen(true);
   };
 
   // --- Deck shuffle animation ---
@@ -602,7 +521,7 @@ const Community = () => {
               {/* Card 1 */}
               <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center pointer-events-none">
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-all bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -616,7 +535,7 @@ const Community = () => {
                   }
                 />
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -634,7 +553,7 @@ const Community = () => {
               {/* Card 2 */}
               <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-36 pointer-events-none">
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -648,7 +567,7 @@ const Community = () => {
                   }
                 />
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -666,7 +585,7 @@ const Community = () => {
               {/* Card 3 */}
               <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-72 pointer-events-none">
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -680,7 +599,7 @@ const Community = () => {
                   }
                 />
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -698,7 +617,7 @@ const Community = () => {
               {/* Card 4 */}
               <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-108 pointer-events-none">
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -712,7 +631,7 @@ const Community = () => {
                   }
                 />
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -730,7 +649,7 @@ const Community = () => {
               {/* Card 5 */}
               <div className="h-80 w-13.75 md:h-130 md:w-21 lg:h-175 lg:w-28.75 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-between items-center rotate-144 pointer-events-none">
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -744,7 +663,7 @@ const Community = () => {
                   }
                 />
                 <div
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openDeckFromStart}
                   className={`relative overflow-hidden group w-full h-16.25 md:h-26.5 lg:h-36.25 rounded-lg md:rounded-2xl lg:rounded-[20px] pointer-events-auto cursor-pointer transition-opacity bg-cover rotate-180 ${
                     isModalOpen ? "opacity-20 bg-[#B77145]/25" : "opacity-100"
                   }`}
@@ -775,13 +694,23 @@ const Community = () => {
                   className="relative order-1 w-[min(320px,calc(100vw_-_32px))] h-[min(420px,calc(100dvh_-_240px))] lg:w-105 lg:h-[min(500px,calc(100dvh_-_160px))]"
                   style={{ perspective: "1400px", perspectiveOrigin: "50% 40%" }}
                 >
-                  {deckData.map((card, idx) => (
-                    <CarouselCard
-                      key={card.id}
-                      card={card}
-                      cardStyle={getCardStyle(idx)}
-                    />
-                  ))}
+                  {deckData.length === 0 ? (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute w-full h-full rounded-[30px] lg:rounded-[40px] p-6 lg:p-8.75 flex justify-center items-center text-center bg-white text-[#B77145] text-[15px] font-medium"
+                    >
+                      No community stories yet.
+                    </div>
+                  ) : (
+                    deckData.map((card, idx) => (
+                      <CarouselCard
+                        key={card.id}
+                        card={card}
+                        cardStyle={getCardStyle(idx)}
+                        onPlayVideo={setActiveVideoUrl}
+                      />
+                    ))
+                  )}
                 </div>
 
                 {/* Action Buttons Row Container */}
@@ -838,7 +767,7 @@ const Community = () => {
 
 export default Community;
 
-const CarouselCard = ({ card, cardStyle }) => {
+const CarouselCard = ({ card, cardStyle, onPlayVideo }) => {
   const textRef = useRef(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
@@ -907,6 +836,15 @@ const CarouselCard = ({ card, cardStyle }) => {
           >
             {card.desc}
           </p>
+          {card.videoUrl && (
+            <button
+              onClick={() => onPlayVideo?.(card.videoUrl)}
+              className="mt-3 flex items-center gap-2 cursor-pointer"
+            >
+              <img src={playBtn} alt="Play video" className="w-10 h-10" />
+              <span className="text-[13px] font-medium">Watch video</span>
+            </button>
+          )}
         </div>
 
         {/* Only renders if text is longer than the container, and matches background color */}

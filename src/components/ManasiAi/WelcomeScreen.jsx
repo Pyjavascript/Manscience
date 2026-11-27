@@ -6,7 +6,7 @@ import ai from "../../assets/Ai/ai.svg";
 const WelcomeScreen = () => (
   <div className="flex flex-col gap-[20px] md:gap-[40px] items-center text-center max-w-[768px] w-full mx-auto px-[8px] pb-[8px] md:pb-[16px]">
     <div>
-      <img src={ai} alt="Logo" className="h-[50px] md:h-[78px]" />
+      <img src="https://res.cloudinary.com/dspwbbjyt/image/upload/v1795769893/ai-gif_ctnktq.gif" alt="Logo" className="h-[50px] md:h-[78px]" />
     </div>
 
     <div className="flex flex-col justify-center items-center gap-[20px]">

@@ -21,32 +21,47 @@ export const BRAIN_IMAGE_URL =
 // Must be a direct video file link (e.g. .mp4), not a YouTube page link.
 export const TUTORIAL_VIDEO_URL = "https://res.cloudinary.com/dspwbbjyt/video/upload/v1786289444/SAAS_video_yww5gm.mp4";
 
-// Initial screening questions shown before the domain scoring
+// Initial screening questions shown before the domain scoring.
+// `lines` are the question's lines as broken in the design; `question` is
+// the same text as one sentence, which is what gets saved to history.
 export const QUESTIONNAIRE = [
   {
     id: 0,
-    question: "When did you first notice these difficulties?",
+    lines: [
+      "When did you first begin",
+      "noticing these difficulties in",
+      "everyday life?",
+    ],
     options: ["Early Childhood", "Started Recently", "Not Sure"],
   },
   {
     id: 1,
-    question:
-      "Have these challenges been present across multiple settings (home, school, work, social situations)?",
+    lines: [
+      "Do these challenges occur",
+      "across different settings?",
+      "(home, school, work, social)",
+    ],
     options: ["Yes", "No", "Not Sure"],
   },
   {
     id: 2,
-    question:
-      "Did the difficulties begin after an illness, injury, accident, surgery, infection, or major life event?",
+    lines: [
+      "Did these difficulties begin",
+      "after an illness, injury, or major",
+      "life event?",
+    ],
     options: ["Yes", "No", "Not Sure"],
   },
   {
     id: 3,
-    question:
-      "Has a professional ever mentioned autism, ADHD, dyslexia or another neurodevelopmental condition?",
+    lines: [
+      "Has a professional mentioned",
+      "autism, ADHD, dyslexia, or a",
+      "related condition?",
+    ],
     options: ["Yes", "No", "Not Sure"],
   },
-];
+].map((q) => ({ ...q, question: q.lines.join(" ") }));
 
 // Typed messages that open the roadmap page instead of hitting the chat API
 export const ROADMAP_TRIGGER_PHRASES = [

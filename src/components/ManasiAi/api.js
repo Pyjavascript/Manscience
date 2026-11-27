@@ -196,3 +196,12 @@ export const submitRoadmap = async (payload, userId) => {
   });
   if (error) throw error;
 };
+
+// Emails the roadmap results to the address the user typed after submitting.
+// TODO: no backend endpoint exists for this yet. Until one is added, this
+// rejects so the form shows its error instead of a false "sent" message.
+export const sendRoadmapResultsEmail = async ({ email, userId }) => {
+  void email;
+  void userId;
+  throw new Error("Roadmap results email endpoint is not set up yet");
+};

@@ -14,6 +14,7 @@ import {
   ROADMAP_RESULTS_TABLE,
   normalizeRoadmapResult,
   buildRoadmapTimeline,
+  getRoadmapUrl,
 } from "../components/ManasiAi/helpers";
 import { fetchChatHistory } from "../components/ManasiAi/api";
 import ProfileHistoryModal from "../components/ProfileHistoryModal";
@@ -595,13 +596,13 @@ export default function Profile() {
             <div
               className="flex justify-end items-end w-full"
               onClick={() => {
-                window.location.href = `${window.location.origin}/roadmap`;
+                window.location.href = `${window.location.origin}${getRoadmapUrl()}`;
               }}
             >
               <button
                 className="bg-[#68270B] text-white text-[10px] md:text-[16px] font-semibold md:font-semibold rounded-full transition h-[45px] w-[90px] md:h-[70px] md:min-w-[140px]   md:h-[50px] lg:h-[70px] md:w-[110px] lg:min-w-[140px] px-6 md:px-10 flex items-center justify-center cursor-pointer"
                 onClick={() => {
-                  window.location.href = `${window.location.origin}/roadmap`;
+                  window.location.href = `${window.location.origin}${getRoadmapUrl()}`;
                 }}
               >
                 Start

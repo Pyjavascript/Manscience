@@ -5,11 +5,12 @@ import { getQuestionWindowStart } from "./helpers";
 
 // Card sizes are plain pixels worked out in JS, never rem, so the cards, the
 // list window and the slide distance always match whatever the page's root
-// font size is. Cards grow with the screen height up to the design size, so
-// exactly 4 show on laptops and big monitors alike.
-const CARD_GAP = 14;
-const MIN_CARD_HEIGHT = 64;
-const MAX_CARD_HEIGHT = 88;
+// font size is. Cards are the same size as the screening question options
+// (70px, 80px from md up, 10px apart); short screens show fewer rows.
+const CARD_GAP = 10;
+const CARD_HEIGHT = 70;
+const MD_CARD_HEIGHT = 80;
+const MD_QUERY = "(min-width: 768px)";
 const MAX_VISIBLE_ROWS = 4;
 
 // Shared easing so the list slide and the card highlight move in sync
@@ -17,9 +18,9 @@ const SLIDE_TRANSITION = { duration: 0.45, ease: [0.22, 1, 0.36, 1] };
 
 const px = (value) => parseFloat(value) || 0;
 
-// How many question rows fit, and how tall each card can be, once the
-// header, the rating buttons and the gaps between them are taken out of the
-// screen height. Short phones show fewer rows instead of scrolling.
+// How many question rows fit once the header, the rating buttons and the
+// gaps between them are taken out of the screen height, and the card height
+// for this screen width. Short phones show fewer rows instead of scrolling.
 const useCardLayout = () => {
   const mainRef = useRef(null);
   const headerRef = useRef(null);
@@ -28,7 +29,7 @@ const useCardLayout = () => {
   const ratingsRef = useRef(null);
   const [layout, setLayout] = useState({
     rows: MAX_VISIBLE_ROWS,
-    cardHeight: MAX_CARD_HEIGHT,
+    cardHeight: MD_CARD_HEIGHT,
   });
 
   useLayoutEffect(() => {
@@ -50,17 +51,11 @@ const useCardLayout = () => {
         px(getComputedStyle(topSpacer).minHeight) -
         px(getComputedStyle(bottomSpacer).minHeight);
 
-      const fit = Math.floor(
-        (available + CARD_GAP) / (MIN_CARD_HEIGHT + CARD_GAP),
-      );
+      const cardHeight = window.matchMedia(MD_QUERY).matches
+        ? MD_CARD_HEIGHT
+        : CARD_HEIGHT;
+      const fit = Math.floor((available + CARD_GAP) / (cardHeight + CARD_GAP));
       const rows = Math.min(MAX_VISIBLE_ROWS, Math.max(1, fit));
-      const cardHeight = Math.min(
-        MAX_CARD_HEIGHT,
-        Math.max(
-          MIN_CARD_HEIGHT,
-          Math.floor((available - (rows - 1) * CARD_GAP) / rows),
-        ),
-      );
 
       setLayout((prev) =>
         prev.rows === rows && prev.cardHeight === cardHeight
@@ -137,7 +132,7 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
           {activeDomain.domain}
         </h2>
 
-        <div className="w-full max-w-[480px] bg-white/20 h-1 rounded-full overflow-hidden mx-auto">
+        <div className="w-full max-w-[420px] bg-white/20 h-1 rounded-full overflow-hidden mx-auto">
           <div
             className="bg-white h-full w-full origin-left transition-transform duration-300 rounded-full"
             style={{ transform: `scaleX(${progressPercent / 100})` }}
@@ -156,7 +151,7 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
       {/* Question list: up to 4 rows, fewer on short screens */}
       <div className="shrink-0 w-full flex justify-center">
         <div
-          className="relative w-full max-w-[576px] overflow-hidden"
+          className="relative w-full max-w-[420px] overflow-hidden"
           style={{
             height: visibleCount * rowHeight - CARD_GAP,
           }}
@@ -197,9 +192,9 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
                       }}
                       transition={SLIDE_TRANSITION}
                       style={{ height: cardHeight }}
-                      className="relative rounded-[22px] w-full md:w-[480px] md:rounded-[28px] text-[13px] md:text-[15px] leading-[1.35] font-medium text-left shrink-0 overflow-hidden bg-[#68270B]/20 text-white/80"
+                      className="relative w-full rounded-[24px] text-[15px] md:text-[16px] leading-[1.3] font-semibold text-left shrink-0 overflow-hidden bg-[#68270B]/20 text-white/80"
                     >
-                      <span className="absolute inset-0 flex items-center px-5 md:px-6">
+                      <span className="absolute inset-0 flex items-center px-[20px] md:px-[30px]">
                         {label}
                       </span>
                       {/* White highlight crossfades in, instead of animating colors */}
@@ -208,7 +203,7 @@ const DomainScoring = ({ scoringState, onRatingSelect, scrollRef }) => {
                         initial={false}
                         animate={{ opacity: isCurrent ? 1 : 0 }}
                         transition={SLIDE_TRANSITION}
-                        className="absolute inset-0 flex items-center px-5 md:px-6 bg-white text-[#68270B]"
+                        className="absolute inset-0 flex items-center px-[20px] md:px-[30px] bg-[#FAFAE8] text-[#68270B]"
                       >
                         {label}
                       </motion.span>
